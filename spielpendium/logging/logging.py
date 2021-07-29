@@ -24,10 +24,11 @@ def set_log_level(level: str):
         def set_logging(*args, **kwargs):
             # Set the logger name to the function's module
             # and set the logging level.
-            logger = get_logger(func.__module__, level=level)
 
-            # Add the logger to the kwargs
-            kwargs['logger'] = logger
+            if 'logger' not in kwargs.keys():
+                logger = get_logger(func.__module__, level=level)
+                # Add the logger to the kwargs
+                kwargs['logger'] = logger
 
             # Return the function
             return func(*args, **kwargs)
