@@ -12,6 +12,7 @@ _BGG_URL = "https://www.boardgamegeek.com/"
 
 @enum.unique
 class ConnectionStatus(enum.Enum):
+    """ Enum class of connection statuses."""
     CONNECTION_OK = enum.auto()
     INTERNET_CONNECTION_DOWN = enum.auto()
     BOARDGAMEGEEK_DOWN = enum.auto()
@@ -76,16 +77,20 @@ def bgg_api_is_up() -> bool:
 def get_connection_status() -> ConnectionStatus:
     """ Checks that there's an internet connection and connections to BGG.
 
-    :return: True if the connections are al
+    :return: The connection status.
     """
 
     if not is_connected_to_internet():
+        # First check the internet connection.
         return ConnectionStatus.INTERNET_CONNECTION_DOWN
     elif not bgg_is_up():
+        # Then check the status of BBG website.
         return ConnectionStatus.BOARDGAMEGEEK_DOWN
     elif not bgg_api_is_up():
+        # Then check the status of the BGG API.
         return ConnectionStatus.BOARDGAMEGEEK_API_DOWN
     else:
+        # If all previous were good, return a good status.
         return ConnectionStatus.CONNECTION_OK
 
 
