@@ -1,12 +1,21 @@
 import socket
 import urllib.request
 import urllib.error
+import enum
 
 from spielpendium.network import search_bgg
 
-__all__ = ['is_connected_to_internet', 'bgg_is_up', 'bgg_api_is_up']
+__all__ = ['ConnectionStatus', 'get_connection_status']
 
 _BGG_URL = "https://www.boardgamegeek.com/"
+
+
+@enum.unique
+class ConnectionStatus(enum.Enum):
+    STATUS_OK = enum.auto()
+    NO_INTERNET_CONNECTION = enum.auto()
+    BGG_DOWN = enum.auto()
+    BGG_API_DOWN = enum.auto()
 
 
 def is_connected_to_internet() -> bool:
@@ -37,7 +46,7 @@ def bgg_is_up() -> bool:
     except urllib.error.URLError:
         # if there's any error with connecting, return False
         pass
-    
+
     return False
 
 
@@ -58,7 +67,21 @@ def bgg_api_is_up() -> bool:
     return False
 
 
+def get_connection_status() -> ConnectionStatus:
+    """ Checks that there's an internet connection and connections to BGG.
+
+    :return: True if the connections are al
+    """
+
+    if not is_connected_to_internet():
+        return ConnectionStatus.NO_INTERNET_CONNECTION
+    elif not bgg_is_up():
+        return ConnectionStatus.BGG_DOWN
+    elif not bgg_api_is_up():
+        return ConnectionStatus.BGG_API_DOWN
+    else:
+        return ConnectionStatus.STATUS_OK
+
+
 if __name__ == '__main__':
-    print(is_connected_to_internet())
-    print(bgg_is_up())
-    print(bgg_api_is_up())
+    print(get_connection_status() == ConnectionStatus.STATUS_OK)
