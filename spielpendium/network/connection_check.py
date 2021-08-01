@@ -35,7 +35,11 @@ def bgg_is_up() -> bool:
         pass
     
     return False
-                
+    
+    
+    def bgg_api_is_up() -> bool:
+    	
+    	return True
 
 if __name__ == '__main__':
     print(is_connected_to_internet())
