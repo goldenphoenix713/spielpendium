@@ -12,10 +12,16 @@ _BGG_URL = "https://www.boardgamegeek.com/"
 
 @enum.unique
 class ConnectionStatus(enum.Enum):
-    STATUS_OK = enum.auto()
-    NO_INTERNET_CONNECTION = enum.auto()
-    BGG_DOWN = enum.auto()
-    BGG_API_DOWN = enum.auto()
+    CONNECTION_OK = enum.auto()
+    INTERNET_CONNECTION_DOWN = enum.auto()
+    BOARDGAMEGEEK_DOWN = enum.auto()
+    BOARDGAMEGEEK_API_DOWN = enum.auto()
+
+    def __repr__(self):
+        return self.name.title().replace('_', ' ')
+
+    def __str__(self):
+        return repr(self)
 
 
 def is_connected_to_internet() -> bool:
@@ -74,14 +80,14 @@ def get_connection_status() -> ConnectionStatus:
     """
 
     if not is_connected_to_internet():
-        return ConnectionStatus.NO_INTERNET_CONNECTION
+        return ConnectionStatus.INTERNET_CONNECTION_DOWN
     elif not bgg_is_up():
-        return ConnectionStatus.BGG_DOWN
+        return ConnectionStatus.BOARDGAMEGEEK_DOWN
     elif not bgg_api_is_up():
-        return ConnectionStatus.BGG_API_DOWN
+        return ConnectionStatus.BOARDGAMEGEEK_API_DOWN
     else:
-        return ConnectionStatus.STATUS_OK
+        return ConnectionStatus.CONNECTION_OK
 
 
 if __name__ == '__main__':
-    print(get_connection_status() == ConnectionStatus.STATUS_OK)
+    print(get_connection_status() == ConnectionStatus.CONNECTION_OK)
