@@ -32,7 +32,8 @@ def is_connected_to_internet() -> bool:
     """
     try:
         # try to connect to 1.1.1.1, a DNS server that should always be up
-        socket.create_connection(("1.1.1.1", 53))
+        connection = socket.create_connection(("1.1.1.1", 53))
+        connection.close()
         return True
     except OSError:
         # if it can't connect, it'll come here
