@@ -1,7 +1,7 @@
 import socket
 
 
-def is_connected():
+def is_connected_to_internet():
     """Checks if there's an internet connection
     
     :returns: True if an internet connection exists, False otherwise.
@@ -18,3 +18,4 @@ def is_connected():
 
 if __name__ == '__main__':
 	print(is_connected())
+	
