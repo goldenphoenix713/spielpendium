@@ -44,10 +44,16 @@ class Games(QtCore.QAbstractTableModel):
         return len(self._games.columns)
     
     def data(self, index, role):
-        pass
+        
+        row = index.row()
+        column = index.column()
+        
+        if role == QtCore.Qt.DisplayRole:
+            return self._games.iloc[row, column]
     
     def index(self, row, column, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:
-        return self.createIndex(row, column)
+        item = self._games.iloc[row, column]
+        return self.createIndex(row, column, item)
         
     
     def load(self, filename: str) -> bool:
