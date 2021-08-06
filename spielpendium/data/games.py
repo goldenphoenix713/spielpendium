@@ -1,4 +1,4 @@
-from typing import Union, List, Any
+from typing import Union, List, Any, Dict
 
 from PyQt5 import QtCore
 import pandas as pd
@@ -7,7 +7,6 @@ __all__ = ['Games']
 
 
 class Games(QtCore.QAbstractTableModel):
-
     _NUM_HIDDEN_COLS = 2
     _ID_COL = 0
     _IMAGE_COL = 1
@@ -40,6 +39,12 @@ class Games(QtCore.QAbstractTableModel):
         ]
 
         self._games = pd.DataFrame(columns=self._header)
+
+    def __repr__(self):
+        return self._games
+
+    def __str__(self):
+        return str(self._games)
 
     def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> int:
@@ -107,9 +112,20 @@ class Games(QtCore.QAbstractTableModel):
                              index.column() + self._NUM_HIDDEN_COLS] \
                 = str(value)
             self.dataChanged.emit(index, index,
-                                    [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole])
+                                  [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole])
             return True
         return False
+
+    def append(self, values: Dict) -> bool:
+        try:
+            if not all([x in self._header for x in values.keys()]):
+                raise KeyError
+            self.beginInsertRows(QtCore.QModelIndex(),
+                                 len(self._games), len(self._games))
+            self._games = self._games.append(values, ignore_index=True)
+            self.endInsertRows()
+        except KeyError:
+            return False
 
     def load(self, filename: str) -> bool:
         pass
@@ -154,10 +170,11 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication([])
     view = QtWidgets.QTableView()
     games = Games()
-    games._games = games._games.append(data, ignore_index=True)
-    print(games._games)
+    print(games)
     print(games.rowCount())
     print(games.columnCount())
     view.setModel(games)
     view.show()
+    games.append(data)
+    print(games)
     app.exec()
