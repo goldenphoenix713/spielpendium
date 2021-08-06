@@ -1,73 +1,163 @@
+from typing import Union, List, Any
+
 from PyQt5 import QtCore
 import pandas as pd
-
 
 __all__ = ['Games']
 
 
 class Games(QtCore.QAbstractTableModel):
-    
-    def __init__(self, parent=None):
+
+    _NUM_HIDDEN_COLS = 2
+    _ID_COL = 0
+    _IMAGE_COL = 1
+
+    def __init__(self, parent: QtCore.QObject = None):
         super(Games, self).__init__(parent)
-        
-        # TODO Add more column names
+
         self._header = [
-            'bgg_id',
-            'game_name',
-            'game_subname',
-            'version',
-            'author',
-            'artist',
-            'publisher',
-            'release_year',
-            'category',
-            'image',
-            'description',
-            'min_players',
-            'max_players',
-            'recommended_players',
-            'age',
-            'min_play_time',
-            'max_play_time',
-            'bgg_rating',
-            'bgg_rank',
-            'complexity',
-            'related_games',
+            'BGG Id',
+            'Image',
+            'Name',
+            'Subname',
+            'Version',
+            'Author',
+            'Artist',
+            'Publisher',
+            'Release Year',
+            'Category',
+            'Description',
+            'Minimum Players',
+            'Maximum Players',
+            'Recommended Players',
+            'Age',
+            'Minimum Play Time',
+            'Maximum Play Time',
+            'BGG Rating',
+            'BGG Rank',
+            'Complexity',
+            'Related Games',
         ]
-        
+
         self._games = pd.DataFrame(columns=self._header)
-    
-    def rowCount(self, parent=QtCore.QModelIndex()) -> int:
+
+    def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
+            -> int:
         return len(self._games)
-    
-    def columnCount(self, parent=QtCore.QModelIndex()) -> int:
-        return len(self._games.columns)
-    
-    def data(self, index, role):
-        
+
+    def columnCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
+            -> int:
+        return len(self._games.columns) - self._NUM_HIDDEN_COLS
+
+    def headerData(self, section: int, orientation: QtCore.Qt.Orientation,
+                   role: int = None) -> Union[List, QtCore.QVariant]:
+
+        if orientation != QtCore.Qt.Horizontal \
+                or role != QtCore.Qt.DisplayRole:
+            return QtCore.QVariant()
+
+        return self._header[section + self._NUM_HIDDEN_COLS]
+
+    def flags(self, index: QtCore.QModelIndex = QtCore.QModelIndex()) \
+            -> QtCore.Qt.ItemFlags:
+
+        return super(Games, self).flags(index) | QtCore.Qt.ItemIsEditable
+
+    def data(self, index: QtCore.QModelIndex, role=None) \
+            -> Union[int, float, str, bytes]:
+
         row = index.row()
         column = index.column()
-        
+
         if role == QtCore.Qt.DisplayRole:
-            return self._games.iloc[row, column]
-    
-    def index(self, row, column, parent=QtCore.QModelIndex()) -> QtCore.QModelIndex:
-        item = self._games.iloc[row, column]
-        return self.createIndex(row, column, item)
-        
-    
+            return str(self._games.iloc[row, column + self._NUM_HIDDEN_COLS])
+        elif role == QtCore.Qt.ToolTipRole:
+            return 'BGG ID: ' + str(self._games.iloc[row, self._ID_COL])
+        elif role == QtCore.Qt.DecorationRole and column == 0:
+            return self._games.iloc[row, self._IMAGE_COL]
+
+    def index(self, row: int, column: int,
+              parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
+            -> QtCore.QModelIndex:
+
+        return self.createIndex(row, column, self._games.iloc[row, column])
+
+    def insertRows(self, row: int, count: int,
+                   parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> bool:
+
+        self.beginInsertRows(parent, row, row + count - 1)
+        for ii in range(count):
+            self._games.loc[len(self._games)] = [None] * self.columnCount()
+        self.endInsertRows()
+
+        return True
+
+    def removeRows(self, row: int, count: int,
+                   parent: QtCore.QModelIndex = None) -> bool:
+        self.beginRemoveRows(parent, row, row + count - 1)
+        self._games.drop(range(row, row + count))
+        self.endRemoveRows()
+
+        return True
+
+    def setData(self, index: QtCore.QModelIndex, value: Any,
+                role: int = None) -> bool:
+        if index.isValid() and role == QtCore.Qt.EditRole:
+            self._games.iloc[index.row(),
+                             index.column() + self._NUM_HIDDEN_COLS] \
+                = str(value)
+            self.dataChanged.emit(index, index,
+                                    [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole])
+            return True
+        return False
+
     def load(self, filename: str) -> bool:
         pass
-    
+
     def save(self, filename: str) -> bool:
         pass
-    
+
     def read_db(self) -> bool:
         pass
-     
+
     def write_db(self) -> bool:
         pass
-    
+
 
 if __name__ == '__main__':
+    from PyQt5 import QtWidgets
+
+    data = {
+        'BGG Id': 1,
+        'Image': 'image',
+        'Name': 'Test',
+        'Subname': 'The Test Thing',
+        'Version': 1,
+        'Author': 'Eddie',
+        'Artist': 'Eddie',
+        'Publisher': 'Eddie Games',
+        'Release Year': 2021,
+        'Category': 'Made Up',
+        'Description': 'This is a test thingy I''m doing.',
+        'Minimum Players': 3,
+        'Maximum Players': 5,
+        'Recommended Players': 4,
+        'Age': 20,
+        'Minimum Play Time': 50,
+        'Maximum Play Time': 120,
+        'BGG Rating': 1.2,
+        'BGG Rank': 504033,
+        'Complexity': 1.2,
+        'Related Games': 'None',
+    }
+
+    app = QtWidgets.QApplication([])
+    view = QtWidgets.QTableView()
     games = Games()
+    games._games = games._games.append(data, ignore_index=True)
+    print(games._games)
+    print(games.rowCount())
+    print(games.columnCount())
+    view.setModel(games)
+    view.show()
+    app.exec()
