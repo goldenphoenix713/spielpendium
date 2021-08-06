@@ -3,6 +3,8 @@ from typing import Union, List, Any, Dict
 from PyQt5 import QtCore
 import pandas as pd
 
+from spielpendium.data.file_io import *
+
 __all__ = ['Games']
 
 
