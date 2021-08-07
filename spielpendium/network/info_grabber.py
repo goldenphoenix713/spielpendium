@@ -7,7 +7,7 @@ from json import dumps, loads
 
 import xmltodict
 
-from spielpendium.logging import set_log_level
+from spielpendium.logger import set_log_level
 
 __all__ = ['search_bgg']
 

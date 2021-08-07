@@ -43,7 +43,8 @@ def set_logging_config(filename: str, level: str = 'info'):
     :param level: The logging level. Defaults to 'info'.
     """
 
-    logging.basicConfig(filename=filename, format=_FORMAT, level=_LEVELS[level.lower()])
+    logging.basicConfig(filename=filename, format=_FORMAT,
+                        level=_LEVELS[level.lower()])
 
 
 def get_logger(name: str, level: str = 'info') -> logging.Logger:
