@@ -131,9 +131,11 @@ class Games(QtCore.QAbstractTableModel):
 
     def load(self, filename: str) -> bool:
         new_games = load_spl(filename)
+        
+        # TODO add code to close existing PIL images
 
         self.beginInsertRows(QtCore.QModelIndex(),
-                             1, len(new_games)-1)
+                             0, len(new_games)-1)
         self._games = new_games
         self.endInsertRows()
 
