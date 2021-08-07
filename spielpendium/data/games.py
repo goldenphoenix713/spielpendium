@@ -130,10 +130,23 @@ class Games(QtCore.QAbstractTableModel):
             return False
 
     def load(self, filename: str) -> bool:
-        pass
+        new_games = load_spl(filename)
+
+        self.beginInsertRows(QtCore.QModelIndex(),
+                             1, len(new_games)-1)
+        self._games = new_games
+        self.endInsertRows()
+
+        return True
 
     def save(self, filename: str) -> bool:
-        pass
+        try:
+            save_spl(self._games, filename)
+            return True
+        except FileNotFoundError:
+            return False
+
+        # TODO Add more exception types
 
     def read_db(self) -> bool:
         pass
@@ -179,4 +192,5 @@ if __name__ == '__main__':
     view.show()
     games.append(data)
     print(games)
+    games.save('test')
     app.exec()
