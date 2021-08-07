@@ -1,14 +1,22 @@
+"""Internal data storage for Spielpendium.
+
+THe Games class is a QAbstractTableModel subclass that stores user
+information when running Spielpendium. It contains methods that call the
+save and load splz functions and allows data to be read in from the database.
+"""
+
+__all__ = ['Games']
+
 from typing import Union, List, Any, Dict
 
 from PyQt5 import QtCore
 import pandas as pd
 
-from spielpendium.data.file_io import *
-
-__all__ = ['Games']
+from spielpendium.data.file_io import load_splz, save_splz
 
 
 class Games(QtCore.QAbstractTableModel):
+    """The internal data storage class for Spielpendium."""
     _NUM_HIDDEN_COLS = 2
     _ID_COL = 0
     _IMAGE_COL = 1
@@ -130,7 +138,7 @@ class Games(QtCore.QAbstractTableModel):
             return False
 
     def load(self, filename: str) -> bool:
-        new_games = load_spl(filename)
+        new_games = load_splz(filename)
         
         # TODO add code to close existing PIL images
 
@@ -143,7 +151,7 @@ class Games(QtCore.QAbstractTableModel):
 
     def save(self, filename: str) -> bool:
         try:
-            save_spl(self._games, filename)
+            save_splz(self._games, filename)
             return True
         except FileNotFoundError:
             return False
@@ -159,10 +167,13 @@ class Games(QtCore.QAbstractTableModel):
 
 if __name__ == '__main__':
     from PyQt5 import QtWidgets
+    from PIL import Image
+
+    im = Image.open('../../images/image.jpg')
 
     data = {
         'BGG Id': 1,
-        'Image': 'image',
+        'Image': im,
         'Name': 'Test',
         'Subname': 'The Test Thing',
         'Version': 1,
@@ -194,5 +205,5 @@ if __name__ == '__main__':
     view.show()
     games.append(data)
     print(games)
-    games.save('test')
+    games.save('test.splz')
     app.exec()
