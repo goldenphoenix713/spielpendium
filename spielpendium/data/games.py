@@ -139,8 +139,11 @@ class Games(QtCore.QAbstractTableModel):
 
     def load(self, filename: str) -> bool:
         new_games = load_splz(filename)
-        
-        # TODO add code to close existing PIL images
+
+        if len(self._games) != 0:
+            for image in self._games['Image']:
+                if isinstance(image, Image):
+                    image.close()
 
         self.beginInsertRows(QtCore.QModelIndex(),
                              0, len(new_games)-1)
@@ -150,13 +153,7 @@ class Games(QtCore.QAbstractTableModel):
         return True
 
     def save(self, filename: str) -> bool:
-        try:
-            save_splz(self._games, filename)
-            return True
-        except FileNotFoundError:
-            return False
-
-        # TODO Add more exception types
+        return save_splz(self._games, filename)
 
     def read_db(self) -> bool:
         pass
