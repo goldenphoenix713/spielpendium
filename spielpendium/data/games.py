@@ -9,8 +9,9 @@ __all__ = ['Games']
 
 from typing import Union, List, Any, Dict
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 import pandas as pd
+from PIL import ImageQt
 
 from spielpendium.data.file_io import load_splz, save_splz
 
@@ -46,9 +47,14 @@ class Games(QtCore.QAbstractTableModel):
     ]
 
     def __init__(self, parent: QtCore.QObject = None):
+        """Initialize the Games object.
+
+        :param parent: A parent QObject for Games.
+        """
         super(Games, self).__init__(parent)
 
         self._games = pd.DataFrame(columns=self.HEADER)
+        self._images = []
         self._metadata = {}
 
     def __repr__(self):
@@ -59,15 +65,33 @@ class Games(QtCore.QAbstractTableModel):
 
     def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> int:
+        """ Override method required by QAbstractTableModel subclasses.
+
+        :param parent: A QModelIndex.
+        :return: THe number of rows in the model.
+        """
         return len(self._games)
 
     def columnCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> int:
+        """ Override method required by QAbstractTableModel subclasses.
+
+        :param parent: A QModelIndex.
+        :return: The number of columns in the model.
+        """
         return len(self._games.columns) - self._NUM_HIDDEN_COLS
 
     def headerData(self, section: int, orientation: QtCore.Qt.Orientation,
                    role: int = None) -> Union[List, QtCore.QVariant]:
+        """ Override method required by QAbstractTableModel subclasses.
 
+        :param section: The header column number.
+        :param orientation: Horizontal or vertical
+        :param role: A Qt role.
+        :return: The header data.
+        """
+        # Only return the  header for a horizontal orientation
+        # and a display role.
         if orientation != QtCore.Qt.Horizontal \
                 or role != QtCore.Qt.DisplayRole:
             return QtCore.QVariant()
@@ -76,11 +100,23 @@ class Games(QtCore.QAbstractTableModel):
 
     def flags(self, index: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> QtCore.Qt.ItemFlags:
+        """ Override method required by QAbstractTableModel subclasses.
+        Allows items to be editable.
+
+        :param index: The index for the model item.
+        :return: The Qt flags.
+        """
 
         return super(Games, self).flags(index) | QtCore.Qt.ItemIsEditable
 
     def data(self, index: QtCore.QModelIndex, role=None) \
             -> Union[int, float, str, bytes]:
+        """ Override method required by QAbstractTableModel subclasses.
+
+        :param index: The index for the model item
+        :param role: A Qt role.
+        :return: The model data.
+        """
 
         row = index.row()
         column = index.column()
@@ -90,7 +126,7 @@ class Games(QtCore.QAbstractTableModel):
         elif role == QtCore.Qt.ToolTipRole:
             return 'BGG ID: ' + str(self._games.iloc[row, self._ID_COL])
         elif role == QtCore.Qt.DecorationRole and column == 0:
-            return self._games.iloc[row, self._IMAGE_COL]
+            return self._images[row]
 
     def index(self, row: int, column: int,
               parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
@@ -105,6 +141,7 @@ class Games(QtCore.QAbstractTableModel):
         for ii in range(count):
             self._games.loc[len(self._games)] = [None] * self.columnCount()
         self.endInsertRows()
+        self._images.append([])
 
         return True
 
@@ -113,6 +150,9 @@ class Games(QtCore.QAbstractTableModel):
         self.beginRemoveRows(parent, row, row + count - 1)
         self._games.drop(range(row, row + count))
         self.endRemoveRows()
+        indices = range(row, row + count -1)
+        self._images = [v for i, v in enumerate(self._images)
+                        if i not in indices]
 
         return True
 
@@ -141,6 +181,12 @@ class Games(QtCore.QAbstractTableModel):
                                  len(self._games), len(self._games))
             self._games = self._games.append(values, ignore_index=True)
             self.endInsertRows()
+            im = self._games.iloc[-1, self._IMAGE_COL].convert("RGBA")
+            data = im.tobytes("raw", "RGBA")
+            qim = QtGui.QImage(data, im.size[0], im.size[1],
+                               QtGui.QImage.Format_RGBA8888)
+            # TODO Resize image appropriately
+            self._images.append(qim)
         except KeyError:
             return False
 
@@ -178,11 +224,11 @@ if __name__ == '__main__':
     from PyQt5 import QtWidgets
     from PIL import Image
 
-    im = Image.open('../../images/image.jpg')
+    test_im = Image.open('../../images/image.jpg')
 
-    data = {
+    test_data = {
         'BGG Id': 1,
-        'Image': im,
+        'Image': test_im,
         'Name': 'Test',
         'Subname': 'The Test Thing',
         'Version': 1,
@@ -212,8 +258,9 @@ if __name__ == '__main__':
     print(games.columnCount())
     view.setModel(games)
     view.show()
-    games.append(data)
+    games.append(test_data)
     games.setData('name', 'Eduardo Ruiz', QtCore.Qt.UserRole)
     print(games)
     games.save('test.splz')
     app.exec()
+    test_im.close()

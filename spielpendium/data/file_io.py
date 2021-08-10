@@ -39,10 +39,13 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
 
     # Replace the images in the DataFrame with the relative image path
     # in the .splz file.
-    data['Image'] = 'images/' + data['BGG Id'].astype(str) + '.png'
+    data_copy = data.copy()
+
+    data_copy['Image'] = 'images/' + data['BGG Id'].astype(str) + '.png'
 
     # Convert the data in the DataFrame to a JSON string.
-    json_data = json.dumps(json.loads(data.to_json(orient="index")), indent=4)
+    json_data = json.dumps(json.loads(data_copy.to_json(orient="index")),
+                           indent=4)
     json_meta = json.dumps(metadata, indent=4)
 
     ###########################################################################
@@ -63,7 +66,7 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
                 image_bytes = BytesIO()
                 image.save(image_bytes, "PNG")
                 file.writestr(
-                    data.loc[data['BGG Id'] == bgg_id]['Image'].values[0],
+                    data_copy.loc[data_copy['BGG Id'] == bgg_id]['Image'].values[0],
                     image_bytes.getvalue()
                 )
 
