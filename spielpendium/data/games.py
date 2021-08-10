@@ -174,21 +174,23 @@ class Games(QtCore.QAbstractTableModel):
         return False
 
     def append(self, values: Dict) -> bool:
-        try:
-            if not all([x in self.HEADER for x in values.keys()]):
-                raise KeyError
-            self.beginInsertRows(QtCore.QModelIndex(),
-                                 len(self._games), len(self._games))
-            self._games = self._games.append(values, ignore_index=True)
-            self.endInsertRows()
-            im = self._games.iloc[-1, self._IMAGE_COL].convert("RGBA")
-            data = im.tobytes("raw", "RGBA")
-            qim = QtGui.QImage(data, im.size[0], im.size[1],
-                               QtGui.QImage.Format_RGBA8888)
-            # TODO Resize image appropriately
-            self._images.append(qim)
-        except KeyError:
+        if not all([x in self.HEADER for x in values.keys()]):
             return False
+        
+        self.beginInsertRows(QtCore.QModelIndex(),
+                                 len(self._games), len(self._games))
+        self._games = self._games.append(values, ignore_index=True)
+        self.endInsertRows()
+        im = self._games.iloc[-1, self._IMAGE_COL].convert("RGBA")
+        qim = QtGui.QImage(
+            im.tobytes("raw", "RGBA"), 
+            im.size[0], 
+            im.size[1],
+            QtGui.QImage.Format_RGBA8888
+        )
+        qim = qim.scaled(64, 64, aspectMode=QtCore.Qt.KeepAspectRatio)
+        self._images.append(qim)
+        return True
 
     def load(self, filename: str) -> bool:
         try:

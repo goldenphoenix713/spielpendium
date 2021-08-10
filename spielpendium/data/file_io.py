@@ -122,7 +122,7 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
                 image: Image.Image = Image.open(BytesIO(image_bytes))
                 data.loc[ii, 'Image'] = image
 
-    # Raise a TYpeError if the file can't be read for any reason.
+    # Raise a TypeError if the file can't be read for any reason.
     except (KeyError, UnicodeDecodeError,
             ValueError, UnidentifiedImageError):
         raise TypeError(f'Unable to read {filename}. It does not '
