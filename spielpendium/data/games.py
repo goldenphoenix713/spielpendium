@@ -21,34 +21,35 @@ class Games(QtCore.QAbstractTableModel):
     _ID_COL = 0
     _IMAGE_COL = 1
 
+    HEADER = [
+        'BGG Id',
+        'Image',
+        'Name',
+        'Subname',
+        'Version',
+        'Author',
+        'Artist',
+        'Publisher',
+        'Release Year',
+        'Category',
+        'Description',
+        'Minimum Players',
+        'Maximum Players',
+        'Recommended Players',
+        'Age',
+        'Minimum Play Time',
+        'Maximum Play Time',
+        'BGG Rating',
+        'BGG Rank',
+        'Complexity',
+        'Related Games',
+    ]
+
     def __init__(self, parent: QtCore.QObject = None):
         super(Games, self).__init__(parent)
 
-        self._header = [
-            'BGG Id',
-            'Image',
-            'Name',
-            'Subname',
-            'Version',
-            'Author',
-            'Artist',
-            'Publisher',
-            'Release Year',
-            'Category',
-            'Description',
-            'Minimum Players',
-            'Maximum Players',
-            'Recommended Players',
-            'Age',
-            'Minimum Play Time',
-            'Maximum Play Time',
-            'BGG Rating',
-            'BGG Rank',
-            'Complexity',
-            'Related Games',
-        ]
-
-        self._games = pd.DataFrame(columns=self._header)
+        self._games = pd.DataFrame(columns=self.HEADER)
+        self._metadata = {}
 
     def __repr__(self):
         return self._games
@@ -71,7 +72,7 @@ class Games(QtCore.QAbstractTableModel):
                 or role != QtCore.Qt.DisplayRole:
             return QtCore.QVariant()
 
-        return self._header[section + self._NUM_HIDDEN_COLS]
+        return self.HEADER[section + self._NUM_HIDDEN_COLS]
 
     def flags(self, index: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> QtCore.Qt.ItemFlags:
@@ -115,20 +116,26 @@ class Games(QtCore.QAbstractTableModel):
 
         return True
 
-    def setData(self, index: QtCore.QModelIndex, value: Any,
+    def setData(self, index: Union[QtCore.QModelIndex, int, str], value: Any,
                 role: int = None) -> bool:
-        if index.isValid() and role == QtCore.Qt.EditRole:
-            self._games.iloc[index.row(),
-                             index.column() + self._NUM_HIDDEN_COLS] \
-                = str(value)
-            self.dataChanged.emit(index, index,
-                                  [QtCore.Qt.DisplayRole, QtCore.Qt.EditRole])
-            return True
+        if role == QtCore.Qt.EditRole:
+            if index.isValid():
+                self._games.iloc[index.row(),
+                                 index.column() + self._NUM_HIDDEN_COLS] \
+                    = str(value)
+                self.dataChanged.emit(index, index,
+                                      [QtCore.Qt.DisplayRole,
+                                       QtCore.Qt.EditRole])
+                return True
+        elif QtCore.Qt.UserRole:
+            if isinstance(index, (int, str)):
+                self._metadata[index] = value
+                return True
         return False
 
     def append(self, values: Dict) -> bool:
         try:
-            if not all([x in self._header for x in values.keys()]):
+            if not all([x in self.HEADER for x in values.keys()]):
                 raise KeyError
             self.beginInsertRows(QtCore.QModelIndex(),
                                  len(self._games), len(self._games))
@@ -138,7 +145,10 @@ class Games(QtCore.QAbstractTableModel):
             return False
 
     def load(self, filename: str) -> bool:
-        new_games = load_splz(filename)
+        try:
+            new_games, new_metadata = load_splz(filename)
+        except(FileNotFoundError, TypeError):
+            return False
 
         if len(self._games) != 0:
             for image in self._games['Image']:
@@ -150,10 +160,12 @@ class Games(QtCore.QAbstractTableModel):
         self._games = new_games
         self.endInsertRows()
 
+        self._metadata = new_metadata
+
         return True
 
     def save(self, filename: str) -> bool:
-        return save_splz(self._games, filename)
+        return save_splz(self._games, self._metadata, filename)
 
     def read_db(self) -> bool:
         pass
@@ -201,6 +213,7 @@ if __name__ == '__main__':
     view.setModel(games)
     view.show()
     games.append(data)
+    games.setData('name', 'Eduardo Ruiz', QtCore.Qt.UserRole)
     print(games)
     games.save('test.splz')
     app.exec()
