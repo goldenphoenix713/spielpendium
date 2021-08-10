@@ -13,6 +13,7 @@ from typing import Dict, Union, Tuple
 
 import pandas as pd
 from PIL import Image, UnidentifiedImageError
+from PyQt5 import QtGui
 
 
 def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
@@ -64,7 +65,7 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
             # with the associated BGG Id (which is unique).
             for bgg_id, image in images.items():
                 image_bytes = BytesIO()
-                image.save(image_bytes, "PNG")
+                image.save(image_bytes, format="PNG")
                 file.writestr(
                     data_copy.loc[data_copy['BGG Id'] == bgg_id]['Image'].values[0],
                     image_bytes.getvalue()
@@ -118,8 +119,11 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
 
             # Loop through the images and add them to the DataFrame
             for ii, path in zip(data.index, data['Image']):
-                image_bytes = file.read(path)
-                image: Image.Image = Image.open(BytesIO(image_bytes))
+                image = QtGui.QImage()
+                if not image.loadFromData(file.read(path)):
+                    # If the image cannot be found, raise an error.
+                    raise FileNotFoundError(f'The image {os.path.split(path)[1]} was not found in {filename}.')
+                # image: Image.Image = Image.open(BytesIO(image_bytes))
                 data.loc[ii, 'Image'] = image
 
     # Raise a TypeError if the file can't be read for any reason.

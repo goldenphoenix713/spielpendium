@@ -11,7 +11,6 @@ from typing import Union, List, Any, Dict
 
 from PyQt5 import QtCore, QtGui
 import pandas as pd
-from PIL import ImageQt
 
 from spielpendium.data.file_io import load_splz, save_splz
 
@@ -126,7 +125,7 @@ class Games(QtCore.QAbstractTableModel):
         elif role == QtCore.Qt.ToolTipRole:
             return 'BGG ID: ' + str(self._games.iloc[row, self._ID_COL])
         elif role == QtCore.Qt.DecorationRole and column == 0:
-            return self._images[row]
+            return self._games.iloc[row, self._IMAGE_COL]
 
     def index(self, row: int, column: int,
               parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
@@ -141,7 +140,6 @@ class Games(QtCore.QAbstractTableModel):
         for ii in range(count):
             self._games.loc[len(self._games)] = [None] * self.columnCount()
         self.endInsertRows()
-        self._images.append([])
 
         return True
 
@@ -150,9 +148,6 @@ class Games(QtCore.QAbstractTableModel):
         self.beginRemoveRows(parent, row, row + count - 1)
         self._games.drop(range(row, row + count))
         self.endRemoveRows()
-        indices = range(row, row + count -1)
-        self._images = [v for i, v in enumerate(self._images)
-                        if i not in indices]
 
         return True
 
@@ -181,15 +176,6 @@ class Games(QtCore.QAbstractTableModel):
                                  len(self._games), len(self._games))
         self._games = self._games.append(values, ignore_index=True)
         self.endInsertRows()
-        im = self._games.iloc[-1, self._IMAGE_COL].convert("RGBA")
-        qim = QtGui.QImage(
-            im.tobytes("raw", "RGBA"), 
-            im.size[0], 
-            im.size[1],
-            QtGui.QImage.Format_RGBA8888
-        )
-        qim = qim.scaled(64, 64, aspectMode=QtCore.Qt.KeepAspectRatio)
-        self._images.append(qim)
         return True
 
     def load(self, filename: str) -> bool:
@@ -197,11 +183,6 @@ class Games(QtCore.QAbstractTableModel):
             new_games, new_metadata = load_splz(filename)
         except(FileNotFoundError, TypeError):
             return False
-
-        if len(self._games) != 0:
-            for image in self._games['Image']:
-                if isinstance(image, Image):
-                    image.close()
 
         self.beginInsertRows(QtCore.QModelIndex(),
                              0, len(new_games)-1)
@@ -225,8 +206,10 @@ class Games(QtCore.QAbstractTableModel):
 if __name__ == '__main__':
     from PyQt5 import QtWidgets
     from PIL import Image
-
-    test_im = Image.open('../../images/image.jpg')
+    
+    app = QtWidgets.QApplication([])
+    
+    test_im = QtGui.QImage('../../images/image.jpg')
 
     test_data = {
         'BGG Id': 1,
@@ -251,8 +234,7 @@ if __name__ == '__main__':
         'Complexity': 1.2,
         'Related Games': 'None',
     }
-
-    app = QtWidgets.QApplication([])
+    
     view = QtWidgets.QTableView()
     games = Games()
     print(games)
@@ -265,4 +247,3 @@ if __name__ == '__main__':
     print(games)
     games.save('test.splz')
     app.exec()
-    test_im.close()
