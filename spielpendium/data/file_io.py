@@ -20,14 +20,14 @@ IMAGE_SIZE = 64
 def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
     """ Saves the internal user data in a Spielpendium program to a .splz file.
 
-    The SPLZ file format is a JSON formatted text file containing the user's
-    information and a folder containing associated game images in a zipped
+    The SPLZ file format is a JSON formatted text file containing the game data,
+    another containing metadata, and a folder containing associated game images in a zipped
     folder.
 
     :param data: The data to save, as a Pandas Dataframe.
     :param metadata: The metadata associated with the DataFrame.
     :param filename: The path to the save file location.
-    :return: True if successful, false otherwise.
+    :return: True if successful, False otherwise.
     """
     ###########################################################################
     # Data setup
@@ -59,7 +59,7 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
     # Open or create the splz file.
     try:
         with zipfile.ZipFile(filename, 'w') as file:
-            # Write the JSONs into the file
+            # Write the JSON files into the zip file
             file.writestr('data.json', json_data)
             file.writestr('metadata.json', json_meta)
 
@@ -125,7 +125,7 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
             metadata = json.loads(file.read('metadata.json').decode())
 
             # Loop through the images and add them to the DataFrame
-            for ii, path in zip(data.index, data['Image']):
+            for index, path in zip(data.index, data['Image']):
                 image = QtGui.QImage()
                 if not image.loadFromData(file.read(path)):
                     # If the image cannot be found, raise an error.
@@ -133,7 +133,7 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
                         f'The image {os.path.split(path)[1]} '
                         f'was not found in {filename}.'
                     )
-                data.loc[ii, 'Image'] = image.scaled(
+                data.loc[index, 'Image'] = image.scaled(
                     IMAGE_SIZE,
                     IMAGE_SIZE,
                     QtCore.Qt.KeepAspectRatio

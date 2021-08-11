@@ -1,3 +1,4 @@
+#pylint:disable=C0103
 """Internal data storage for Spielpendium.
 
 THe Games class is a QAbstractTableModel subclass that stores user
@@ -66,7 +67,12 @@ class Games(QtCore.QAbstractTableModel):
         return str(self._games)
     
     def __getitem__(self, index):
-        return self._games[index]
+        if isinstance(index, str):
+            return self._games[index]
+        if isinstance(index, int):
+            return  self._games.ilkc[index]
+        
+        return False
 
     def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> int:
@@ -115,7 +121,7 @@ class Games(QtCore.QAbstractTableModel):
         return super(Games, self).flags(index) | QtCore.Qt.ItemIsEditable
 
     def data(self, index: QtCore.QModelIndex, role=None) \
-            -> Union[int, float, str, bytes]:
+            -> Union[int, float, str, bytes, None]:
         """ Override method required by QAbstractTableModel subclasses.
 
         :param index: The index for the model item
@@ -132,6 +138,7 @@ class Games(QtCore.QAbstractTableModel):
             return 'BGG ID: ' + str(self._games.iloc[row, self._ID_COL])
         if role == QtCore.Qt.DecorationRole and column == 0:
             return self._games.iloc[row, self._IMAGE_COL]
+        return None
 
     def index(self, row: int, column: int,
               parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
@@ -143,7 +150,7 @@ class Games(QtCore.QAbstractTableModel):
                    parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> bool:
 
         self.beginInsertRows(parent, row, row + count - 1)
-        for ii in range(count):
+        for _ in range(count):
             self._games.loc[len(self._games)] = [None] * self.columnCount()
         self.endInsertRows()
 
@@ -246,7 +253,7 @@ if __name__ == '__main__':
     print(games)
     print(games.rowCount())
     print(games.columnCount())
-    view.setModel(games) 
+    view.setModel(games)
     view.show()
     games.append(test_data)
     print(games.rowCount())
