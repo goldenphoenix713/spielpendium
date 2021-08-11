@@ -12,8 +12,9 @@ from io import BytesIO
 from typing import Dict, Union, Tuple
 
 import pandas as pd
-from PIL import Image, UnidentifiedImageError
 from PyQt5 import QtGui, QtCore
+
+IMAGE_SIZE = 64
 
 
 def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
@@ -36,14 +37,14 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
     # saved in the JSON data file.
     images_list = data['Image']
     images_list.index = data['BGG Id']
-    images: Dict[Union[int, str], Image.Image] = images_list.to_dict()
+    images: Dict[Union[int, str], QtGui.QImage] = images_list.to_dict()
 
     # Replace the images in the DataFrame with the relative image path
     # in the .splz file.
     data_copy = data.copy()
 
     data_copy['Image'] = 'images/' + data['BGG Id'].astype(str) + '.png'
-    
+
     print(data_copy['Image'])
 
     # Convert the data in the DataFrame to a JSON string.
@@ -71,7 +72,9 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
                 image.save(buffer, "PNG")
                 image_bytes = BytesIO(buffer.data())
                 file.writestr(
-                    data_copy.loc[data_copy['BGG Id'] == bgg_id]['Image'].values[0],
+                    data_copy.loc[
+                        data_copy['BGG Id'] == bgg_id
+                        ]['Image'].values[0],
                     image_bytes.getvalue()
                 )
 
@@ -88,7 +91,7 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
     :param filepath: The path to the .splz file.
     :return: The data that was stored in the file.
     :raises FileNotFoundError: If the file can't be found.
-    :raises TypeError: If the file is unable to be read for any reason.
+    :raises IOError: If the file is unable to be read for any reason.
     """
 
     ###########################################################################
@@ -104,9 +107,9 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
 
     # Check that the file is a valid zipfile or that is have a .splz extension
     if not zipfile.is_zipfile(filepath) or not filename.endswith('.splz'):
-        raise TypeError(f'Unable to read {filename}. It does not '
-                        'seem to be a valid .splz file. or may '
-                        'have become corrupted.') from None
+        raise IOError(f'Unable to read {filename}. It does not '
+                      'seem to be a valid .splz file. or may '
+                      'have become corrupted.') from None
 
     ###########################################################################
     # Extract the contents of the zipfile
@@ -124,22 +127,29 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
             # Loop through the images and add them to the DataFrame
             for ii, path in zip(data.index, data['Image']):
                 image = QtGui.QImage()
-                if image.loadFromData(file.read(path)):
+                if not image.loadFromData(file.read(path)):
                     # If the image cannot be found, raise an error.
-                    raise FileNotFoundError(f'The image {os.path.split(path)[1]} was not found in {filename}.')
-                # image: Image.Image = Image.open(BytesIO(image_bytes))
-                data.loc[ii, 'Image'] = image
+                    raise FileNotFoundError(
+                        f'The image {os.path.split(path)[1]} '
+                        f'was not found in {filename}.'
+                    )
+                data.loc[ii, 'Image'] = image.scaled(
+                    IMAGE_SIZE,
+                    IMAGE_SIZE,
+                    QtCore.Qt.KeepAspectRatio
+                )
 
-    # Raise a TypeError if the file can't be read for any reason.
+    # Raise a IOError if the file can't be read for any reason.
     except (KeyError, UnicodeDecodeError,
-            ValueError, UnidentifiedImageError):
-        raise TypeError(f'Unable to read {filename}. It does not '
-                        'seem to be a valid .splz file. or may '
-                        'have become corrupted.') from None
+            ValueError, FileNotFoundError):
+        raise IOError(f'Unable to read {filename}. It does not '
+                      'seem to be a valid .splz file. or may '
+                      'have become corrupted.') from None
     return data, metadata
 
 
 if __name__ == '__main__':
     the_data, the_metadata = load_splz('test.splz')
     print(the_data)
+    print(the_data['Image'])
     print(the_metadata)

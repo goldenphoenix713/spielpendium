@@ -9,13 +9,14 @@ __all__ = ['Games']
 
 from typing import Union, List, Any, Dict
 
-from PyQt5 import QtCore, QtGui
+from PyQt5 import QtCore
 import pandas as pd
 
 try:
     from spielpendium.data.file_io import load_splz, save_splz
 except ModuleNotFoundError:
     from file_io import load_splz, save_splz
+
 
 class Games(QtCore.QAbstractTableModel):
     """The internal data storage class for Spielpendium."""
@@ -135,7 +136,8 @@ class Games(QtCore.QAbstractTableModel):
     def index(self, row: int, column: int,
               parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> QtCore.QModelIndex:
-        return self.createIndex(row, column, self._games.iloc[row, column + self._NUM_HIDDEN_COLS])
+        return self.createIndex(row, column, self._games.iloc[
+            row, column + self._NUM_HIDDEN_COLS])
 
     def insertRows(self, row: int, count: int,
                    parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> bool:
@@ -175,9 +177,9 @@ class Games(QtCore.QAbstractTableModel):
     def append(self, values: Dict) -> bool:
         if not all([x in self.HEADER for x in values.keys()]):
             return False
-        
+
         self.beginInsertRows(QtCore.QModelIndex(),
-                                 len(self._games), len(self._games))
+                             len(self._games), len(self._games))
         self._games = self._games.append(values, ignore_index=True)
         self.endInsertRows()
         return True
@@ -185,11 +187,11 @@ class Games(QtCore.QAbstractTableModel):
     def load(self, filename: str) -> bool:
         try:
             new_games, new_metadata = load_splz(filename)
-        except(FileNotFoundError, TypeError):
+        except(FileNotFoundError, IOError):
             return False
 
         self.beginInsertRows(QtCore.QModelIndex(),
-                             0, len(new_games)-1)
+                             0, len(new_games) - 1)
         self._games = new_games
         self.endInsertRows()
 
@@ -208,12 +210,12 @@ class Games(QtCore.QAbstractTableModel):
 
 
 if __name__ == '__main__':
-    from PyQt5 import QtWidgets
-    from PIL import Image
-    
+    from PyQt5 import QtWidgets, QtGui
+
     app = QtWidgets.QApplication([])
-    
-    test_im = QtGui.QImage('../../images/image.jpg')
+
+    test_im = (QtGui.QImage('../../images/image.jpg')
+               .scaled(64, 64, QtCore.Qt.KeepAspectRatio))
 
     test_data = {
         'BGG Id': 1,
@@ -238,7 +240,7 @@ if __name__ == '__main__':
         'Complexity': 1.2,
         'Related Games': 'None',
     }
-    
+
     view = QtWidgets.QTableView()
     games = Games()
     print(games)
