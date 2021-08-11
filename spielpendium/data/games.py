@@ -63,13 +63,16 @@ class Games(QtCore.QAbstractTableModel):
 
     def __str__(self):
         return str(self._games)
+    
+    def __getitem__(self, index):
+        return self._games[index]
 
     def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> int:
         """ Override method required by QAbstractTableModel subclasses.
 
         :param parent: A QModelIndex.
-        :return: THe number of rows in the model.
+        :return: The number of rows in the model.
         """
         return len(self._games)
 
@@ -124,9 +127,9 @@ class Games(QtCore.QAbstractTableModel):
 
         if role == QtCore.Qt.DisplayRole:
             return str(self._games.iloc[row, column + self._NUM_HIDDEN_COLS])
-        elif role == QtCore.Qt.ToolTipRole:
+        if role == QtCore.Qt.ToolTipRole:
             return 'BGG ID: ' + str(self._games.iloc[row, self._ID_COL])
-        elif role == QtCore.Qt.DecorationRole and column == 0:
+        if role == QtCore.Qt.DecorationRole and column == 0:
             return self._games.iloc[row, self._IMAGE_COL]
 
     def index(self, row: int, column: int,
@@ -241,7 +244,7 @@ if __name__ == '__main__':
     print(games)
     print(games.rowCount())
     print(games.columnCount())
-    view.setModel(games)
+    view.setModel(games) 
     view.show()
     games.append(test_data)
     print(games.rowCount())
@@ -251,5 +254,5 @@ if __name__ == '__main__':
     games.save('test.splz')
     games.load('test.splz')
     print(games)
-    print(games._games['Image'])
+    print(games['Image'])
     app.exec()
