@@ -13,7 +13,7 @@ from typing import Dict, Union, Tuple
 
 import pandas as pd
 from PIL import Image, UnidentifiedImageError
-from PyQt5 import QtGui
+from PyQt5 import QtGui, QtCore
 
 
 def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
@@ -43,6 +43,8 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
     data_copy = data.copy()
 
     data_copy['Image'] = 'images/' + data['BGG Id'].astype(str) + '.png'
+    
+    print(data_copy['Image'])
 
     # Convert the data in the DataFrame to a JSON string.
     json_data = json.dumps(json.loads(data_copy.to_json(orient="index")),
@@ -64,8 +66,10 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
             # The images are stored in the "images" subfolder and are named
             # with the associated BGG Id (which is unique).
             for bgg_id, image in images.items():
-                image_bytes = BytesIO()
-                image.save(image_bytes, format="PNG")
+                buffer = QtCore.QBuffer()
+                buffer.open(QtCore.QBuffer.ReadWrite)
+                image.save(buffer, "PNG")
+                image_bytes = BytesIO(buffer.data())
                 file.writestr(
                     data_copy.loc[data_copy['BGG Id'] == bgg_id]['Image'].values[0],
                     image_bytes.getvalue()
@@ -120,7 +124,7 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
             # Loop through the images and add them to the DataFrame
             for ii, path in zip(data.index, data['Image']):
                 image = QtGui.QImage()
-                if not image.loadFromData(file.read(path)):
+                if image.loadFromData(file.read(path)):
                     # If the image cannot be found, raise an error.
                     raise FileNotFoundError(f'The image {os.path.split(path)[1]} was not found in {filename}.')
                 # image: Image.Image = Image.open(BytesIO(image_bytes))

@@ -12,8 +12,10 @@ from typing import Union, List, Any, Dict
 from PyQt5 import QtCore, QtGui
 import pandas as pd
 
-from spielpendium.data.file_io import load_splz, save_splz
-
+try:
+    from spielpendium.data.file_io import load_splz, save_splz
+except ModuleNotFoundError:
+    from file_io import load_splz, save_splz
 
 class Games(QtCore.QAbstractTableModel):
     """The internal data storage class for Spielpendium."""
@@ -130,8 +132,7 @@ class Games(QtCore.QAbstractTableModel):
     def index(self, row: int, column: int,
               parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> QtCore.QModelIndex:
-
-        return self.createIndex(row, column, self._games.iloc[row, column])
+        return self.createIndex(row, column, self._games.iloc[row, column + self._NUM_HIDDEN_COLS])
 
     def insertRows(self, row: int, count: int,
                    parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> bool:
@@ -243,7 +244,12 @@ if __name__ == '__main__':
     view.setModel(games)
     view.show()
     games.append(test_data)
+    print(games.rowCount())
+    print(games.columnCount())
     games.setData('name', 'Eduardo Ruiz', QtCore.Qt.UserRole)
     print(games)
     games.save('test.splz')
+    games.load('test.splz')
+    print(games)
+    print(games._games['Image'])
     app.exec()
