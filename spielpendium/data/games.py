@@ -180,11 +180,26 @@ class Games(QtCore.QAbstractTableModel):
     def index(self, row: int, column: int,
               parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> QtCore.QModelIndex:
+        """Creates an QModel index used by Qt to determine item locations in
+        the model.
+
+        :param row: The item row.
+        :param column: The item column.
+        :param parent: The parent of the index.
+        :return: The QModelIndex for the given row and column.
+        """
         return self.createIndex(row, column, self._games.iloc[
             row, column + self._NUM_HIDDEN_COLS])
 
     def insertRows(self, row: int, count: int,
                    parent: QtCore.QModelIndex = QtCore.QModelIndex()) -> bool:
+        """Insert new rows into the model and let connected views know.
+
+        :param row: The first row to be inserted.
+        :param count: The number of rows to be inserted.
+        :param parent: A parent index.
+        :return: True if the row insertion is successful, False otherwise.
+        """
 
         self.beginInsertRows(parent, row, row + count - 1)
         for _ in range(count):
@@ -195,6 +210,13 @@ class Games(QtCore.QAbstractTableModel):
 
     def removeRows(self, row: int, count: int,
                    parent: QtCore.QModelIndex = None) -> bool:
+        """Remove rows from the model.
+
+        :param row: The starting row to remove.
+        :param count: The number of rows to remove.
+        :param parent: The parent index.
+        :return: True if the row removal is successful, False otherwise.
+        """
         self.beginRemoveRows(parent, row, row + count - 1)
         self._games.drop(range(row, row + count))
         self.endRemoveRows()
@@ -203,6 +225,13 @@ class Games(QtCore.QAbstractTableModel):
 
     def setData(self, index: Union[QtCore.QModelIndex, int, str], value: Any,
                 role: int = None) -> bool:
+        """Set data at a given index.
+
+        :param index: The index in the model to insert data.
+        :param value: The data to be inserted.
+        :param role: THe Qt role of the data being inserted.
+        :return: True if the data was successfully added, False otherwise.
+        """
         if role == QtCore.Qt.EditRole:
             if index.isValid():
                 self._games.iloc[index.row(),
@@ -219,6 +248,13 @@ class Games(QtCore.QAbstractTableModel):
         return False
 
     def append(self, values: Dict) -> bool:
+        """Add new data to the model. This method differs from setData in
+        that this method adds an entire row at a time instead of one at a
+        time.
+
+        :param values: The information to add to the new row.
+        :return: True if the appending is successful, False otherwise.
+        """
         if not all([x in self.HEADER for x in values.keys()]):
             return False
 
@@ -237,6 +273,11 @@ class Games(QtCore.QAbstractTableModel):
         return self._metadata
 
     def load(self, filename: str) -> bool:
+        """Loads data from a file into the Games object.
+
+        :param filename: The path to the file to load.
+        :return: True if the loading is successful, False otherwise.
+        """
         try:
             new_games, new_metadata = load_splz(filename)
         except(FileNotFoundError, IOError):
@@ -252,12 +293,25 @@ class Games(QtCore.QAbstractTableModel):
         return True
 
     def save(self, filename: str) -> bool:
+        """Save the data in the Games object to a file.
+
+        :param filename: The path to the save file.
+        :return: True if the save is successful, False otherwise.
+        """
         return save_splz(self._games, self._metadata, filename)
 
     def read_db(self) -> bool:
+        """Reads information from the database.
+
+        :return: True if the read is successful, False otherwise.
+        """
         pass
 
     def write_db(self) -> bool:
+        """Write information to the database.
+
+        :return: True of the writing is successful, False otherwise.
+        """
         pass
 
     def export(self, filename: str) -> bool:
