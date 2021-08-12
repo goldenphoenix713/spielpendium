@@ -14,15 +14,15 @@ from typing import Dict, Union, Tuple
 import pandas as pd
 from PyQt5 import QtGui, QtCore
 
-IMAGE_SIZE = 64
+IMAGE_SIZE = 64  # Temporary until this is defined elsewhere.
 
 
 def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
     """ Saves the internal user data in a Spielpendium program to a .splz file.
 
-    The SPLZ file format is a JSON formatted text file containing the game data,
-    another containing metadata, and a folder containing associated game images in a zipped
-    folder.
+    The SPLZ file format is a JSON formatted text file containing the game
+    data, another containing metadata, and a folder containing associated
+    game images in a zipped folder.
 
     :param data: The data to save, as a Pandas Dataframe.
     :param metadata: The metadata associated with the DataFrame.

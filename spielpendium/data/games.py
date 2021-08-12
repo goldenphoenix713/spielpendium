@@ -1,4 +1,4 @@
-#pylint:disable=C0103
+# pylint:disable=C0103
 """Internal data storage for Spielpendium.
 
 THe Games class is a QAbstractTableModel subclass that stores user
@@ -8,7 +8,7 @@ save and load splz functions and allows data to be read in from the database.
 
 __all__ = ['Games']
 
-from typing import Union, List, Any, Dict
+from typing import Union, List, Any, Dict, Tuple
 
 from PyQt5 import QtCore
 import pandas as pd
@@ -61,18 +61,55 @@ class Games(QtCore.QAbstractTableModel):
         self._metadata = {}
 
     def __repr__(self):
-        return self._games
+        """The representation of Games in the terminal."""
+        return str(self)
 
     def __str__(self):
+        """The string representation of Games."""
         return str(self._games)
-    
-    def __getitem__(self, index):
+
+    def __getitem__(self, index: Union[int, str, Tuple]) -> Any:
+        """Enables indexing of Games.
+
+        :param index: The index into Games
+        :return: The item at the given index.
+        :raises IndexError: If given an invalid index.
+        """
+
+        if isinstance(index, tuple):
+            if len(index) == 1:
+                index = index[0]
+            elif len(index) == 2:
+                if isinstance(index[0], int) and isinstance(index[1], int):
+                    return self._games.iloc[index[0], index[1]]
+                if isinstance(index[0], int) and isinstance(index[1], str):
+                    return self._games[index[1]].iloc[index[0]]
+                if isinstance(index[0], str) and isinstance(index[1], int):
+                    return self._games.loc[index[0]].iloc[index[1]]
+                if isinstance(index[0], str) and isinstance(index[1], str):
+                    return self.games[index[1]].loc[index[0]]
+
+                if isinstance(index[0], slice) \
+                        and not isinstance(index[1], slice):
+                    if isinstance(index[1], str):
+                        return self._games[index[1]]
+                    if isinstance(index[1], int):
+                        return self._games.iloc[:, index[1]]
+                elif not isinstance(index[0], slice) \
+                        and isinstance(index[1], slice):
+                    if isinstance(index[0], int):
+                        return self._games.iloc[index[0]]
+                elif isinstance(index[0], slice) \
+                        and isinstance(index[1], slice):
+                    return self._games
+
         if isinstance(index, str):
             return self._games[index]
         if isinstance(index, int):
-            return  self._games.ilkc[index]
-        
-        return False
+            return self._games.iloc[index]
+
+        raise IndexError('Indices must be a string, an integer, '
+                         'a slice, or a 2-tuple.')
 
     def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> int:
@@ -191,6 +228,14 @@ class Games(QtCore.QAbstractTableModel):
         self.endInsertRows()
         return True
 
+    def metadata(self) -> Dict:
+        """Returns all of the metadata of the Games object.
+
+        :return:  The metadata of the Games object.
+        """
+
+        return self._metadata
+
     def load(self, filename: str) -> bool:
         try:
             new_games, new_metadata = load_splz(filename)
@@ -213,6 +258,15 @@ class Games(QtCore.QAbstractTableModel):
         pass
 
     def write_db(self) -> bool:
+        pass
+
+    def export(self, filename: str) -> bool:
+        """Exports the information in the Games object to a pdf.
+
+        :param filename: The path to the file to export.
+        :return: True if the export is successful, False otherwise.
+        """
+
         pass
 
 
@@ -250,18 +304,13 @@ if __name__ == '__main__':
 
     view = QtWidgets.QTableView()
     games = Games()
-    print(games)
-    print(games.rowCount())
-    print(games.columnCount())
     view.setModel(games)
     view.show()
     games.append(test_data)
-    print(games.rowCount())
-    print(games.columnCount())
     games.setData('name', 'Eduardo Ruiz', QtCore.Qt.UserRole)
-    print(games)
     games.save('test.splz')
-    games.load('test.splz')
-    print(games)
-    print(games['Image'])
+    games2 = Games()
+    games2.load('test.splz')
+    print(games2)
+    print(games2['Image'])
     app.exec()
