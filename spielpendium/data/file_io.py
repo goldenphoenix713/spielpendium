@@ -45,8 +45,6 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
 
     data_copy['Image'] = 'images/' + data['BGG Id'].astype(str) + '.png'
 
-    print(data_copy['Image'])
-
     # Convert the data in the DataFrame to a JSON string.
     json_data = json.dumps(json.loads(data_copy.to_json(orient="index")),
                            indent=4)

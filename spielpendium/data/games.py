@@ -111,6 +111,33 @@ class Games(QtCore.QAbstractTableModel):
         raise IndexError('Indices must be a string, an integer, '
                          'a slice, or a 2-tuple.')
 
+    def __eq__(self, other: 'Games') -> bool:
+        """Checks for equality between two Games objects.
+
+        :param other: Another Games instance.
+        :return: True if the Games objects are equal, False otherwise.
+        """
+        copy_self: pd.DataFrame = self._games.copy()
+        copy_other = other._games.copy()
+
+        copy_self.pop('Image')
+        copy_other.pop('Image')
+
+        is_equal = True
+        for row in range(len(copy_self)):
+            for column in range(len(copy_self.columns)):
+                if copy_self.iloc[row, column] != copy_other.iloc[row, column]:
+                    is_equal = False
+                    break
+
+            if not is_equal:
+                break
+
+        if is_equal:
+            is_equal = self._metadata == other._metadata
+
+        return is_equal
+
     def rowCount(self, parent: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> int:
         """ Override method required by QAbstractTableModel subclasses.
