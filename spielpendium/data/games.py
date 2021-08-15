@@ -117,12 +117,16 @@ class Games(QtCore.QAbstractTableModel):
         :param other: Another Games instance.
         :return: True if the Games objects are equal, False otherwise.
         """
+
+        # Make copies of the DataFrames
         copy_self: pd.DataFrame = self._games.copy()
         copy_other = other._games.copy()
 
-        copy_self.pop('Image')
-        copy_other.pop('Image')
+        # Take the images out. These have to be checked separately
+        image_col_self = copy_self.pop('Image')
+        image_col_other = copy_other.pop('Image')
 
+        # Check to make sure all elements are the same
         is_equal = True
         for row in range(len(copy_self)):
             for column in range(len(copy_self.columns)):
@@ -130,9 +134,31 @@ class Games(QtCore.QAbstractTableModel):
                     is_equal = False
                     break
 
+            # Check to see if the images are equal
+            if is_equal:
+                # Convert QImages to bytes
+                # This makes a buffer in memory and saves the images as PNG
+                # files into the memory buffer. Then it compares the raw bytes
+                # of the PNG "file".
+                self_ba = QtCore.QByteArray()
+                self_buff = QtCore.QBuffer(self_ba)
+                self_buff.open(QtCore.QIODevice.WriteOnly)
+                image_col_self.iloc[row].save(self_buff, "PNG")
+                self_im_bytes = self_buff.data()
+
+                other_ba = QtCore.QByteArray()
+                other_buff = QtCore.QBuffer(other_ba)
+                other_buff.open(QtCore.QIODevice.WriteOnly)
+                image_col_other.iloc[row].save(other_buff, "PNG")
+                other_im_bytes = other_buff.data()
+
+                # Check that the bytes equal
+                is_equal = self_im_bytes == other_im_bytes
+
             if not is_equal:
                 break
 
+        # Check metadata equality
         if is_equal:
             is_equal = self._metadata == other._metadata
 
