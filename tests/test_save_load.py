@@ -41,18 +41,27 @@ class TestSaveLoad(unittest.TestCase):
             'date': '2021-08-12',
         }
 
-    def test_save_load(self):
-        game1 = Games()
-        game1.append(self.data)
+    def test_save(self):
+        games = Games()
+        games.append(self.data)
+
         for key, value in self.metadata.items():
-            game1.setData(key, value)
+            games.setData(key, value, QtCore.Qt.UserRole)
 
-        game1.save('test.splz')
+        self.assertTrue(games.save('test.splz'))
 
-        game2 = Games()
-        game2.load('test.splz')
+    def test_save_load(self):
+        games1 = Games()
+        games1.append(self.data)
+        for key, value in self.metadata.items():
+            games1.setData(key, value, QtCore.Qt.UserRole)
 
-        self.assertEqual(game1, game2)
+        games1.save('test.splz')
+
+        games2 = Games()
+        games2.load('test.splz')
+
+        self.assertEqual(games1, games2)
 
 
 if __name__ == '__main__':
