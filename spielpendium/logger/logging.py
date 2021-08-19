@@ -59,12 +59,13 @@ def get_logger(name: str, level: str = 'info') -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(_LEVELS[level.lower()])
 
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    if not logger.hasHandlers():
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.DEBUG)
 
-    formatter = logging.Formatter(_FORMAT)
+        formatter = logging.Formatter(_FORMAT)
 
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
 
     return logger

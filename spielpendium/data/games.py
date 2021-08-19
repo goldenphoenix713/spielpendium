@@ -15,8 +15,10 @@ import pandas as pd
 
 try:
     from spielpendium.data.file_io import load_splz, save_splz
+    from spielpendium.data.games_interface import import_user_data
 except ModuleNotFoundError:
     from file_io import load_splz, save_splz
+    from games_interface import import_user_data
 
 
 class Games(QtCore.QAbstractTableModel):
@@ -300,7 +302,7 @@ class Games(QtCore.QAbstractTableModel):
                 return True
         return False
 
-    def append(self, values: Dict) -> bool:
+    def append(self, values: List) -> bool:
         """Add new data to the model. This method differs from setData in
         that this method adds an entire row at a time instead of one at a
         time.
@@ -308,11 +310,12 @@ class Games(QtCore.QAbstractTableModel):
         :param values: The information to add to the new row.
         :return: True if the appending is successful, False otherwise.
         """
-        if not all([x in self.HEADER for x in values.keys()]):
+
+        if not all([x in self.HEADER for x in values[0].keys()]):
             return False
 
         self.beginInsertRows(QtCore.QModelIndex(),
-                             len(self._games), len(self._games))
+                             len(self._games), len(self._games) + len(values))
         self._games = self._games.append(values, ignore_index=True)
         self.endInsertRows()
         return True
@@ -378,38 +381,16 @@ class Games(QtCore.QAbstractTableModel):
 
 
 if __name__ == '__main__':
-    from PyQt5 import QtWidgets, QtGui
+    from PyQt5 import QtWidgets
 
     app = QtWidgets.QApplication([])
 
-    test_im = (QtGui.QImage('../../images/image.jpg')
-               .scaled(64, 64, QtCore.Qt.KeepAspectRatio))
-
-    test_data = {
-        'BGG Id': 1,
-        'Image': test_im,
-        'Name': 'Test',
-        'Subname': 'The Test Thing',
-        'Version': 1,
-        'Author': 'Eddie',
-        'Artist': 'Eddie',
-        'Publisher': 'Eddie Games',
-        'Release Year': 2021,
-        'Category': 'Made Up',
-        'Description': 'This is a test thingy I''m doing.',
-        'Minimum Players': 3,
-        'Maximum Players': 5,
-        'Recommended Players': 4,
-        'Age': 20,
-        'Minimum Play Time': 50,
-        'Maximum Play Time': 120,
-        'BGG Rating': 1.2,
-        'BGG Rank': 504033,
-        'Complexity': 1.2,
-        'Related Games': 'None',
-    }
+    test_data = import_user_data('phoenix713')
 
     view = QtWidgets.QTableView()
+    header = view.verticalHeader()
+    header.setDefaultSectionSize(64)
+    header.sectionResizeMode(header.Fixed)
     games = Games()
     view.setModel(games)
     view.show()

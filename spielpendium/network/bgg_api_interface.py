@@ -1,17 +1,20 @@
+"""The BGG API side of the Spielpendium-BGG interface."""
+
 import urllib.request
 import urllib.error
 import urllib.parse
+import multiprocessing as mp
 from typing import Dict, Optional, List, Union
 import xml.parsers.expat
 from json import dumps, loads
 
-from PyQt5 import QtGui
+from PyQt5 import QtGui, QtCore
 import xmltodict
 
 from spielpendium.logger import set_log_level
 
 __all__ = ['search_bgg', 'get_user_game_collection', 'get_game_info',
-           'get_image']
+           'get_images']
 
 _BGG_API_URL = 'https://www.boardgamegeek.com/xmlapi/'
 
@@ -147,17 +150,43 @@ def get_game_info(game_id: Union[int, List[int]], **kwargs) -> Dict:
 
     url = _BGG_API_URL + 'boardgame/' + ','.join([str(a) for a in game_id])
 
+    if 'stats' in kwargs.keys():
+        url = url + f'?stats={int(kwargs["stats"])}'
+
     return get_xml_info(url, **kwargs)
 
 
-def get_image(image_url: str) -> QtGui.QImage:
-    """ Retrieves an image from a URL.
+def get_images(image_urls: Union[str, List[str]]) -> List[QtGui.QImage]:
+    """ Retrieves images from a list of URLs.
 
-    :param image_url: Thr image URL.
-    :return: The image.
+    :param image_urls: The image URLs.
+    :return: The images.
     """
+    if isinstance(image_urls, str):
+        image_urls = [image_urls]
+
+    pool = mp.Pool(processes=mp.cpu_count())
+    images_as_bytes = pool.map(get_single_image, image_urls)
+    images = [QtGui.QImage.fromData(im).scaled(
+        64, 64, QtCore.Qt.KeepAspectRatio
+    ) for im in images_as_bytes]
+
+    # for image_url in image_urls:
+    #     with urllib.request.urlopen(image_url) as url:
+    #         images.append(QtGui.QImage.fromData(url.read()))
+
+    return images
+
+
+def get_single_image(image_url: str) -> bytes:
+    """ Gets the image at the requested url.
+
+    :param image_url: The image url.
+    :return: The image as bytes.
+    """
+
     with urllib.request.urlopen(image_url) as url:
-        image = QtGui.QImage.fromData(url.read())
+        image = url.read()
 
     return image
 
@@ -172,16 +201,16 @@ if __name__ == '__main__':
     # search_results = search_bgg('Catan')
     # print(dumps(search_results, indent=2))
 
-    # collection = get_user_game_collection('phoenix713')
-    # print(dumps(collection, indent=2))
+    collection = get_user_game_collection('phoenix713')
+    print(dumps(collection, indent=2))
 
     # game_details = get_game_info([224125, 255907])
     # print(dumps(game_details, indent=2))
 
-    test_image = 'https://cf.geekdo-images.com/vpET5JF4hXUXA6bqXx0WlQ__' \
-                 'original/img/FyZogAqdllhWqFns_zfjhaUP6jM=/0x0/' \
-                 'filters:format(jpeg)/pic4854460.jpg'
-    im = get_image(test_image)
-    print(im)
+    # test_image = 'https://cf.geekdo-images.com/vpET5JF4hXUXA6bqXx0WlQ__' \
+    #              'original/img/FyZogAqdllhWqFns_zfjhaUP6jM=/0x0/' \
+    #              'filters:format(jpeg)/pic4854460.jpg'
+    # im = get_image(test_image)
+    # print(im)
     # im.save('test.png', 'png')
     # print(dumps(info, indent=2))
