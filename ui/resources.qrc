@@ -1,0 +1,13 @@
+<RCC>
+  <qresource prefix="/images">
+    <file>crossed.png</file>
+    <file>faq.png</file>
+    <file>cogwheel.png</file>
+    <file>information.png</file>
+    <file>download.png</file>
+    <file>floppy-disk.png</file>
+    <file>folder.png</file>
+    <file>forward.png</file>
+    <file>plus.png</file>
+  </qresource>
+</RCC>
