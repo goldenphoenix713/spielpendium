@@ -36,15 +36,15 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
-      <widget class="QWidget" name="tab">
+      <widget class="QWidget" name="userGamesTab">
        <attribute name="title">
         <string>User Games</string>
        </attribute>
        <layout class="QHBoxLayout" name="horizontalLayout_4">
         <item>
-         <widget class="QWidget" name="widget_2" native="true">
+         <widget class="QWidget" name="gameWidget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,1">
            <property name="leftMargin">
             <number>0</number>
@@ -59,7 +59,7 @@
             <number>0</number>
            </property>
            <item>
-            <widget class="QWidget" name="widget_4" native="true">
+            <widget class="QWidget" name="gameListWidget" native="true">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                <horstretch>3</horstretch>
@@ -80,7 +80,7 @@
                <number>0</number>
               </property>
               <item row="0" column="1" colspan="2">
-               <widget class="QTableView" name="tableView">
+               <widget class="QTableView" name="gameList">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                   <horstretch>0</horstretch>
@@ -105,7 +105,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QWidget" name="widget_3" native="true">
+            <widget class="QWidget" name="gameInfoWidget" native="true">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                <horstretch>1</horstretch>
@@ -126,27 +126,27 @@
                <number>0</number>
               </property>
               <item row="4" column="0">
-               <widget class="QLabel" name="label_12">
+               <widget class="QLabel" name="categoryLabel">
                 <property name="text">
                  <string>Category</string>
                 </property>
                 <property name="buddy">
-                 <cstring>comboBox</cstring>
+                 <cstring>categoryDropdown</cstring>
                 </property>
                </widget>
               </item>
               <item row="7" column="0" colspan="6">
-               <widget class="QLabel" name="label_6">
+               <widget class="QLabel" name="gameDescriptionLabel">
                 <property name="text">
                  <string>Game Description</string>
                 </property>
                 <property name="buddy">
-                 <cstring>plainTextEdit</cstring>
+                 <cstring>gameDescriptionTextEdit</cstring>
                 </property>
                </widget>
               </item>
               <item row="8" column="0" colspan="6">
-               <widget class="QPlainTextEdit" name="plainTextEdit">
+               <widget class="QPlainTextEdit" name="gameDescriptionTextEdit">
                 <property name="minimumSize">
                  <size>
                   <width>0</width>
@@ -159,7 +159,7 @@
                </widget>
               </item>
               <item row="21" column="0" colspan="6">
-               <widget class="QPushButton" name="pushButton_3">
+               <widget class="QPushButton" name="editButton">
                 <property name="text">
                  <string>Edit</string>
                 </property>
@@ -175,21 +175,21 @@
                </widget>
               </item>
               <item row="3" column="1">
-               <widget class="QLineEdit" name="lineEdit_4">
+               <widget class="QLineEdit" name="versionLineEdit">
                 <property name="readOnly">
                  <bool>true</bool>
                 </property>
                </widget>
               </item>
               <item row="0" column="1" colspan="5">
-               <widget class="QLineEdit" name="lineEdit_2">
+               <widget class="QLineEdit" name="nameLineEdit">
                 <property name="readOnly">
                  <bool>true</bool>
                 </property>
                </widget>
               </item>
               <item row="18" column="0" colspan="6">
-               <widget class="QWidget" name="widget_7" native="true">
+               <widget class="QWidget" name="playTimeWidget" native="true">
                 <layout class="QGridLayout" name="gridLayout_5">
                  <property name="leftMargin">
                   <number>0</number>
@@ -207,41 +207,41 @@
                   <number>9</number>
                  </property>
                  <item row="1" column="0">
-                  <widget class="QLabel" name="label_14">
+                  <widget class="QLabel" name="minPlayTimeLabel">
                    <property name="text">
                     <string>Minimum</string>
                    </property>
                    <property name="buddy">
-                    <cstring>spinBox_5</cstring>
+                    <cstring>minPlayTimeSpinbox</cstring>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="2">
-                  <widget class="QLabel" name="label_15">
+                  <widget class="QLabel" name="maxPlayTimeLabel">
                    <property name="text">
                     <string>Maximum</string>
                    </property>
                    <property name="buddy">
-                    <cstring>spinBox_6</cstring>
+                    <cstring>maxPlayTimeSpinbox</cstring>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="1">
-                  <widget class="QSpinBox" name="spinBox_5">
+                  <widget class="QSpinBox" name="minPlayTimeSpinbox">
                    <property name="readOnly">
                     <bool>true</bool>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="3">
-                  <widget class="QSpinBox" name="spinBox_6">
+                  <widget class="QSpinBox" name="maxPlayTimeSpinbox">
                    <property name="readOnly">
                     <bool>true</bool>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="0" colspan="4" alignment="Qt::AlignHCenter">
-                  <widget class="QLabel" name="label_13">
+                  <widget class="QLabel" name="playTimeLabel">
                    <property name="text">
                     <string>Play Time (minutes)</string>
                    </property>
@@ -251,7 +251,7 @@
                </widget>
               </item>
               <item row="3" column="3">
-               <widget class="QSpinBox" name="spinBox_4">
+               <widget class="QSpinBox" name="yearSpinbox">
                 <property name="readOnly">
                  <bool>true</bool>
                 </property>
@@ -264,7 +264,7 @@
                </widget>
               </item>
               <item row="10" column="0" colspan="6">
-               <widget class="QWidget" name="widget_8" native="true">
+               <widget class="QWidget" name="bggStatsWidget" native="true">
                 <layout class="QGridLayout" name="gridLayout_6">
                  <property name="leftMargin">
                   <number>0</number>
@@ -282,46 +282,46 @@
                   <number>9</number>
                  </property>
                  <item row="1" column="2">
-                  <widget class="QLabel" name="label_17">
+                  <widget class="QLabel" name="ratingLabel">
                    <property name="text">
                     <string>Rating</string>
                    </property>
                    <property name="buddy">
-                    <cstring>lineEdit_6</cstring>
+                    <cstring>ratingLineEdit</cstring>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="3">
-                  <widget class="QLineEdit" name="lineEdit_6"/>
+                  <widget class="QLineEdit" name="ratingLineEdit"/>
                  </item>
                  <item row="1" column="5">
-                  <widget class="QLineEdit" name="lineEdit_7"/>
+                  <widget class="QLineEdit" name="complexityLineEdit"/>
                  </item>
                  <item row="1" column="4">
-                  <widget class="QLabel" name="label_18">
+                  <widget class="QLabel" name="complexityLabel">
                    <property name="text">
                     <string>Complexity</string>
                    </property>
                    <property name="buddy">
-                    <cstring>lineEdit_7</cstring>
+                    <cstring>complexityLineEdit</cstring>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="0">
-                  <widget class="QLabel" name="label_16">
+                  <widget class="QLabel" name="rankLabel">
                    <property name="text">
                     <string>Rank</string>
                    </property>
                    <property name="buddy">
-                    <cstring>lineEdit_5</cstring>
+                    <cstring>rankLineEdit</cstring>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="1">
-                  <widget class="QLineEdit" name="lineEdit_5"/>
+                  <widget class="QLineEdit" name="rankLineEdit"/>
                  </item>
                  <item row="0" column="0" colspan="6" alignment="Qt::AlignHCenter">
-                  <widget class="QLabel" name="label_19">
+                  <widget class="QLabel" name="bggStatsLabel">
                    <property name="text">
                     <string>BoardGameGeek Statistics</string>
                    </property>
@@ -331,57 +331,57 @@
                </widget>
               </item>
               <item row="2" column="0">
-               <widget class="QLabel" name="label_9">
+               <widget class="QLabel" name="publisherLabel">
                 <property name="text">
                  <string>Publisher</string>
                 </property>
                 <property name="buddy">
-                 <cstring>lineEdit_3</cstring>
+                 <cstring>publisherLineEdit</cstring>
                 </property>
                </widget>
               </item>
               <item row="2" column="1" colspan="5">
-               <widget class="QLineEdit" name="lineEdit_3">
+               <widget class="QLineEdit" name="publisherLineEdit">
                 <property name="readOnly">
                  <bool>true</bool>
                 </property>
                </widget>
               </item>
               <item row="3" column="2">
-               <widget class="QLabel" name="label_11">
+               <widget class="QLabel" name="releaseYearLabel">
                 <property name="text">
                  <string>Release Year</string>
                 </property>
                 <property name="buddy">
-                 <cstring>spinBox_4</cstring>
+                 <cstring>yearSpinbox</cstring>
                 </property>
                </widget>
               </item>
               <item row="3" column="0">
-               <widget class="QLabel" name="label_10">
+               <widget class="QLabel" name="versionLabel">
                 <property name="text">
                  <string>Version</string>
                 </property>
                 <property name="buddy">
-                 <cstring>lineEdit_4</cstring>
+                 <cstring>versionLineEdit</cstring>
                 </property>
                </widget>
               </item>
               <item row="3" column="5">
-               <widget class="QLineEdit" name="lineEdit_8"/>
+               <widget class="QLineEdit" name="agesLineEdit"/>
               </item>
               <item row="3" column="4">
-               <widget class="QLabel" name="label_21">
+               <widget class="QLabel" name="agesLabel">
                 <property name="text">
                  <string>Ages</string>
                 </property>
                 <property name="buddy">
-                 <cstring>lineEdit_8</cstring>
+                 <cstring>agesLineEdit</cstring>
                 </property>
                </widget>
               </item>
               <item row="4" column="1" colspan="5">
-               <widget class="QComboBox" name="comboBox">
+               <widget class="QComboBox" name="categoryDropdown">
                 <property name="enabled">
                  <bool>true</bool>
                 </property>
@@ -391,7 +391,7 @@
                </widget>
               </item>
               <item row="6" column="0" colspan="6">
-               <widget class="QWidget" name="widget_6" native="true">
+               <widget class="QWidget" name="peopleWidget" native="true">
                 <property name="maximumSize">
                  <size>
                   <width>16777215</width>
@@ -415,27 +415,27 @@
                   <number>6</number>
                  </property>
                  <item row="0" column="0" alignment="Qt::AlignHCenter">
-                  <widget class="QLabel" name="label_7">
+                  <widget class="QLabel" name="designerLabel">
                    <property name="text">
                     <string>Designer(s)</string>
                    </property>
                    <property name="buddy">
-                    <cstring>listView</cstring>
+                    <cstring>designerList</cstring>
                    </property>
                   </widget>
                  </item>
                  <item row="0" column="1" alignment="Qt::AlignHCenter">
-                  <widget class="QLabel" name="label_8">
+                  <widget class="QLabel" name="artistLabel">
                    <property name="text">
                     <string>Artist(s)</string>
                    </property>
                    <property name="buddy">
-                    <cstring>listView_2</cstring>
+                    <cstring>artistList</cstring>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="0">
-                  <widget class="QListView" name="listView">
+                  <widget class="QListView" name="designerList">
                    <property name="maximumSize">
                     <size>
                      <width>16777215</width>
@@ -445,7 +445,7 @@
                   </widget>
                  </item>
                  <item row="1" column="1">
-                  <widget class="QListView" name="listView_2">
+                  <widget class="QListView" name="artistList">
                    <property name="maximumSize">
                     <size>
                      <width>16777215</width>
@@ -458,7 +458,7 @@
                </widget>
               </item>
               <item row="11" column="0" colspan="6">
-               <widget class="QWidget" name="widget_5" native="true">
+               <widget class="QWidget" name="numPlayersWidget" native="true">
                 <layout class="QGridLayout" name="gridLayout_3">
                  <property name="leftMargin">
                   <number>0</number>
@@ -476,51 +476,51 @@
                   <number>9</number>
                  </property>
                  <item row="1" column="3">
-                  <widget class="QSpinBox" name="spinBox">
+                  <widget class="QSpinBox" name="maxPlayersSpinbox">
                    <property name="readOnly">
                     <bool>true</bool>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="4">
-                  <widget class="QLabel" name="label_4">
+                  <widget class="QLabel" name="recommendedPlayersLabel">
                    <property name="text">
                     <string>Recommended</string>
                    </property>
                    <property name="buddy">
-                    <cstring>spinBox_3</cstring>
+                    <cstring>recommendedPlayersSpinbox</cstring>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="2">
-                  <widget class="QLabel" name="label_3">
+                  <widget class="QLabel" name="maxPlayersLabel">
                    <property name="text">
                     <string>Maximum</string>
                    </property>
                    <property name="buddy">
-                    <cstring>spinBox_2</cstring>
+                    <cstring>minPlayersSpinbox</cstring>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="1">
-                  <widget class="QSpinBox" name="spinBox_2">
+                  <widget class="QSpinBox" name="minPlayersSpinbox">
                    <property name="readOnly">
                     <bool>true</bool>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="0">
-                  <widget class="QLabel" name="label_2">
+                  <widget class="QLabel" name="minPlayersLabel">
                    <property name="text">
                     <string>Minimum</string>
                    </property>
                    <property name="buddy">
-                    <cstring>spinBox</cstring>
+                    <cstring>maxPlayersSpinbox</cstring>
                    </property>
                   </widget>
                  </item>
                  <item row="1" column="5">
-                  <widget class="QSpinBox" name="spinBox_3">
+                  <widget class="QSpinBox" name="recommendedPlayersSpinbox">
                    <property name="readOnly">
                     <bool>true</bool>
                    </property>
@@ -530,7 +530,7 @@
                   </widget>
                  </item>
                  <item row="0" column="0" colspan="6">
-                  <widget class="QLabel" name="label_5">
+                  <widget class="QLabel" name="numPlayersLabel">
                    <property name="text">
                     <string>Number of Players</string>
                    </property>
@@ -543,17 +543,17 @@
                </widget>
               </item>
               <item row="0" column="0">
-               <widget class="QLabel" name="label">
+               <widget class="QLabel" name="nameLabel">
                 <property name="text">
                  <string>Name</string>
                 </property>
                 <property name="buddy">
-                 <cstring>lineEdit_2</cstring>
+                 <cstring>nameLineEdit</cstring>
                 </property>
                </widget>
               </item>
               <item row="20" column="0" colspan="6">
-               <widget class="QWidget" name="widget_9" native="true">
+               <widget class="QWidget" name="relatedGamesWidget" native="true">
                 <layout class="QVBoxLayout" name="verticalLayout_4">
                  <property name="spacing">
                   <number>6</number>
@@ -568,17 +568,17 @@
                   <number>9</number>
                  </property>
                  <item>
-                  <widget class="QLabel" name="label_20">
+                  <widget class="QLabel" name="relatedGamesLabel">
                    <property name="text">
                     <string>Related Games</string>
                    </property>
                    <property name="buddy">
-                    <cstring>listView_3</cstring>
+                    <cstring>relatedGamesList</cstring>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QListView" name="listView_3">
+                  <widget class="QListView" name="relatedGamesList">
                    <property name="maximumSize">
                     <size>
                      <width>16777215</width>
@@ -598,13 +598,13 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="tab_2">
+      <widget class="QWidget" name="seqarchTab">
        <attribute name="title">
         <string>Search BoardGameGeek</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QWidget" name="widget" native="true">
+         <widget class="QWidget" name="searchWidget" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout">
            <property name="leftMargin">
             <number>0</number>
@@ -619,10 +619,10 @@
             <number>0</number>
            </property>
            <item>
-            <widget class="QLineEdit" name="lineEdit"/>
+            <widget class="QLineEdit" name="searchLineEdit"/>
            </item>
            <item>
-            <widget class="QPushButton" name="pushButton">
+            <widget class="QPushButton" name="searchButton">
              <property name="text">
               <string>Search</string>
              </property>
@@ -632,7 +632,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QListView" name="listView_4"/>
+         <widget class="QListView" name="searchResultsList"/>
         </item>
        </layout>
       </widget>
@@ -849,27 +849,27 @@
   </action>
  </widget>
  <tabstops>
-  <tabstop>lineEdit</tabstop>
-  <tabstop>pushButton</tabstop>
-  <tabstop>tableView</tabstop>
-  <tabstop>lineEdit_2</tabstop>
-  <tabstop>lineEdit_3</tabstop>
-  <tabstop>lineEdit_4</tabstop>
-  <tabstop>spinBox_4</tabstop>
-  <tabstop>lineEdit_8</tabstop>
-  <tabstop>comboBox</tabstop>
-  <tabstop>listView</tabstop>
-  <tabstop>listView_2</tabstop>
-  <tabstop>plainTextEdit</tabstop>
-  <tabstop>lineEdit_5</tabstop>
-  <tabstop>lineEdit_6</tabstop>
-  <tabstop>lineEdit_7</tabstop>
-  <tabstop>spinBox_2</tabstop>
-  <tabstop>spinBox</tabstop>
-  <tabstop>spinBox_3</tabstop>
-  <tabstop>spinBox_5</tabstop>
-  <tabstop>spinBox_6</tabstop>
-  <tabstop>pushButton_3</tabstop>
+  <tabstop>searchLineEdit</tabstop>
+  <tabstop>searchButton</tabstop>
+  <tabstop>gameList</tabstop>
+  <tabstop>nameLineEdit</tabstop>
+  <tabstop>publisherLineEdit</tabstop>
+  <tabstop>versionLineEdit</tabstop>
+  <tabstop>yearSpinbox</tabstop>
+  <tabstop>agesLineEdit</tabstop>
+  <tabstop>categoryDropdown</tabstop>
+  <tabstop>designerList</tabstop>
+  <tabstop>artistList</tabstop>
+  <tabstop>gameDescriptionTextEdit</tabstop>
+  <tabstop>rankLineEdit</tabstop>
+  <tabstop>ratingLineEdit</tabstop>
+  <tabstop>complexityLineEdit</tabstop>
+  <tabstop>minPlayersSpinbox</tabstop>
+  <tabstop>maxPlayersSpinbox</tabstop>
+  <tabstop>recommendedPlayersSpinbox</tabstop>
+  <tabstop>minPlayTimeSpinbox</tabstop>
+  <tabstop>maxPlayTimeSpinbox</tabstop>
+  <tabstop>editButton</tabstop>
  </tabstops>
  <resources>
   <include location="resources.qrc"/>
