@@ -2,7 +2,7 @@
 
 __all__ = ['import_user_data']
 
-from typing import Dict, Optional, Union
+from typing import Dict, List, Optional, Union
 from operator import itemgetter
 
 from spielpendium.network import get_user_game_collection, get_game_info,\
@@ -106,7 +106,7 @@ def get_related_games(ii_game: Dict):
 def import_user_data(username: str,
                      filters: Optional[Dict[str, Union[int, bool]]] = None,
                      **kwargs
-                     ) -> Dict:
+                     ) -> List[Dict]:
     """ Takes information downloaded using the BGG APT and conditions it to
     the format needed by a Games object.
 

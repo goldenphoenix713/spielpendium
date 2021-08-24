@@ -12,11 +12,10 @@ class TestSaveLoad(unittest.TestCase):
         test_im = (QtGui.QImage('../images/image.jpg')
                    .scaled(64, 64, QtCore.Qt.KeepAspectRatio))
 
-        self.data = {
+        self.data = [{
             'BGG Id': 1,
             'Image': test_im,
             'Name': 'Test',
-            'Subname': 'The Test Thing',
             'Version': 1,
             'Author': 'Author',
             'Artist': 'Artist',
@@ -34,7 +33,7 @@ class TestSaveLoad(unittest.TestCase):
             'BGG Rank': 504033,
             'Complexity': 1.2,
             'Related Games': 'None',
-        }
+        }]
 
         self.metadata = {
             'name': 'User',

@@ -96,7 +96,7 @@ def get_xml_info(url: str, **kwargs) -> Dict:
         if 'message' not in data.keys():
             if logger is not None:
                 logger.info(f'Data successfully pulled from {url}.')
-                break
+            break
         else:
             if logger is not None:
                 if first_time:
