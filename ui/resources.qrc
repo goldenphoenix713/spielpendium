@@ -1,0 +1,15 @@
+<RCC>
+  <qresource prefix="/images">
+    <file>icons/back-arrow.png</file>
+    <file>icons/cogwheel.png</file>
+    <file>icons/crossed.png</file>
+    <file>icons/delete.png</file>
+    <file>icons/download.png</file>
+    <file>icons/faq.png</file>
+    <file>icons/file.png</file>
+    <file>icons/floppy-disk.png</file>
+    <file>icons/folder.png</file>
+    <file>icons/information.png</file>
+    <file>icons/plus.png</file>
+  </qresource>
+</RCC>
