@@ -138,7 +138,6 @@ def import_user_data(username: str,
                 'BGG Id': game['@objectid'],
                 'Image': images[ii],
                 'Name': get_name(game),
-                'Subname': None,  # TODO Figure out if this is a thing.
                 # TODO This will need user input to choose?
                 'Version': game['boardgameversion'],
                 'Author': get_authors(game),

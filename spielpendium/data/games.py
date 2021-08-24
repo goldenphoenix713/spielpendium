@@ -23,7 +23,7 @@ except ModuleNotFoundError:
 
 class Games(QtCore.QAbstractTableModel):
     """The internal data storage class for Spielpendium."""
-    _NUM_HIDDEN_COLS = 2
+    _NUM_HIDDEN_COLS = 1
     _ID_COL = 0
     _IMAGE_COL = 1
 
@@ -31,7 +31,6 @@ class Games(QtCore.QAbstractTableModel):
         'BGG Id',
         'Image',
         'Name',
-        'Subname',
         'Version',
         'Author',
         'Artist',
@@ -224,11 +223,13 @@ class Games(QtCore.QAbstractTableModel):
         row = index.row()
         column = index.column()
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.DisplayRole \
+                and column != self._IMAGE_COL - self._NUM_HIDDEN_COLS:
             return str(self._games.iloc[row, column + self._NUM_HIDDEN_COLS])
         if role == QtCore.Qt.ToolTipRole:
             return 'BGG ID: ' + str(self._games.iloc[row, self._ID_COL])
-        if role == QtCore.Qt.DecorationRole and column == 0:
+        if role == QtCore.Qt.DecorationRole \
+                and column == self._IMAGE_COL - self._NUM_HIDDEN_COLS:
             return self._games.iloc[row, self._IMAGE_COL]
         return None
 
@@ -243,6 +244,7 @@ class Games(QtCore.QAbstractTableModel):
         :param parent: The parent of the index.
         :return: The QModelIndex for the given row and column.
         """
+
         return self.createIndex(row, column, self._games.iloc[
             row, column + self._NUM_HIDDEN_COLS])
 
@@ -315,7 +317,8 @@ class Games(QtCore.QAbstractTableModel):
             return False
 
         self.beginInsertRows(QtCore.QModelIndex(),
-                             len(self._games), len(self._games) + len(values))
+                             len(self._games),
+                             len(self._games) + len(values) - 1)
         self._games = self._games.append(values, ignore_index=True)
         self.endInsertRows()
         return True

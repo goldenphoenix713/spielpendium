@@ -1,5 +1,5 @@
 """The BGG API side of the Spielpendium-BGG interface."""
-
+import time
 import urllib.request
 import urllib.error
 import urllib.parse
@@ -65,31 +65,46 @@ def get_xml_info(url: str, **kwargs) -> Dict:
     else:
         logger = None
 
-    try:
-        with urllib.request.urlopen(url) as file:
-            data = file.read()
-        if logger is not None:
-            logger.debug(f'Data retrieved successfully from {url}.')
-    except urllib.error.HTTPError as err:
-        if logger is not None:
-            logger.error(f'Data was unable to be retrieved from {url}. {err}')
-        raise err from None
+    first_time = True
 
-    # Convert the bytes object to a dict.
-    # First, it gets converted to an OrderedDict
-    # with xmltodict, and then to a dict via the
-    # json library dumps and loads functions.
-    try:
-        data = loads(dumps(xmltodict.parse(data)))
-        if logger is not None:
-            logger.debug('Data successfully converted to dict.')
-    except xml.parsers.expat.ExpatError:
-        if logger is not None:
-            logger.error(f'Data from {url} was unable to be read.')
-        raise ValueError('Unable to read the information '
-                         'at the provided URL.')from None
-    if logger is not None:
-        logger.info(f'Data successfully pulled from {url}.')
+    while True:
+        try:
+            with urllib.request.urlopen(url) as file:
+                data = file.read()
+            if logger is not None:
+                logger.debug(f'Information retrieved successfully from {url}.')
+        except urllib.error.HTTPError as err:
+            if logger is not None:
+                logger.error(f'Information was unable to be retrieved from '
+                             f'{url}. {err}')
+            raise err from None
+
+        # Convert the bytes object to a dict.
+        # First, it gets converted to an OrderedDict
+        # with xmltodict, and then to a dict via the
+        # json library dumps and loads functions.
+        try:
+            data = loads(dumps(xmltodict.parse(data)))
+            if logger is not None:
+                logger.debug('Data successfully converted to dict.')
+        except xml.parsers.expat.ExpatError:
+            if logger is not None:
+                logger.error(f'Data from {url} was unable to be read.')
+            raise ValueError('Unable to read the information '
+                             'at the provided URL.') from None
+
+        if 'message' not in data.keys():
+            if logger is not None:
+                logger.info(f'Data successfully pulled from {url}.')
+                break
+        else:
+            if logger is not None:
+                if first_time:
+                    logger.info(f'Waiting for API to generate data at {url}.')
+                    first_time = False
+                else:
+                    logger.info(f'Still waiting for API to generate data.')
+            time.sleep(10)
 
     return data
 
@@ -201,8 +216,8 @@ if __name__ == '__main__':
     # search_results = search_bgg('Catan')
     # print(dumps(search_results, indent=2))
 
-    collection = get_user_game_collection('phoenix713')
-    print(dumps(collection, indent=2))
+    collection = get_user_game_collection('phoenix713', filters={'own': True})
+    # print(dumps(collection, indent=2))
 
     # game_details = get_game_info([224125, 255907])
     # print(dumps(game_details, indent=2))
