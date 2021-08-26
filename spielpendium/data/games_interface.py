@@ -9,13 +9,16 @@ from spielpendium.network import get_user_game_collection, get_game_info,\
     get_images
 
 
-def get_name(ii_game: Dict) -> str:
+def get_name(ii_game: Dict) -> Union[str, List]:
     if isinstance(ii_game['name'], dict):
         return ii_game['name']['#text']
 
     if isinstance(ii_game['name'], list):
-        return [name['#text'] for name in ii_game['name']
-                if '@primary' in name.keys()][0]
+        if any(['@primary' in name.keys() for name in ii_game['name']]):
+            return [name['#text'] for name in ii_game['name']
+                    if '@primary' in name.keys()][0]
+        else:
+            return [name['#text'] for name in ii_game['name']]
 
     return ''
 
@@ -98,9 +101,61 @@ def get_bgg_rank(ii_game: Dict) -> str:
     return rank
 
 
-def get_related_games(ii_game: Dict):
-    ii_game.keys()
-    pass
+def get_version(ii_game: Dict) -> Dict:
+    """ Finds the game version(s) for the game and returns them.
+
+    :param ii_game: The iith game in the game list.
+    :return: The version(s) of the game.
+    """
+    return dict_list_to_dict(ii_game['boardgameversion'])
+
+
+def get_publisher(ii_game: Dict) -> Dict:
+    """ Finds the game publisher(s) for the game and returns them.
+
+    :param ii_game: The iith game in the game list.
+    :return: The publisher(s) of the game.
+    """
+    return dict_list_to_dict(ii_game['boardgamepublisher'])
+
+
+def get_related_games(ii_game: Dict) -> Dict:
+    """ Finds the related game(s) for the game and returns them.
+
+    :param ii_game: The iith game in the game list.
+    :return: The related game(s) of the game.
+    """
+    keys_to_look_for = [
+        'boardgameexpansion',
+        'boardgmeaccessory',
+    ]
+    related_games = {}
+    for key in keys_to_look_for:
+        if key in ii_game.keys():
+            related_games.update(dict_list_to_dict(ii_game[key]))
+
+    return related_games
+
+
+def dict_list_to_dict(dict_list: Union[Dict, List[Dict]]) -> Dict:
+    """ Finds the game version(s) for the game and returns them.
+
+    :param dict_list: A dict or list of dicts with objectid and text keys
+    :return: The converted data
+    """
+    publishers = {}
+    if isinstance(dict_list, dict):
+        items = [dict_list]
+    elif isinstance(dict_list, list):
+        items = dict_list
+    else:
+        raise ValueError('Information is not a dict or list.')
+
+    publishers.update(
+        {item['@objectid']: item['#text'] for item in items}
+    )
+
+    return publishers
 
 
 def import_user_data(username: str,
@@ -138,11 +193,9 @@ def import_user_data(username: str,
                 'BGG Id': game['@objectid'],
                 'Image': images[ii],
                 'Name': get_name(game),
-                # TODO This will need user input to choose?
-                'Version': game['boardgameversion'],
+                'Version': get_version(game),
                 'Author': get_authors(game),
                 'Artist': get_artists(game),
-                # TODO This will (surprisingly?) need user input to choose?
                 'Publisher': game['boardgamepublisher'],
                 'Release Year': game['yearpublished'],
                 'Category': get_categories(game),
