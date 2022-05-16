@@ -160,24 +160,23 @@ def dict_list_to_dict(dict_list: Union[Dict, List[Dict]]) -> Dict:
 
 def import_user_data(username: str,
                      filters: Optional[Dict[str, Union[int, bool]]] = None,
-                     **kwargs
                      ) -> List[Dict]:
     """ Takes information downloaded using the BGG APT and conditions it to
     the format needed by a Games object.
 
-    :param username: The BGG username who's collection we're importing.
+    :param username: The BGG username whose collection we're importing.
     :param filters: Additional filters for the game collection.
     :return: A dict in the format needed by a Games object.
     """
 
-    user_collection = get_user_game_collection(username, filters, **kwargs)
+    user_collection = get_user_game_collection(username, filters)
 
     num_items = int(user_collection['items']['@totalitems'])
 
     game_ids = [user_collection['items']['item'][ii]['@objectid']
                 for ii in range(num_items)]
 
-    game_info = get_game_info(game_ids, stats=True)
+    game_info = get_game_info(game_ids, get_stats=True)
 
     boardgame_list = game_info['boardgames']['boardgame']
 
@@ -217,4 +216,7 @@ def import_user_data(username: str,
 
 
 if __name__ == '__main__':
-    import_user_data('phoenix713')
+    from pprint import pprint
+
+    user_data = import_user_data('phoenix713')
+    pprint(user_data, indent=2)

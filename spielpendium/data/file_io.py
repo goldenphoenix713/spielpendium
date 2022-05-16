@@ -14,12 +14,12 @@ from typing import Dict, Union, Tuple
 import pandas as pd
 from PyQt5 import QtGui, QtCore
 
-from spielpendium.logger import set_log_level
+from spielpendium import log
 
 IMAGE_SIZE = 64  # Temporary until this is defined elsewhere.
 
 
-@set_log_level('info')
+@log.log(log.logger)
 def save_splz(data: pd.DataFrame, metadata: Dict, filename: str, **kwargs) \
         -> bool:
     """ Saves the internal user data in a Spielpendium program to a .splz file.
@@ -73,8 +73,8 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str, **kwargs) \
             file.writestr('metadata.json', json_meta)
 
             # Loop through the "images" dict and add them into the file.
-            # The images are stored in the "images" subfolder and are named
-            # with the associated BGG Id (which is unique).
+            # The images are stored in the "images" sub folder and are named
+            # with the associated BGG ID (which is unique).
             for bgg_id, image in images.items():
                 buffer = QtCore.QBuffer()
                 buffer.open(QtCore.QBuffer.ReadWrite)
@@ -99,7 +99,7 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str, **kwargs) \
         return False
 
 
-@set_log_level('info')
+@log.log(log.logger)
 def load_splz(filepath: str, **kwargs) -> Tuple[pd.DataFrame, Dict]:
     """ Loads data stored in a .splz file into Spielpendium.
 
@@ -124,7 +124,7 @@ def load_splz(filepath: str, **kwargs) -> Tuple[pd.DataFrame, Dict]:
     if not os.path.exists(filepath):
         raise FileNotFoundError(f'Unable to find the file {filename}.')
 
-    # Check that the file is a valid zipfile or that is have a .splz extension
+    # Check that the file is a valid zipfile or that is has .splz extension
     if not zipfile.is_zipfile(filepath) or not filename.endswith('.splz'):
         raise IOError(f'Unable to read {filename}. It does not '
                       'seem to be a valid .splz file. or may '

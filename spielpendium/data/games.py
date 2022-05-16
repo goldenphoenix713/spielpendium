@@ -324,7 +324,7 @@ class Games(QtCore.QAbstractTableModel):
         return True
 
     def metadata(self) -> Dict:
-        """Returns all of the metadata of the Games object.
+        """Returns all the metadata of the Games object.
 
         :return:  The metadata of the Games object.
         """

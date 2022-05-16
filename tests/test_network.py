@@ -10,7 +10,7 @@ class TestNetwork(unittest.TestCase):
         self.search_term = 'Catan'
 
     def test_search(self):
-        info = search_bgg(self.search_term, logger=None)
+        info = search_bgg(self.search_term)
         self.assertTrue(isinstance(info, dict))
 
     def test_connection_status(self):
