@@ -13,10 +13,10 @@ _BGG_URL = "https://www.boardgamegeek.com/"
 @enum.unique
 class ConnectionStatus(enum.Enum):
     """ Enum class of connection statuses."""
-    CONNECTION_OK = enum.auto()
-    INTERNET_CONNECTION_DOWN = enum.auto()
-    BOARDGAMEGEEK_DOWN = enum.auto()
-    BOARDGAMEGEEK_API_DOWN = enum.auto()
+    CONNECTION_OK = 0
+    INTERNET_CONNECTION_DOWN = 1
+    BOARDGAMEGEEK_DOWN = 2
+    BOARDGAMEGEEK_API_DOWN = 3
 
     def __repr__(self):
         return self.name.title().replace('_', ' ')
@@ -66,7 +66,7 @@ def bgg_api_is_up() -> bool:
 
     try:
         # Try a test search using the BGG API. It is works, the API is up
-        search_bgg('Catan', logger=None)
+        search_bgg('Catan')
         return True
     except urllib.error.HTTPError:
         # If it doesn't work, the API is down
