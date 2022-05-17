@@ -15,13 +15,15 @@ import pandas as pd
 
 try:
     from spielpendium.data.file_io import load_splz, save_splz
+    from spielpendium.data.games_interface import import_user_data
 except ModuleNotFoundError:
     from file_io import load_splz, save_splz
+    from games_interface import import_user_data
 
 
 class Games(QtCore.QAbstractTableModel):
     """The internal data storage class for Spielpendium."""
-    _NUM_HIDDEN_COLS = 2
+    _NUM_HIDDEN_COLS = 1
     _ID_COL = 0
     _IMAGE_COL = 1
 
@@ -29,7 +31,6 @@ class Games(QtCore.QAbstractTableModel):
         'BGG Id',
         'Image',
         'Name',
-        'Subname',
         'Version',
         'Author',
         'Artist',
@@ -117,12 +118,16 @@ class Games(QtCore.QAbstractTableModel):
         :param other: Another Games instance.
         :return: True if the Games objects are equal, False otherwise.
         """
+
+        # Make copies of the DataFrames
         copy_self: pd.DataFrame = self._games.copy()
         copy_other = other._games.copy()
 
-        copy_self.pop('Image')
-        copy_other.pop('Image')
+        # Take the images out. These have to be checked separately
+        image_col_self = copy_self.pop('Image')
+        image_col_other = copy_other.pop('Image')
 
+        # Check to make sure all elements are the same
         is_equal = True
         for row in range(len(copy_self)):
             for column in range(len(copy_self.columns)):
@@ -130,9 +135,31 @@ class Games(QtCore.QAbstractTableModel):
                     is_equal = False
                     break
 
+            # Check to see if the images are equal
+            if is_equal:
+                # Convert QImages to bytes
+                # This makes a buffer in memory and saves the images as PNG
+                # files into the memory buffer. Then it compares the raw bytes
+                # of the PNG "file".
+                self_ba = QtCore.QByteArray()
+                self_buff = QtCore.QBuffer(self_ba)
+                self_buff.open(QtCore.QIODevice.WriteOnly)
+                image_col_self.iloc[row].save(self_buff, "PNG")
+                self_im_bytes = self_buff.data()
+
+                other_ba = QtCore.QByteArray()
+                other_buff = QtCore.QBuffer(other_ba)
+                other_buff.open(QtCore.QIODevice.WriteOnly)
+                image_col_other.iloc[row].save(other_buff, "PNG")
+                other_im_bytes = other_buff.data()
+
+                # Check that the bytes equal
+                is_equal = self_im_bytes == other_im_bytes
+
             if not is_equal:
                 break
 
+        # Check metadata equality
         if is_equal:
             is_equal = self._metadata == other._metadata
 
@@ -196,11 +223,13 @@ class Games(QtCore.QAbstractTableModel):
         row = index.row()
         column = index.column()
 
-        if role == QtCore.Qt.DisplayRole:
+        if role == QtCore.Qt.DisplayRole \
+                and column != self._IMAGE_COL - self._NUM_HIDDEN_COLS:
             return str(self._games.iloc[row, column + self._NUM_HIDDEN_COLS])
         if role == QtCore.Qt.ToolTipRole:
             return 'BGG ID: ' + str(self._games.iloc[row, self._ID_COL])
-        if role == QtCore.Qt.DecorationRole and column == 0:
+        if role == QtCore.Qt.DecorationRole \
+                and column == self._IMAGE_COL - self._NUM_HIDDEN_COLS:
             return self._games.iloc[row, self._IMAGE_COL]
         return None
 
@@ -215,6 +244,7 @@ class Games(QtCore.QAbstractTableModel):
         :param parent: The parent of the index.
         :return: The QModelIndex for the given row and column.
         """
+
         return self.createIndex(row, column, self._games.iloc[
             row, column + self._NUM_HIDDEN_COLS])
 
@@ -274,7 +304,7 @@ class Games(QtCore.QAbstractTableModel):
                 return True
         return False
 
-    def append(self, values: Dict) -> bool:
+    def append(self, values: List) -> bool:
         """Add new data to the model. This method differs from setData in
         that this method adds an entire row at a time instead of one at a
         time.
@@ -282,31 +312,33 @@ class Games(QtCore.QAbstractTableModel):
         :param values: The information to add to the new row.
         :return: True if the appending is successful, False otherwise.
         """
-        if not all([x in self.HEADER for x in values.keys()]):
+
+        if not all([x in self.HEADER for x in values[0].keys()]):
             return False
 
         self.beginInsertRows(QtCore.QModelIndex(),
-                             len(self._games), len(self._games))
+                             len(self._games),
+                             len(self._games) + len(values) - 1)
         self._games = self._games.append(values, ignore_index=True)
         self.endInsertRows()
         return True
 
     def metadata(self) -> Dict:
-        """Returns all of the metadata of the Games object.
+        """Returns all the metadata of the Games object.
 
         :return:  The metadata of the Games object.
         """
 
         return self._metadata
 
-    def load(self, filename: str) -> bool:
+    def load(self, filename: str, **kwargs) -> bool:
         """Loads data from a file into the Games object.
 
         :param filename: The path to the file to load.
         :return: True if the loading is successful, False otherwise.
         """
         try:
-            new_games, new_metadata = load_splz(filename)
+            new_games, new_metadata = load_splz(filename, **kwargs)
         except(FileNotFoundError, IOError):
             return False
 
@@ -319,13 +351,13 @@ class Games(QtCore.QAbstractTableModel):
 
         return True
 
-    def save(self, filename: str) -> bool:
+    def save(self, filename: str, **kwargs) -> bool:
         """Save the data in the Games object to a file.
 
         :param filename: The path to the save file.
         :return: True if the save is successful, False otherwise.
         """
-        return save_splz(self._games, self._metadata, filename)
+        return save_splz(self._games, self._metadata, filename, **kwargs)
 
     def read_db(self) -> bool:
         """Reads information from the database.
@@ -352,38 +384,16 @@ class Games(QtCore.QAbstractTableModel):
 
 
 if __name__ == '__main__':
-    from PyQt5 import QtWidgets, QtGui
+    from PyQt5 import QtWidgets
 
     app = QtWidgets.QApplication([])
 
-    test_im = (QtGui.QImage('../../images/image.jpg')
-               .scaled(64, 64, QtCore.Qt.KeepAspectRatio))
-
-    test_data = {
-        'BGG Id': 1,
-        'Image': test_im,
-        'Name': 'Test',
-        'Subname': 'The Test Thing',
-        'Version': 1,
-        'Author': 'Eddie',
-        'Artist': 'Eddie',
-        'Publisher': 'Eddie Games',
-        'Release Year': 2021,
-        'Category': 'Made Up',
-        'Description': 'This is a test thingy I''m doing.',
-        'Minimum Players': 3,
-        'Maximum Players': 5,
-        'Recommended Players': 4,
-        'Age': 20,
-        'Minimum Play Time': 50,
-        'Maximum Play Time': 120,
-        'BGG Rating': 1.2,
-        'BGG Rank': 504033,
-        'Complexity': 1.2,
-        'Related Games': 'None',
-    }
+    test_data = import_user_data('phoenix713')
 
     view = QtWidgets.QTableView()
+    header = view.verticalHeader()
+    header.setDefaultSectionSize(64)
+    header.sectionResizeMode(header.Fixed)
     games = Games()
     view.setModel(games)
     view.show()

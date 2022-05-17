@@ -14,10 +14,14 @@ from typing import Dict, Union, Tuple
 import pandas as pd
 from PyQt5 import QtGui, QtCore
 
+from spielpendium import log
+
 IMAGE_SIZE = 64  # Temporary until this is defined elsewhere.
 
 
-def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
+@log.log(log.logger)
+def save_splz(data: pd.DataFrame, metadata: Dict, filename: str, **kwargs) \
+        -> bool:
     """ Saves the internal user data in a Spielpendium program to a .splz file.
 
     The SPLZ file format is a JSON formatted text file containing the game
@@ -32,6 +36,10 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
     ###########################################################################
     # Data setup
     ###########################################################################
+    if 'logger' in kwargs.keys():
+        logger = kwargs['logger']
+    else:
+        logger = None
 
     # Take the images out of the DataFrame, since they can't be
     # saved in the JSON data file.
@@ -50,6 +58,9 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
                            indent=4)
     json_meta = json.dumps(metadata, indent=4)
 
+    if logger is not None:
+        logger.debug('Games data converted to JSON.')
+
     ###########################################################################
     # Write the file
     ###########################################################################
@@ -62,8 +73,8 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
             file.writestr('metadata.json', json_meta)
 
             # Loop through the "images" dict and add them into the file.
-            # The images are stored in the "images" subfolder and are named
-            # with the associated BGG Id (which is unique).
+            # The images are stored in the "images" sub folder and are named
+            # with the associated BGG ID (which is unique).
             for bgg_id, image in images.items():
                 buffer = QtCore.QBuffer()
                 buffer.open(QtCore.QBuffer.ReadWrite)
@@ -76,14 +87,20 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
                     image_bytes.getvalue()
                 )
 
+        if logger is not None:
+            logger.info(f'SPLZ file successfully saved at {filename}.')
+
         # Let the user know saving was successful
         return True
     # If there's any error, return False
-    except (OSError, zipfile.LargeZipFile):
+    except (OSError, zipfile.LargeZipFile) as err:
+        if logger is not None:
+            logger.error(f'SPLZ file was not saved at {filename}. {err}')
         return False
 
 
-def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
+@log.log(log.logger)
+def load_splz(filepath: str, **kwargs) -> Tuple[pd.DataFrame, Dict]:
     """ Loads data stored in a .splz file into Spielpendium.
 
     :param filepath: The path to the .splz file.
@@ -95,6 +112,10 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
     ###########################################################################
     # Check that the file is valid
     ###########################################################################
+    if 'logger' in kwargs.keys():
+        logger = kwargs['logger']
+    else:
+        logger = None
 
     # Get the filename from the full path
     filename: str = os.path.split(filepath)[1]
@@ -103,12 +124,14 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
     if not os.path.exists(filepath):
         raise FileNotFoundError(f'Unable to find the file {filename}.')
 
-    # Check that the file is a valid zipfile or that is have a .splz extension
+    # Check that the file is a valid zipfile or that is has .splz extension
     if not zipfile.is_zipfile(filepath) or not filename.endswith('.splz'):
         raise IOError(f'Unable to read {filename}. It does not '
                       'seem to be a valid .splz file. or may '
                       'have become corrupted.') from None
 
+    if logger is not None:
+        logger.debug(f'File to load found at {filepath}.')
     ###########################################################################
     # Extract the contents of the zipfile
     ###########################################################################
@@ -136,10 +159,14 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
                     IMAGE_SIZE,
                     QtCore.Qt.KeepAspectRatio
                 )
+        if logger is not None:
+            logger.info(f'File at {filepath} successfully loaded.')
 
     # Raise a IOError if the file can't be read for any reason.
     except (KeyError, UnicodeDecodeError,
             ValueError, FileNotFoundError):
+        if logger is not None:
+            logger.error(f'Unable to read {filename}.')
         raise IOError(f'Unable to read {filename}. It does not '
                       'seem to be a valid .splz file. or may '
                       'have become corrupted.') from None
