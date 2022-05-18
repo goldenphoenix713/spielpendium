@@ -57,6 +57,10 @@ def get_xml_info(url: str) -> dict:
     :return: The information from the XML converted into a dict.
     """
     first_loop = True
+    max_checks = 10
+    time_between_checks = 10
+
+    check = 0
 
     while True:
         with urllib.request.urlopen(url) as webpage:
@@ -66,22 +70,25 @@ def get_xml_info(url: str) -> dict:
         # Convert the bytes object to an OrderedDict.
         data = xmltodict.parse(data_bytes)
         log.logger.debug('Data successfully converted to dict.')
-        # except xml.parsers.expat.ExpatError:
-        #     if logger is not None:
-        #         logger.error(f'Data from {url} was unable to be read.')
-        #     raise ValueError('Unable to read the information '
-        #                      'at the provided URL.') from None
 
         if 'message' not in data.keys():
             log.logger.info(f'Data successfully pulled from {url}.')
             break
         else:
+            check += 1
+
+            if check >= max_checks:
+                log.logger.error(f'API did not generate data at {url} after '
+                                 f'checking {max_checks} times. '
+                                 f'Try again later.')
             if first_loop:
-                log.logger.info(f'Waiting for API to generate data at {url}.')
+                log.logger.info(f'Waiting for API to generate data at {url}. '
+                                f'Next check in 10 seconds')
                 first_loop = False
             else:
                 log.logger.info(f'Still waiting for API to generate data.')
-            time.sleep(10)
+
+            time.sleep(time_between_checks)
 
     return data
 
@@ -101,6 +108,7 @@ def search_bgg(search_query: str, exact_flag: bool = False) -> dict:
     return get_xml_info(search_url)
 
 
+@log.log(log.logger)
 def get_user_game_collection(
         username: str,
         filters: Optional[Dict[str, Union[int, bool]]] = None
@@ -147,6 +155,7 @@ def get_game_info(game_ids: Union[int, List[int]],
     return get_xml_info(url)
 
 
+@log.log(log.logger)
 def get_images(image_urls: Union[str, List[str]]) -> List[QtGui.QImage]:
     """ Retrieves images from a list of URLs.
 

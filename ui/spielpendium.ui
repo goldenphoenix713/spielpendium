@@ -598,7 +598,7 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="seqarchTab">
+      <widget class="QWidget" name="searchTab">
        <attribute name="title">
         <string>Search BoardGameGeek</string>
        </attribute>
