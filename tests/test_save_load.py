@@ -47,18 +47,19 @@ class TestSaveLoad(unittest.TestCase):
         for key, value in self.metadata.items():
             games.setData(key, value, QtCore.Qt.UserRole)
 
-        self.assertTrue(games.save('test.splz', logger=None))
 
+        self.assertTrue(games.save('test.splz'))
+  
     def test_save_load(self):
         games1 = Games()
         games1.append(self.data)
         for key, value in self.metadata.items():
             games1.setData(key, value, QtCore.Qt.UserRole)
 
-        games1.save('test.splz', logger=None)
+        games1.save('test.splz')
 
         games2 = Games()
-        games2.load('test.splz', logger=None)
+        games2.load('test.splz')
 
         self.assertEqual(games1, games2)
 
