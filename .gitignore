@@ -133,3 +133,4 @@ dmypy.json
 
 # Additional things
 *.splz
+*.db
