@@ -161,7 +161,7 @@ def dict_list_to_dict(dict_list: Union[Dict, List[Dict]]) -> Dict:
 def import_user_data(username: str,
                      filters: Optional[Dict[str, Union[int, bool]]] = None,
                      ) -> List[Dict]:
-    """ Takes information downloaded using the BGG APT and conditions it to
+    """ Takes information downloaded using the BGG API and conditions it to
     the format needed by a Games object.
 
     :param username: The BGG username whose collection we're importing.

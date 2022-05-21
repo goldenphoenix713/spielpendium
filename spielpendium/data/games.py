@@ -1,4 +1,3 @@
-# pylint:disable=C0103
 """Internal data storage for Spielpendium.
 
 THe Games class is a QAbstractTableModel subclass that stores user

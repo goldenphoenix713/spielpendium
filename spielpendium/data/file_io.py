@@ -16,8 +16,8 @@ import pandas as pd
 from PyQt5 import QtGui, QtCore
 
 from spielpendium import log
+from spielpendium.constants import IMAGE_SIZE
 
-IMAGE_SIZE = 512
 _SPLZ_VERSION = '1.0'
 
 

@@ -8,6 +8,10 @@ from spielpendium.network import search_bgg
 __all__ = ['ConnectionStatus', 'get_connection_status']
 
 _BGG_URL = "https://www.boardgamegeek.com/"
+_HTTP_STATUS_OK = 200
+_TEST_SEARCH_TERM = 'Catan'
+_TEST_IP_ADDRESS = '1.1.1.1'
+_TEST_PORT = 53
 
 
 @enum.unique
@@ -21,8 +25,7 @@ class ConnectionStatus(enum.Enum):
     def __repr__(self):
         return self.name.title().replace('_', ' ')
 
-    def __str__(self):
-        return repr(self)
+    __str__ = __repr__
 
 
 def is_connected_to_internet() -> bool:
@@ -32,7 +35,7 @@ def is_connected_to_internet() -> bool:
     """
     try:
         # try to connect to 1.1.1.1, a DNS server that should always be up
-        connection = socket.create_connection(("1.1.1.1", 53))
+        connection = socket.create_connection((_TEST_IP_ADDRESS, _TEST_PORT))
         connection.close()
         return True
     except OSError:
@@ -49,8 +52,7 @@ def bgg_is_up() -> bool:
 
     try:
         # try to connect to.BGG and check the return status.
-        # 200 means "ok success status"
-        return urllib.request.urlopen(_BGG_URL).getcode() == 200
+        return urllib.request.urlopen(_BGG_URL).getcode() == _HTTP_STATUS_OK
     except urllib.error.URLError:
         # if there's any error with connecting, return False
         pass
@@ -66,7 +68,7 @@ def bgg_api_is_up() -> bool:
 
     try:
         # Try a test search using the BGG API. It is works, the API is up
-        search_bgg('Catan')
+        search_bgg(_TEST_SEARCH_TERM)
         return True
     except urllib.error.HTTPError:
         # If it doesn't work, the API is down

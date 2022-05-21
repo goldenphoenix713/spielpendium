@@ -10,11 +10,14 @@ from PyQt5 import QtGui, QtCore
 import xmltodict
 
 from spielpendium import log
+from spielpendium.constants import IMAGE_SIZE
 
 __all__ = ['search_bgg', 'get_user_game_collection', 'get_game_info',
            'get_images']
 
 _BGG_API_URL = 'https://www.boardgamegeek.com/xmlapi/'
+_MAX_CHECKS = 10
+_TIME_BETWEEN_CHECKS = 10
 
 # noinspection SpellCheckingInspection
 COLLECTION_FILTERS = (
@@ -57,12 +60,9 @@ def get_xml_info(url: str) -> dict:
     :return: The information from the XML converted into a dict.
     """
     first_loop = True
-    max_checks = 10
-    time_between_checks = 10
 
-    check = 0
-
-    while True:
+    data = 0
+    for check in range(_MAX_CHECKS):
         with urllib.request.urlopen(url) as webpage:
             data_bytes = webpage.read()
         log.logger.debug(f'Information retrieved successfully from {url}.')
@@ -75,11 +75,9 @@ def get_xml_info(url: str) -> dict:
             log.logger.info(f'Data successfully pulled from {url}.')
             break
         else:
-            check += 1
-
-            if check >= max_checks:
+            if check+1 >= _MAX_CHECKS:
                 log.logger.error(f'API did not generate data at {url} after '
-                                 f'checking {max_checks} times. '
+                                 f'checking {_MAX_CHECKS} times. '
                                  f'Try again later.')
             if first_loop:
                 log.logger.info(f'Waiting for API to generate data at {url}. '
@@ -88,11 +86,12 @@ def get_xml_info(url: str) -> dict:
             else:
                 log.logger.info(f'Still waiting for API to generate data.')
 
-            time.sleep(time_between_checks)
+            time.sleep(_TIME_BETWEEN_CHECKS)
 
     return data
 
 
+@log.log(log.logger)
 def search_bgg(search_query: str, exact_flag: bool = False) -> dict:
     """ Assembles the search URL and returns data from the BoardGameGeek API.
 
@@ -144,13 +143,13 @@ def get_game_info(game_ids: Union[int, List[int]],
     :return: The details of the game(s).
     """
 
+    # Convert to list
     if isinstance(game_ids, int):
         game_ids = [game_ids]
 
+    # Generate the url
     url = _BGG_API_URL + 'boardgame/' + ','.join([str(a) for a in game_ids])
-
-    if get_stats:
-        url = url + f'?stats=1'
+    url += f'?stats=1' if get_stats else ''
 
     return get_xml_info(url)
 
@@ -162,13 +161,19 @@ def get_images(image_urls: Union[str, List[str]]) -> List[QtGui.QImage]:
     :param image_urls: The image URLs.
     :return: The images.
     """
+    # Convert to list
     if isinstance(image_urls, str):
         image_urls = [image_urls]
 
+    # Set up pool of subprocesses to each get an image
     pool = mp.Pool(processes=mp.cpu_count())
+
+    # Get the images
     images_as_bytes = pool.map(get_single_image, image_urls)
+
+    # Convert the images to QImages
     images_qt = [QtGui.QImage.fromData(im).scaled(
-        256, 256, QtCore.Qt.KeepAspectRatio
+        IMAGE_SIZE, IMAGE_SIZE, QtCore.Qt.KeepAspectRatio
     ) for im in images_as_bytes]
 
     return images_qt
