@@ -331,33 +331,33 @@ class Games(QtCore.QAbstractTableModel):
 
         return self._metadata
 
-    def load(self, filename: str, **kwargs) -> bool:
+    def load(self, filename: str) -> bool:
         """Loads data from a file into the Games object.
 
         :param filename: The path to the file to load.
         :return: True if the loading is successful, False otherwise.
         """
         try:
-            new_games, new_metadata = load_splz(filename, **kwargs)
+            new_games, new_metadata = load_splz(filename)
         except(FileNotFoundError, IOError):
             return False
 
         self.beginInsertRows(QtCore.QModelIndex(),
                              0, len(new_games) - 1)
-        self._games = new_games
+        self._games = new_games[self.HEADER]
         self.endInsertRows()
 
         self._metadata = new_metadata
 
         return True
 
-    def save(self, filename: str, **kwargs) -> bool:
+    def save(self, filename: str) -> bool:
         """Save the data in the Games object to a file.
 
         :param filename: The path to the save file.
         :return: True if the save is successful, False otherwise.
         """
-        return save_splz(self._games, self._metadata, filename, **kwargs)
+        return save_splz(self._games, self._metadata, filename)
 
     def read_db(self) -> bool:
         """Reads information from the database.

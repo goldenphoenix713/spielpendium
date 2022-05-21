@@ -2,7 +2,7 @@ import unittest
 
 from PyQt5 import QtCore, QtGui
 
-from spielpendium.data import Games
+from spielpendium.data import Games, IMAGE_SIZE
 
 
 class TestSaveLoad(unittest.TestCase):
@@ -10,7 +10,7 @@ class TestSaveLoad(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(TestSaveLoad, self).__init__(*args, **kwargs)
         test_im = (QtGui.QImage('../images/image.jpg')
-                   .scaled(64, 64, QtCore.Qt.KeepAspectRatio))
+                   .scaled(IMAGE_SIZE, IMAGE_SIZE, QtCore.Qt.KeepAspectRatio))
 
         self.data = [{
             'BGG Id': 1,
@@ -36,8 +36,7 @@ class TestSaveLoad(unittest.TestCase):
         }]
 
         self.metadata = {
-            'name': 'User',
-            'date': '2021-08-12',
+            'name': 'User'
         }
 
     def test_save(self):
@@ -47,9 +46,8 @@ class TestSaveLoad(unittest.TestCase):
         for key, value in self.metadata.items():
             games.setData(key, value, QtCore.Qt.UserRole)
 
-
         self.assertTrue(games.save('test.splz'))
-  
+
     def test_save_load(self):
         games1 = Games()
         games1.append(self.data)
