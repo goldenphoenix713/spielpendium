@@ -1,5 +1,3 @@
--- TODO Create some views to be used in the program.
-
 DROP TABLE IF EXISTS Games;
 DROP TABLE IF EXISTS Publishers;
 DROP TABLE IF EXISTS Searches;
@@ -140,23 +138,6 @@ id INT NOT NULL,
 keyword TEXT NOT NULL,
 value TEXT NOT NULL
 );
-
-/*name TEXT NOT NULL,
-sub_name TEXT,
-version INT NOT NULL,
-image BLOB NOT NULL,
-description TEXT NOT NULL,
-publisher_id INT NOT NULL,
-release_year DATE NOT NULL,
-min_players INT NOT NULL,
-max_players INT NOT NULL,
-recommended_players INT,
-min_age INT NOT NULL,
-min_play_time INT NOT NULL,
-max_play_time INT NOT NULL,
-bgg_rating FLOAT,
-bgg_rank INT,
-complexity FLOAT NOT NULL,*/
 
 CREATE VIEW BGG_Games_View AS
     SELECT g.name,
