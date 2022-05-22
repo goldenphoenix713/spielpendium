@@ -1,3 +1,5 @@
+-- TODO Create some views to be used in the program.
+
 DROP TABLE IF EXISTS Games;
 DROP TABLE IF EXISTS Publishers;
 DROP TABLE IF EXISTS Searches;
@@ -16,6 +18,7 @@ DROP TABLE IF EXISTS Artist_Game;
 DROP TABLE IF EXISTS User_Settings;
 DROP TABLE IF EXISTS People;
 DROP TABLE IF EXISTS Categories;
+DROP VIEW IF EXISTS BGG_Games_View;
 
 
 CREATE TABLE Publishers (
@@ -137,3 +140,50 @@ id INT NOT NULL,
 keyword TEXT NOT NULL,
 value TEXT NOT NULL
 );
+
+/*name TEXT NOT NULL,
+sub_name TEXT,
+version INT NOT NULL,
+image BLOB NOT NULL,
+description TEXT NOT NULL,
+publisher_id INT NOT NULL,
+release_year DATE NOT NULL,
+min_players INT NOT NULL,
+max_players INT NOT NULL,
+recommended_players INT,
+min_age INT NOT NULL,
+min_play_time INT NOT NULL,
+max_play_time INT NOT NULL,
+bgg_rating FLOAT,
+bgg_rank INT,
+complexity FLOAT NOT NULL,*/
+
+CREATE VIEW BGG_Games_View AS
+    SELECT g.name,
+           g.sub_name,
+           g.version,
+           pub.name,
+           g.image,
+           g.description,
+           g.release_year,
+           g.min_players,
+           g.max_players,
+           g.recommended_players,
+           g.min_age,
+           g.min_play_time,
+           g.max_play_time,
+           g.bgg_rating,
+           g.bgg_rank
+    FROM BGG_Lists bggl
+        LEFT JOIN BGG_List_Games bgglg ON bgglg.bgg_list_id = bggl.id
+        LEFT JOIN Games g ON bgglg.game_id = g.id
+        LEFT JOIN Publishers pub ON pub.id = g.publisher_id
+        LEFT JOIN Author_Game aug ON aug.game_id = g.id
+        LEFT JOIN Authors au ON au.id = aug.author_id
+        LEFT JOIN Artist_Game arg ON arg.game_id = g.id
+        LEFT JOIN Artists ar ON ar.id = arg.artist_id
+        LEFT JOIN Ownership_Statuses own ON own.id = bggl.ownership_status_id
+        LEFT JOIN Games_Categories gcat ON gcat.game_id = g.id
+        LEFT JOIN Categories cat ON gcat.category_id = cat.id
+        LEFT JOIN Related_Games rg ON rg.game_id1 = g.id
+        LEFT JOIN Game_Relationships grg ON grg.id = rg.relationship_id;
