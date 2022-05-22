@@ -1,7 +1,15 @@
+import pathlib
 from typing import List, Any
 import os
 
 from PyQt5 import QtSql
+
+import log
+
+__all__ = ['SCRIPT_DIRECTORY', 'connect', 'disconnect', 'run_script', 'query']
+
+SCRIPT_DIRECTORY = (f'{pathlib.Path(__file__).parent.absolute()}'
+                    f'{os.sep}scripts{os.sep}')
 
 
 def connect(db_file: str) -> bool:
@@ -30,15 +38,12 @@ def disconnect():
     db.removeDatabase(db.databaseName())
 
 
-def create_tables():
-    ...
+@log.log(log.logger)
+def query(command: str, params: List = None) -> Any:
+    if params is None:
+        params = []
 
-
-def _create_games_table():
-    ...
-
-
-def query(command: str, params: List) -> Any:
+    log.logger.debug('Preparing query for execution.')
     q = QtSql.QSqlQuery()
 
     q.prepare(command)
@@ -46,6 +51,7 @@ def query(command: str, params: List) -> Any:
     for param in params:
         q.addBindValue(param)
 
+    log.logger.debug('Executing the query.')
     success = q.exec()
 
     if not success:
@@ -55,6 +61,7 @@ def query(command: str, params: List) -> Any:
     ret = []
 
     if q.isSelect():
+        log.logger.debug('Getting selected data.')
         while q.next():
             for ii in range(len(params)):
                 ret.append(q.value(ii))
@@ -64,5 +71,30 @@ def query(command: str, params: List) -> Any:
     return success
 
 
-if __name__ == '__main__':
-    pass
+@log.log(log.logger)
+def run_script(script_file):
+    q = QtSql.QSqlQuery()
+
+    # Open and read the file as a single buffer
+    log.logger.debug('Reading SQL file.')
+    with open(script_file, 'r') as file:
+        sql_file = file.read()
+
+    log.logger.debug('Successfully read SQL file.')
+
+    # all SQL commands (split on ';')
+    sql_commands = sql_file.split(';')
+
+    # Execute every command from the input file
+    for command in sql_commands:
+        # This will skip and report errors
+        # For example, if the tables do not yet exist, this will skip over
+        # the DROP TABLE commands
+        command = command.strip()
+
+        if command != '':
+            log.logger.debug(f'Running SQL command:\n    {command}')
+            if not q.exec(command):
+                log.logger.exception(f'Command skipped:\n    {command}')
+
+    log.logger.debug('Finished running commands.')

@@ -4,7 +4,7 @@ from pathlib import Path
 import functools
 import inspect
 
-from spielpendium.app import PROGRAM_NAME
+from spielpendium.constants import PROGRAM_NAME
 
 __all__ = ['log', 'logger']
 
