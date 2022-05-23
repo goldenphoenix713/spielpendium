@@ -11,6 +11,7 @@ import xmltodict
 
 from spielpendium import log
 from spielpendium.constants import IMAGE_SIZE
+from spielpendium import database
 
 __all__ = ['search_bgg', 'get_user_game_collection', 'get_game_info',
            'get_images']
@@ -88,7 +89,7 @@ def get_xml_info(url: str) -> dict:
 
             time.sleep(_TIME_BETWEEN_CHECKS)
 
-    return data
+    return data, data_bytes.decode()
 
 
 @log.log(log.logger)
@@ -110,28 +111,81 @@ def search_bgg(search_query: str, exact_flag: bool = False) -> dict:
 @log.log(log.logger)
 def get_user_game_collection(
         username: str,
-        filters: Optional[Dict[str, Union[int, bool]]] = None
+        filters: Optional[Dict[str, Union[int, bool]]] = None,
+        force_update: bool = False
 ) -> dict:
     """ Grabs a user's game collection from BGG.
 
     :param username: The username whose collection were grabbing.
     :param filters: Additional filters for the game collection.
+    :param force_update: Whether to force an update from the API
     :return: A dictionary with the user's game collection.
     """
-    username_safe = urllib.parse.quote(username)
-    collection_url = f'{_BGG_API_URL}collection/{username_safe}'
 
-    if filters is not None:
-        if any([key not in COLLECTION_FILTERS for key in filters.keys()]):
-            raise KeyError('Invalid filter provided. Filters must be '
-                           'one of the following: "' +
-                           '", "'.join(list(COLLECTION_FILTERS)) + '".')
+    if user_exists(username) and not force_update:
+        info_dict = get_database_info(username)
+    else:
 
-        collection_url += '?' + '&'.join(
-            [f'{key}={int(value)}' for key, value in filters.items()]
-        )
+        username_safe = urllib.parse.quote(username)
+        collection_url = f'{_BGG_API_URL}collection/{username_safe}'
 
-    return get_xml_info(collection_url)
+        if filters is not None:
+            if any([key not in COLLECTION_FILTERS for key in filters.keys()]):
+                raise KeyError('Invalid filter provided. Filters must be '
+                               'one of the following: "' +
+                               '", "'.join(list(COLLECTION_FILTERS)) + '".')
+
+            collection_url += '?' + '&'.join(
+                [f'{key}={int(value)}' for key, value in filters.items()]
+            )
+
+        info_dict, xml = get_xml_info(collection_url)
+
+        save_user_xml(username, xml, force_update)
+
+    return info_dict
+
+
+def get_database_info(username: str) -> dict:
+    command = """
+    SELECT xml FROM BGG_Lists
+    WHERE username=?
+    """
+
+    xml = database.query(command, [username])[0]
+
+    return xmltodict.parse(xml)
+
+
+def user_exists(username):
+    command = """
+    SELECT COUNT(1)
+    FROM BGG_Lists
+    WHERE BGG_Lists.username=?;
+    """
+
+    return database.query(command, [username])[0] == 1
+
+
+def save_user_xml(username, xml, update=False):
+    from datetime import datetime
+
+    if update:
+        command = """
+        UPDATE BGG_Lists
+        SET xml=?, last_refreshed=strftime('%Y-%m-%dT%H:%M:%S','now')
+        WHERE username=?;
+        """
+
+        database.query(command, [xml, username])
+    else:
+        command = """
+        INSERT INTO BGG_Lists
+        (username, xml, last_refreshed)
+        VALUES(?, ?, strftime('%Y-%m-%dT%H:%M:%S','now'));
+        """
+
+        database.query(command, [username, xml])
 
 
 def get_game_info(game_ids: Union[int, List[int]],
@@ -195,22 +249,22 @@ def get_single_image(image_url: str) -> bytes:
 if __name__ == '__main__':
     from json import dumps
 
-    test_url = 'https://www.boardgamegeek.com/xmlapi/boardgame/35424'
-    info = get_xml_info(test_url)
-    print(dumps(info, indent=2))
-
-    search_results = search_bgg('Catan')
-    print(dumps(search_results, indent=2))
-
+    # test_url = 'https://www.boardgamegeek.com/xmlapi/boardgame/35424'
+    # info = get_xml_info(test_url)
+    # print(dumps(info, indent=2))
+    #
+    # search_results = search_bgg('Catan')
+    # print(dumps(search_results, indent=2))
+    #
     collection = get_user_game_collection('phoenix713', filters={'own': True})
     print(dumps(collection, indent=2))
 
-    game_details = get_game_info([224125, 255907])
-    print(dumps(game_details, indent=2))
-
-    test_image = ('https://cf.geekdo-images.com/vpET5JF4hXUXA6bqXx0WlQ__'
-                  'original/img/FyZogAqdllhWqFns_zfjhaUP6jM=/0x0/filters:'
-                  'format(jpeg)/pic4854460.jpg')
-    images = get_images(test_image)
-    print(images)
-    images[0].save('test.png', 'png')
+    # game_details = get_game_info([224125, 255907])
+    # print(dumps(game_details, indent=2))
+    #
+    # test_image = ('https://cf.geekdo-images.com/vpET5JF4hXUXA6bqXx0WlQ__'
+    #               'original/img/FyZogAqdllhWqFns_zfjhaUP6jM=/0x0/filters:'
+    #               'format(jpeg)/pic4854460.jpg')
+    # images = get_images(test_image)
+    # print(images)
+    # images[0].save('test.png', 'png')

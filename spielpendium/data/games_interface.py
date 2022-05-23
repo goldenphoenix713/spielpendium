@@ -158,7 +158,7 @@ def dict_list_to_dict(dict_list: Union[Dict, List[Dict]]) -> Dict:
     return publishers
 
 
-def import_user_data(username: str,
+def import_user_data(username: str, force_update: bool = False,
                      filters: Optional[Dict[str, Union[int, bool]]] = None,
                      ) -> List[Dict]:
     """ Takes information downloaded using the BGG API and conditions it to
@@ -166,10 +166,11 @@ def import_user_data(username: str,
 
     :param username: The BGG username whose collection we're importing.
     :param filters: Additional filters for the game collection.
+    :param force_update: Whether to force an update from the API.
     :return: A dict in the format needed by a Games object.
     """
 
-    user_collection = get_user_game_collection(username, filters)
+    user_collection = get_user_game_collection(username, filters, force_update)
 
     num_items = int(user_collection['items']['@totalitems'])
 
@@ -216,7 +217,12 @@ def import_user_data(username: str,
 
 
 if __name__ == '__main__':
-    from pprint import pprint
+    ...
+    # from pprint import pprint
+    # from spielpendium.constants import DB_FILE
 
-    user_data = import_user_data('phoenix713')
-    pprint(user_data, indent=2)
+    # ans2 = user_exists('pizza')
+    # print(ans2)
+
+    # user_data = import_user_data('phoenix713')
+    # pprint(user_data, indent=2)

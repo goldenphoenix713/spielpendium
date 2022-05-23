@@ -1,12 +1,15 @@
+import functools
 import pathlib
 from typing import List, Any
 import os
 
 from PyQt5 import QtSql
 
-import log
+from spielpendium import log
+from spielpendium.constants import DB_FILE
 
-__all__ = ['SCRIPT_DIRECTORY', 'connect', 'disconnect', 'run_script', 'query']
+__all__ = ['SCRIPT_DIRECTORY', 'connect', 'disconnect', 'run_script', 'query',
+           'database_connection']
 
 SCRIPT_DIRECTORY = (f'{pathlib.Path(__file__).parent.absolute()}'
                     f'{os.sep}scripts{os.sep}')
@@ -19,6 +22,7 @@ def connect(db_file: str) -> bool:
     :return: True if the connection to the database was established,
         False otherwise
     """
+
     db = QtSql.QSqlDatabase.addDatabase('QSQLITE')
     db.setDatabaseName(db_file)
 
@@ -35,10 +39,26 @@ def disconnect():
 
     db = QtSql.QSqlDatabase.database()
     db.close()
-    db.removeDatabase(db.databaseName())
+    QtSql.QSqlDatabase.removeDatabase(db.databaseName())
 
 
 @log.log(log.logger)
+def database_connection(db_file):
+
+    def decorator(func):
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            connect(db_file)
+            ret = func(*args, **kwargs)
+            disconnect()
+
+            return ret
+        return wrapper
+    return decorator
+
+
+@database_connection(DB_FILE)
 def query(command: str, params: List = None) -> Any:
     if params is None:
         params = []
@@ -55,8 +75,9 @@ def query(command: str, params: List = None) -> Any:
     success = q.exec()
 
     if not success:
-        raise IOError(f'Unable to execute the command "{command}"'
-                      f'with the parameters "{params}".')
+        raise IOError(f'Unable to execute the command "{command}" '
+                      f'with the parameters "{params}". '
+                      f'Reason: {q.lastError().text()}.')
 
     ret = []
 
@@ -71,7 +92,7 @@ def query(command: str, params: List = None) -> Any:
     return success
 
 
-@log.log(log.logger)
+@database_connection(DB_FILE)
 def run_script(script_file):
     q = QtSql.QSqlQuery()
 
