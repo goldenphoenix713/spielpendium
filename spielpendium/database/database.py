@@ -1,5 +1,4 @@
 import functools
-import pathlib
 from typing import List, Any
 import os
 
@@ -7,12 +6,10 @@ from PyQt5 import QtSql
 
 from spielpendium import log
 from spielpendium.constants import DB_FILE
+from spielpendium.database.scripts import SQLScripts
 
-__all__ = ['SCRIPT_DIRECTORY', 'connect', 'disconnect', 'run_script', 'query',
-           'database_connection']
-
-SCRIPT_DIRECTORY = (f'{pathlib.Path(__file__).parent.absolute()}'
-                    f'{os.sep}scripts{os.sep}')
+__all__ = ['connect', 'disconnect', 'query', 'query_batch',
+           'database_connection', 'create']
 
 
 def connect(db_file: str) -> bool:
@@ -42,7 +39,6 @@ def disconnect():
     QtSql.QSqlDatabase.removeDatabase(db.databaseName())
 
 
-@log.log(log.logger)
 def database_connection(db_file):
 
     def decorator(func):
@@ -58,6 +54,11 @@ def database_connection(db_file):
     return decorator
 
 
+def create():
+    query_batch(SQLScripts.create_database)
+
+
+@log.log(log.logger)
 @database_connection(DB_FILE)
 def query(command: str, params: List = None) -> Any:
     if params is None:
@@ -79,9 +80,9 @@ def query(command: str, params: List = None) -> Any:
                       f'with the parameters "{params}". '
                       f'Reason: {q.lastError().text()}.')
 
-    ret = []
-
     if q.isSelect():
+        ret = []
+
         log.logger.debug('Getting selected data.')
         while q.next():
             for ii in range(len(params)):
@@ -92,30 +93,28 @@ def query(command: str, params: List = None) -> Any:
     return success
 
 
+@log.log(log.logger)
 @database_connection(DB_FILE)
-def run_script(script_file):
+def query_batch(commands: tuple) -> list:
+    log.logger.debug(f'Number of commands in batch: {len(commands)}')
     q = QtSql.QSqlQuery()
 
-    # Open and read the file as a single buffer
-    log.logger.debug('Reading SQL file.')
-    with open(script_file, 'r') as file:
-        sql_file = file.read()
+    successes = [True for _ in range(len(commands))]
 
-    log.logger.debug('Successfully read SQL file.')
+    for ii, command in enumerate(commands):
+        if command.strip() != '':
+            log.logger.debug(f'Running query {ii+1} of {len(commands)}:\n'
+                             f'{command.strip()}')
 
-    # all SQL commands (split on ';')
-    sql_commands = sql_file.split(';')
-
-    # Execute every command from the input file
-    for command in sql_commands:
-        # This will skip and report errors
-        # For example, if the tables do not yet exist, this will skip over
-        # the DROP TABLE commands
-        command = command.strip()
-
-        if command != '':
-            log.logger.debug(f'Running SQL command:\n    {command}')
             if not q.exec(command):
-                log.logger.exception(f'Command skipped:\n    {command}')
+                successes[ii] = False
+                log.logger.error(f'Command could not be run:\n    {command}. '
+                                 f'Reason:\n    {q.lastError().text()}')
+            else:
+                log.logger.debug('Success.')
 
-    log.logger.debug('Finished running commands.')
+    return successes
+
+
+if __name__ == '__main__':
+    create()

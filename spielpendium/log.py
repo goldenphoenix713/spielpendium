@@ -2,7 +2,6 @@ import logging
 import os
 from pathlib import Path
 import functools
-import inspect
 
 from spielpendium.constants import PROGRAM_NAME
 
@@ -60,8 +59,7 @@ def log(_logger: logging.Logger):
 
     def decorator(func):
         # Get the full path to the function (packages as modules) for debugging
-        s = inspect.stack()
-        func_name = inspect.getmodule(s[1][0]).__name__
+        func_name = func.__name__
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):

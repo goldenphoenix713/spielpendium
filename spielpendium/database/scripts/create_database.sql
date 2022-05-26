@@ -5,9 +5,9 @@ DROP TABLE IF EXISTS Search_Results;
 DROP TABLE IF EXISTS Related_Games;
 DROP TABLE IF EXISTS Recent_Files;
 DROP TABLE IF EXISTS Game_Relationships;
-DROP TABLE IF EXISTS BGG_Lists;
+DROP TABLE IF EXISTS User_Lists;
 DROP TABLE IF EXISTS Authors;
-DROP TABLE IF EXISTS BGG_List_Games;
+DROP TABLE IF EXISTS User_List_Games;
 DROP TABLE IF EXISTS Games_Categories;
 DROP TABLE IF EXISTS Artists;
 DROP TABLE IF EXISTS Ownership_Statuses;
@@ -21,39 +21,39 @@ DROP VIEW IF EXISTS BGG_Games_View;
 
 CREATE TABLE Publishers (
 id INTEGER PRIMARY KEY NOT NULL,
-name TEXT NOT NULL);
+name TEXT NOT NULL UNIQUE);
 
 CREATE TABLE Searches (
 id INTEGER PRIMARY KEY NOT NULL,
-query TEXT NOT NULL,
+query TEXT NOT NULL UNIQUE,
 date_time DATETIME NOT NULL);
 
 CREATE TABLE Recent_Files (
 id INTEGER PRIMARY KEY NOT NULL,
-path TEXT NOT NULL,
+path TEXT NOT NULL UNIQUE,
 date_time DATETIME NOT NULL);
 
 CREATE TABLE Game_Relationships (
 id INTEGER PRIMARY KEY NOT NULL,
 type TEXT NOT NULL UNIQUE);
 
-CREATE TABLE BGG_Lists (
+CREATE TABLE User_Lists (
 id INTEGER PRIMARY KEY NOT NULL,
-username TEXT NOT NULL,
+username TEXT NOT NULL UNIQUE,
 xml TEXT NOT NULL,
 last_refreshed DATETIME NOT NULL);
 
 CREATE TABLE Ownership_Statuses (
 id INTEGER PRIMARY KEY NOT NULL,
-name TEXT NOT NULL);
+name TEXT NOT NULL UNIQUE);
 
 CREATE TABLE People (
 id INTEGER PRIMARY KEY NOT NULL,
-name TEXT NOT NULL);
+name TEXT NOT NULL UNIQUE);
 
 CREATE TABLE Categories (
 id INTEGER PRIMARY KEY NOT NULL,
-name TEXT NOT NULL);
+name TEXT NOT NULL UNIQUE);
 
 CREATE TABLE Games (
 id INTEGER PRIMARY KEY NOT NULL UNIQUE,
@@ -74,6 +74,7 @@ max_play_time INTEGER NOT NULL,
 bgg_rating FLOAT,
 bgg_rank INTEGER,
 complexity FLOAT NOT NULL,
+UNIQUE(name, sub_name, version),
 FOREIGN KEY(publisher_id) REFERENCES Publishers(id));
 
 CREATE TABLE Search_Results (
@@ -98,12 +99,12 @@ id INTEGER PRIMARY KEY NOT NULL,
 person_id INTEGER NOT NULL,
 FOREIGN KEY(person_id) REFERENCES People(id));
 
-CREATE TABLE BGG_List_Games (
+CREATE TABLE User_List_Games (
 id INTEGER PRIMARY KEY NOT NULL,
-bgg_list_id INTEGER NOT NULL,
+user_List_id INTEGER NOT NULL,
 game_id INTEGER NOT NULL,
 ownership_status_id INTEGER NOT NULL,
-FOREIGN KEY(bgg_list_id) REFERENCES BGG_Lists(id),
+FOREIGN KEY(user_List_id) REFERENCES User_Lists(id),
 FOREIGN KEY(game_id) REFERENCES Games(id),
 FOREIGN KEY(ownership_status_id) REFERENCES Ownership_Statuses(id));
 
@@ -155,8 +156,8 @@ CREATE VIEW BGG_Games_View AS
            g.max_play_time,
            g.bgg_rating,
            g.bgg_rank
-    FROM BGG_Lists bggl
-        LEFT JOIN BGG_List_Games bgglg ON bgglg.bgg_list_id = bggl.id
+    FROM User_Lists bggl
+        LEFT JOIN User_List_Games bgglg ON bgglg.user_List_id = bggl.id
         LEFT JOIN Games g ON bgglg.game_id = g.id
         LEFT JOIN Publishers pub ON pub.id = g.publisher_id
         LEFT JOIN Author_Game aug ON aug.game_id = g.id

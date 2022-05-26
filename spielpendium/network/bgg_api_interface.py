@@ -12,6 +12,7 @@ import xmltodict
 from spielpendium import log
 from spielpendium.constants import IMAGE_SIZE
 from spielpendium import database
+from spielpendium.database.scripts import SQLScripts
 
 __all__ = ['search_bgg', 'get_user_game_collection', 'get_game_info',
            'get_images']
@@ -141,7 +142,7 @@ def get_user_game_collection(
 
         info_dict, xml = get_xml_info(collection_url)
 
-        save_user_xml(username, xml, force_update)
+        save_user_xml(username, xml)
 
     return info_dict
 
@@ -158,34 +159,13 @@ def get_database_info(username: str) -> dict:
 
 
 def user_exists(username):
-    command = """
-    SELECT COUNT(1)
-    FROM BGG_Lists
-    WHERE BGG_Lists.username=?;
-    """
-
+    command = SQLScripts.user_exists
     return database.query(command, [username])[0] == 1
 
 
-def save_user_xml(username, xml, update=False):
-    from datetime import datetime
-
-    if update:
-        command = """
-        UPDATE BGG_Lists
-        SET xml=?, last_refreshed=strftime('%Y-%m-%dT%H:%M:%S','now')
-        WHERE username=?;
-        """
-
-        database.query(command, [xml, username])
-    else:
-        command = """
-        INSERT INTO BGG_Lists
-        (username, xml, last_refreshed)
-        VALUES(?, ?, strftime('%Y-%m-%dT%H:%M:%S','now'));
-        """
-
-        database.query(command, [username, xml])
+def save_user_xml(username, xml):
+    command = SQLScripts.save_user_xml
+    database.query(command, [username, xml])
 
 
 def get_game_info(game_ids: Union[int, List[int]],
@@ -256,7 +236,8 @@ if __name__ == '__main__':
     # search_results = search_bgg('Catan')
     # print(dumps(search_results, indent=2))
     #
-    collection = get_user_game_collection('phoenix713', filters={'own': True})
+    collection = get_user_game_collection('phoenix713', filters={'own': True},
+                                          force_update=True)
     print(dumps(collection, indent=2))
 
     # game_details = get_game_info([224125, 255907])
