@@ -54,8 +54,8 @@ def database_connection(db_file):
     return decorator
 
 
-def create():
-    query_batch(SQLScripts.create_database)
+def create() -> Any:
+    return query_batch(SQLScripts.create_database)
 
 
 @log.log(log.logger)
@@ -117,4 +117,5 @@ def query_batch(commands: tuple) -> list:
 
 
 if __name__ == '__main__':
-    create()
+    successes = create()
+    print(successes)

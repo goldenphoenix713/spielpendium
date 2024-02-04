@@ -4,7 +4,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 import multiprocessing as mp
-from typing import Dict, Optional, List, Union
+from typing import Dict, Optional, List, Union, Tuple
 
 from PyQt5 import QtGui, QtCore
 import xmltodict
@@ -52,7 +52,7 @@ COLLECTION_FILTERS = (
 
 
 @log.log(log.logger)
-def get_xml_info(url: str) -> dict:
+def get_xml_info(url: str) -> Tuple[dict, str]:
     """ Pulls xml info from the web and converts it to a dict.
 
     :param url: The URL that will be pulled to get XML data.
@@ -106,7 +106,7 @@ def search_bgg(search_query: str, exact_flag: bool = False) -> dict:
     search_url = (f'{_BGG_API_URL}search?search={search_query}'
                   f'&exact={int(exact_flag)}')
 
-    return get_xml_info(search_url)
+    return get_xml_info(search_url)[0]
 
 
 @log.log(log.logger)
@@ -159,12 +159,12 @@ def get_database_info(username: str) -> dict:
 
 
 def user_exists(username):
-    command = SQLScripts.user_exists
+    command = SQLScripts.user_exists[0]
     return database.query(command, [username])[0] == 1
 
 
 def save_user_xml(username, xml):
-    command = SQLScripts.save_user_xml
+    command = SQLScripts.save_user_xml[0]
     database.query(command, [username, xml])
 
 
@@ -185,7 +185,7 @@ def get_game_info(game_ids: Union[int, List[int]],
     url = _BGG_API_URL + 'boardgame/' + ','.join([str(a) for a in game_ids])
     url += f'?stats=1' if get_stats else ''
 
-    return get_xml_info(url)
+    return get_xml_info(url)[0]
 
 
 @log.log(log.logger)
