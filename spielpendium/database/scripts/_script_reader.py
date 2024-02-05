@@ -25,6 +25,8 @@ class _SQLScriptReader:
             # Separate all SQL commands (split on ';')
             sql_commands = tuple([x for x in sql.split(';')
                                   if x.strip() != ''])
+            if len(sql_commands) == 1:
+                sql_commands = sql_commands[0]
 
             script_name = os.path.splitext(os.path.basename(script_file))[0]
             self._script_dict[script_name] = sql_commands
@@ -35,7 +37,8 @@ class _SQLScriptReader:
 
     def __getattr__(self, item):
         if item in self._script_dict.keys():
-            return self._script_dict[item]
+            script = self._script_dict[item]
+            return script
         elif item in ['all', 'all_scripts']:
             return self._script_dict
         else:
@@ -70,7 +73,7 @@ class _SQLScriptKeys:
 
     def __str__(self):
         keys = [f"'{x}'" for x in self.keys]
-        return f'SQLScriptKeys([{", ".join(keys)}])'
+        return f'SQLScriptKeys({", ".join(keys)})'
 
     def __getitem__(self, item):
         return self.keys[item]

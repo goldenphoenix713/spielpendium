@@ -124,9 +124,8 @@ def get_user_game_collection(
     """
 
     if user_exists(username) and not force_update:
-        info_dict = get_database_info(username)
+        info_dict = get_user_info(username)
     else:
-
         username_safe = urllib.parse.quote(username)
         collection_url = f'{_BGG_API_URL}collection/{username_safe}'
 
@@ -147,11 +146,8 @@ def get_user_game_collection(
     return info_dict
 
 
-def get_database_info(username: str) -> dict:
-    command = """
-    SELECT xml FROM BGG_Lists
-    WHERE username=?
-    """
+def get_user_info(username: str) -> dict:
+    command = SQLScripts.get_user_xml
 
     xml = database.query(command, [username])[0]
 
@@ -159,12 +155,12 @@ def get_database_info(username: str) -> dict:
 
 
 def user_exists(username):
-    command = SQLScripts.user_exists[0]
+    command = SQLScripts.user_exists
     return database.query(command, [username])[0] == 1
 
 
 def save_user_xml(username, xml):
-    command = SQLScripts.save_user_xml[0]
+    command = SQLScripts.save_user_xml
     database.query(command, [username, xml])
 
 
@@ -237,7 +233,7 @@ if __name__ == '__main__':
     # print(dumps(search_results, indent=2))
     #
     collection = get_user_game_collection('phoenix713', filters={'own': True},
-                                          force_update=True)
+                                          force_update=False)
     print(dumps(collection, indent=2))
 
     # game_details = get_game_info([224125, 255907])

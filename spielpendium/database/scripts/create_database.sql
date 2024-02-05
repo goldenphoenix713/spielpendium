@@ -157,8 +157,8 @@ CREATE VIEW BGG_Games_View AS
            g.bgg_rating,
            g.bgg_rank
     FROM User_Lists bggl
-        LEFT JOIN User_List_Games bgglg ON bgglg.user_List_id = bggl.id
-        LEFT JOIN Games g ON bgglg.game_id = g.id
+        LEFT JOIN User_List_Games ugl ON ugl.user_List_id = bggl.id
+        LEFT JOIN Games g ON ugl.game_id = g.id
         LEFT JOIN Publishers pub ON pub.id = g.publisher_id
         LEFT JOIN Author_Game aug ON aug.game_id = g.id
         LEFT JOIN Authors au ON au.id = aug.author_id

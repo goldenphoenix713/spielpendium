@@ -12,18 +12,18 @@ __all__ = ['connect', 'disconnect', 'query', 'query_batch',
            'database_connection', 'create']
 
 
-def connect(db_file: str) -> bool:
+def connect() -> bool:
     """Open the database file connection.
 
-    :param db_file: The filename for the SQLite database.
     :return: True if the connection to the database was established,
         False otherwise
     """
+    db = QtSql.QSqlDatabase.database()
+    if not db.isValid():
+        db = QtSql.QSqlDatabase.addDatabase('QSQLITE')
+        db.setDatabaseName(DB_FILE)
 
-    db = QtSql.QSqlDatabase.addDatabase('QSQLITE')
-    db.setDatabaseName(db_file)
-
-    db_dir = os.path.dirname(db_file)
+    db_dir = os.path.dirname(DB_FILE)
 
     if not os.path.exists(db_dir):
         os.mkdir(db_dir)
@@ -36,22 +36,24 @@ def disconnect():
 
     db = QtSql.QSqlDatabase.database()
     db.close()
-    QtSql.QSqlDatabase.removeDatabase(db.databaseName())
+
+    del db
+
+    QtSql.QSqlDatabase.removeDatabase(
+        QtSql.QSqlDatabase.database().connectionName()
+    )
 
 
-def database_connection(db_file):
+def database_connection(func):
 
-    def decorator(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        connect()
+        ret = func(*args, **kwargs)
+        disconnect()
 
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            connect(db_file)
-            ret = func(*args, **kwargs)
-            disconnect()
-
-            return ret
-        return wrapper
-    return decorator
+        return ret
+    return wrapper
 
 
 def create() -> Any:
@@ -59,7 +61,7 @@ def create() -> Any:
 
 
 @log.log(log.logger)
-@database_connection(DB_FILE)
+@database_connection
 def query(command: str, params: List = None) -> Any:
     if params is None:
         params = []
@@ -89,12 +91,12 @@ def query(command: str, params: List = None) -> Any:
                 ret.append(q.value(ii))
 
         return ret
-
-    return success
+    else:
+        return success
 
 
 @log.log(log.logger)
-@database_connection(DB_FILE)
+@database_connection
 def query_batch(commands: tuple) -> list:
     log.logger.debug(f'Number of commands in batch: {len(commands)}')
     q = QtSql.QSqlQuery()
@@ -117,5 +119,5 @@ def query_batch(commands: tuple) -> list:
 
 
 if __name__ == '__main__':
-    successes = create()
-    print(successes)
+    my_successes = create()
+    print(my_successes)
