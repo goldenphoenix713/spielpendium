@@ -22,7 +22,7 @@ class _SQLScriptReader:
 
             log.logger.debug('Successfully read SQL file.')
 
-            # Separate all SQL commands (split on ';')
+            # Separate all SQL commands by splitting on ';'
             sql_commands = tuple([x for x in sql.split(';')
                                   if x.strip() != ''])
             if len(sql_commands) == 1:
@@ -77,6 +77,9 @@ class _SQLScriptKeys:
 
     def __getitem__(self, item):
         return self.keys[item]
+
+    def __iter__(self):
+        return iter(self.keys)
 
 
 SQLScripts = _SQLScriptReader(pathlib.Path(__file__).parent.absolute())

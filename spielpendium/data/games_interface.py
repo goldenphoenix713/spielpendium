@@ -5,8 +5,8 @@ __all__ = ['import_user_data']
 from typing import Dict, List, Optional, Union
 from operator import itemgetter
 
-from spielpendium.network import get_user_game_collection, get_game_info,\
-    get_images
+from spielpendium.network import (get_user_game_collection, get_game_info,
+                                  get_images)
 
 
 def get_name(ii_game: Dict) -> Union[str, List]:
@@ -125,10 +125,7 @@ def get_related_games(ii_game: Dict) -> Dict:
     :param ii_game: The iith game in the game list.
     :return: The related game(s) of the game.
     """
-    keys_to_look_for = [
-        'boardgameexpansion',
-        'boardgmeaccessory',
-    ]
+    keys_to_look_for = ('boardgameexpansion', 'boardgmeaccessory')
     related_games = {}
     for key in keys_to_look_for:
         if key in ii_game.keys():

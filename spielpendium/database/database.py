@@ -1,11 +1,10 @@
 import functools
 from typing import List, Any
-import os
 
 from PyQt5 import QtSql
 
 from spielpendium import log
-from spielpendium.constants import DB_FILE
+from spielpendium.constants import DB_FILE, DB_DIR
 from spielpendium.database.scripts import SQLScripts
 
 __all__ = ['connect', 'disconnect', 'query', 'query_batch',
@@ -21,12 +20,9 @@ def connect() -> bool:
     db = QtSql.QSqlDatabase.database()
     if not db.isValid():
         db = QtSql.QSqlDatabase.addDatabase('QSQLITE')
-        db.setDatabaseName(DB_FILE)
+        db.setDatabaseName(str(DB_FILE))
 
-    db_dir = os.path.dirname(DB_FILE)
-
-    if not os.path.exists(db_dir):
-        os.mkdir(db_dir)
+    DB_DIR.mkdir(exist_ok=True)
 
     return db.open()
 

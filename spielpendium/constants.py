@@ -1,11 +1,13 @@
-import os
-import pathlib
+from pathlib import Path
 
-IMAGE_SIZE = 256
+IMAGE_SIZE = 64
 
-ROOT_DIR = pathlib.Path(__file__).parents[1].absolute()
+ROOT_DIR = Path(__file__).parents[1].absolute()
 
 PROGRAM_NAME = ROOT_DIR.name
 
-LOG_FILE = f'{ROOT_DIR}{os.sep}log{os.sep}{PROGRAM_NAME}.log'
-DB_FILE = f'{ROOT_DIR}{os.sep}db{os.sep}{PROGRAM_NAME}.sqlite'
+LOG_DIR = ROOT_DIR / 'log'
+DB_DIR = ROOT_DIR / 'db'
+
+LOG_FILE = LOG_DIR / f'{PROGRAM_NAME}.log'
+DB_FILE = DB_DIR / f'{PROGRAM_NAME}.sqlite'

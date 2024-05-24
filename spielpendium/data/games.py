@@ -5,19 +5,17 @@ information when running Spielpendium. It contains methods that call the
 save and load splz functions and allows data to be read in from the database.
 """
 
-__all__ = ['Games']
-
+from __future__ import annotations
 from typing import Union, List, Any, Dict, Tuple
 
 from PyQt5 import QtCore
 import pandas as pd
 
-try:
-    from spielpendium.data.file_io import load_splz, save_splz
-    from spielpendium.data.games_interface import import_user_data
-except ModuleNotFoundError:
-    from file_io import load_splz, save_splz
-    from games_interface import import_user_data
+from spielpendium.constants import IMAGE_SIZE
+from spielpendium.data.file_io import load_splz, save_splz
+from spielpendium.data.games_interface import import_user_data
+
+__all__ = ['Games']
 
 
 class Games(QtCore.QAbstractTableModel):
@@ -87,7 +85,7 @@ class Games(QtCore.QAbstractTableModel):
                 if isinstance(index[0], str) and isinstance(index[1], int):
                     return self._games.loc[index[0]].iloc[index[1]]
                 if isinstance(index[0], str) and isinstance(index[1], str):
-                    return self.games[index[1]].loc[index[0]]
+                    return self._games[index[1]].loc[index[0]]
 
                 if isinstance(index[0], slice) \
                         and not isinstance(index[1], slice):
@@ -111,7 +109,7 @@ class Games(QtCore.QAbstractTableModel):
         raise IndexError('Indices must be a string, an integer, '
                          'a slice, or a 2-tuple.')
 
-    def __eq__(self, other: 'Games') -> bool:
+    def __eq__(self, other: Games) -> bool:
         """Checks for equality between two Games objects.
 
         :param other: Another Games instance.
@@ -202,13 +200,13 @@ class Games(QtCore.QAbstractTableModel):
     def flags(self, index: QtCore.QModelIndex = QtCore.QModelIndex()) \
             -> QtCore.Qt.ItemFlags:
         """ Override method required by QAbstractTableModel subclasses.
-        Allows items to be editable.
+            Allows items to be editable.
 
-        :param index: The index for the model item.
+        :param index: The index for the model item
         :return: The Qt flags.
         """
 
-        return super(Games, self).flags(index) | QtCore.Qt.ItemIsEditable
+        return super(Games, self).flags(index)  # | QtCore.Qt.ItemIsEditable
 
     def data(self, index: QtCore.QModelIndex, role=None) \
             -> Union[int, float, str, bytes, None]:
@@ -229,7 +227,11 @@ class Games(QtCore.QAbstractTableModel):
             return 'BGG ID: ' + str(self._games.iloc[row, self._ID_COL])
         if role == QtCore.Qt.DecorationRole \
                 and column == self._IMAGE_COL - self._NUM_HIDDEN_COLS:
-            return self._games.iloc[row, self._IMAGE_COL]
+            return self._games.iloc[row, self._IMAGE_COL].scaled(
+                IMAGE_SIZE,
+                IMAGE_SIZE,
+                QtCore.Qt.KeepAspectRatio
+            )
         return None
 
     def index(self, row: int, column: int,
@@ -285,7 +287,7 @@ class Games(QtCore.QAbstractTableModel):
 
         :param index: The index in the model to insert data.
         :param value: The data to be inserted.
-        :param role: THe Qt role of the data being inserted.
+        :param role: The Qt role of the data being inserted.
         :return: True if the data was successfully added, False otherwise.
         """
         if role == QtCore.Qt.EditRole:
@@ -315,10 +317,12 @@ class Games(QtCore.QAbstractTableModel):
         if not all([x in self.HEADER for x in values[0].keys()]):
             return False
 
+        values = pd.DataFrame(values)
+
         self.beginInsertRows(QtCore.QModelIndex(),
                              len(self._games),
                              len(self._games) + len(values) - 1)
-        self._games = self._games.append(values, ignore_index=True)
+        self._games = pd.concat([self._games, values], ignore_index=True)
         self.endInsertRows()
         return True
 
@@ -338,7 +342,7 @@ class Games(QtCore.QAbstractTableModel):
         """
         try:
             new_games, new_metadata = load_splz(filename)
-        except(FileNotFoundError, IOError):
+        except (FileNotFoundError, IOError):
             return False
 
         self.beginInsertRows(QtCore.QModelIndex(),
@@ -398,9 +402,9 @@ if __name__ == '__main__':
     view.show()
     games.append(test_data)
     games.setData('name', 'Eduardo Ruiz', QtCore.Qt.UserRole)
-    games.save('test.splz')
-    games2 = Games()
-    games2.load('test.splz')
-    print(games2)
-    print(games2['Image'])
+    # games.save('test.splz')
+    # games2 = Games()
+    # games2.load('test.splz')
+    # print(games2)
+    # print(games2['Image'])
     app.exec()

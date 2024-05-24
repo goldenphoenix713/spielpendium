@@ -1,16 +1,14 @@
 import logging
 import os
-from pathlib import Path
 import functools
 
-from spielpendium.constants import PROGRAM_NAME
+from spielpendium.constants import (PROGRAM_NAME, LOG_DIR as _LOG_DIR,
+                                    LOG_FILE as _LOG_FILE)
 
 __all__ = ['log', 'logger']
 
 # Define some constants
 _LOG_FORMAT = '[%(asctime)s %(levelname)s] %(message)s'
-_LOG_DIR = f'{Path(__file__).parents[1].absolute()}{os.sep}log{os.sep}'
-_LOG_FILE = f'{_LOG_DIR}{PROGRAM_NAME.lower()}.log'
 
 
 def _create_logger() -> logging.Logger:

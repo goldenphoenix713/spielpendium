@@ -2,7 +2,8 @@ import unittest
 
 from PyQt5 import QtCore, QtGui
 
-from spielpendium.data import Games, IMAGE_SIZE
+from spielpendium.data import Games
+from spielpendium.constants import IMAGE_SIZE
 
 
 class TestSaveLoad(unittest.TestCase):

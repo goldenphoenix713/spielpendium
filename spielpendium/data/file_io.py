@@ -82,11 +82,11 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
                 buffer = QtCore.QBuffer()
                 buffer.open(QtCore.QBuffer.ReadWrite)
                 image.save(buffer, "PNG")
+                # noinspection PyTypeChecker
                 image_bytes = BytesIO(buffer.data())
                 file.writestr(
-                    data_copy.loc[
-                        data_copy['BGG Id'] == bgg_id
-                        ]['Image'].values[0],
+                    data_copy.loc[data_copy['BGG Id'] == bgg_id]['Image']
+                    .values[0],
                     image_bytes.getvalue()
                 )
                 buffer.close()
@@ -122,7 +122,7 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
     if not os.path.exists(filepath):
         raise FileNotFoundError(f'Unable to find the file {filename}.')
 
-    # Check that the file is a valid zipfile or that is has .splz extension
+    # Check that the file is a valid zipfile or that it has .splz extension
     if not zipfile.is_zipfile(filepath) or not filename.endswith('.splz'):
         raise IOError(f'Unable to read {filename}. It does not '
                       'seem to be a valid .splz file. or may '
@@ -147,7 +147,7 @@ def load_splz(filepath: str) -> Tuple[pd.DataFrame, Dict]:
 
             # Loop through the images and add them to the DataFrame
             for index, path in zip(data.index, data['Image']):
-                image = QtGui.QImage()
+                image = QtGui.QPixmap()
                 if not image.loadFromData(file.read(path)):
                     # If the image cannot be found, raise an error.
                     raise FileNotFoundError(

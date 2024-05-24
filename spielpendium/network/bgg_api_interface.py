@@ -98,7 +98,7 @@ def search_bgg(search_query: str, exact_flag: bool = False) -> dict:
     """ Assembles the search URL and returns data from the BoardGameGeek API.
 
     :param search_query: The query to search for.
-    :param exact_flag: A flag that tells the BGG APT whether to only return
+    :param exact_flag: A flag that tells the BGG API whether to only return
            exact matches or not.
     :return: Dictionary with the search results
     """
@@ -185,7 +185,7 @@ def get_game_info(game_ids: Union[int, List[int]],
 
 
 @log.log(log.logger)
-def get_images(image_urls: Union[str, List[str]]) -> List[QtGui.QImage]:
+def get_images(image_urls: Union[str, List[str]]) -> List[QtGui.QPixmap]:
     """ Retrieves images from a list of URLs.
 
     :param image_urls: The image URLs.
@@ -202,9 +202,9 @@ def get_images(image_urls: Union[str, List[str]]) -> List[QtGui.QImage]:
     images_as_bytes = pool.map(get_single_image, image_urls)
 
     # Convert the images to QImages
-    images_qt = [QtGui.QImage.fromData(im).scaled(
+    images_qt = [QtGui.QPixmap.fromImage(QtGui.QImage.fromData(im).scaled(
         IMAGE_SIZE, IMAGE_SIZE, QtCore.Qt.KeepAspectRatio
-    ) for im in images_as_bytes]
+    )) for im in images_as_bytes]
 
     return images_qt
 
@@ -225,14 +225,15 @@ def get_single_image(image_url: str) -> bytes:
 if __name__ == '__main__':
     from json import dumps
 
-    # test_url = 'https://www.boardgamegeek.com/xmlapi/boardgame/35424'
-    # info = get_xml_info(test_url)
-    # print(dumps(info, indent=2))
+    test_url = 'https://www.boardgamegeek.com/xmlapi/boardgame/35424'
+    info = get_xml_info(test_url)
+    print(dumps(info, indent=2))
     #
     # search_results = search_bgg('Catan')
     # print(dumps(search_results, indent=2))
     #
-    collection = get_user_game_collection('phoenix713', filters={'own': True},
+    collection = get_user_game_collection('phoenix713',
+                                          filters={'own': True},
                                           force_update=False)
     print(dumps(collection, indent=2))
 
