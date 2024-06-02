@@ -7,6 +7,8 @@ from spielpendium import log
 from spielpendium.constants import DB_FILE, DB_DIR
 from spielpendium.database.scripts import SQLScripts
 
+__author__ = 'Eduardo Ruiz'
+
 __all__ = ['connect', 'disconnect', 'query', 'query_batch',
            'database_connection', 'create']
 

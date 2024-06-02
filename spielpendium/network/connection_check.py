@@ -5,6 +5,8 @@ import enum
 
 from spielpendium.network import search_bgg
 
+__author__ = 'Eduardo Ruiz'
+
 __all__ = ['ConnectionStatus', 'get_connection_status']
 
 _BGG_URL = "https://www.boardgamegeek.com/"

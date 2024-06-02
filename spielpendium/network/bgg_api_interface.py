@@ -14,6 +14,8 @@ from spielpendium.constants import IMAGE_SIZE
 from spielpendium import database
 from spielpendium.database.scripts import SQLScripts
 
+__author__ = 'Eduardo Ruiz'
+
 __all__ = ['search_bgg', 'get_user_game_collection', 'get_game_info',
            'get_images']
 

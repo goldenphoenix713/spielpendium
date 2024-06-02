@@ -5,6 +5,8 @@ from PyQt5 import QtCore, QtGui
 from spielpendium.data import Games
 from spielpendium.constants import IMAGE_SIZE
 
+__author__ = 'Eduardo Ruiz'
+
 
 class TestSaveLoad(unittest.TestCase):
     

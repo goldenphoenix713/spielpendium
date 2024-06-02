@@ -5,6 +5,8 @@ import functools
 from spielpendium.constants import (PROGRAM_NAME, LOG_DIR as _LOG_DIR,
                                     LOG_FILE as _LOG_FILE)
 
+__author__ = 'Eduardo Ruiz'
+
 __all__ = ['log', 'logger']
 
 # Define some constants

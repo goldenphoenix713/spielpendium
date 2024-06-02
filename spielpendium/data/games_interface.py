@@ -1,12 +1,15 @@
 """ The Spielpendium side of the Spielpendium-BGG interface."""
 
-__all__ = ['import_user_data']
 
 from typing import Dict, List, Optional, Union
 from operator import itemgetter
 
 from spielpendium.network import (get_user_game_collection, get_game_info,
                                   get_images)
+
+__author__ = 'Eduardo Ruiz'
+
+__all__ = ['import_user_data']
 
 
 def get_name(ii_game: Dict) -> Union[str, List]:

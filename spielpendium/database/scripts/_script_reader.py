@@ -1,8 +1,11 @@
+""" Class that reads and holds sql scripts."""
 import glob
 import os
 import pathlib
 
 from spielpendium import log
+
+__author__ = 'Eduardo Ruiz'
 
 __all__ = ['SQLScripts']
 

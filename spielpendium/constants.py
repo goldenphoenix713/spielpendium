@@ -1,5 +1,7 @@
 from pathlib import Path
 
+__author__ = 'Eduardo Ruiz'
+
 IMAGE_SIZE = 64
 
 ROOT_DIR = Path(__file__).parents[1].absolute()

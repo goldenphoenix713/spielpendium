@@ -2,6 +2,8 @@ import unittest
 from spielpendium.network import search_bgg, get_connection_status, \
     ConnectionStatus
 
+__author__ = 'Eduardo Ruiz'
+
 
 class TestNetwork(unittest.TestCase):
 

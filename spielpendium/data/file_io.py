@@ -2,9 +2,6 @@
 
 Functions that save and load Spielpendium save files (.splz)
 """
-
-__all__ = ['save_splz', 'load_splz', 'IMAGE_SIZE']
-
 import datetime
 import os
 import zipfile
@@ -18,7 +15,12 @@ from PyQt5 import QtGui, QtCore
 from spielpendium import log
 from spielpendium.constants import IMAGE_SIZE
 
-_SPLZ_VERSION = '1.0'
+__splz_version_tuple__ = (0, 0, 1)
+__splz_version__ = '.'.join([f'{x}' for x in __splz_version_tuple__])
+
+__author__ = 'Eduardo Ruiz'
+
+__all__ = ['save_splz', 'load_splz', 'IMAGE_SIZE']
 
 
 @log.log(log.logger)
@@ -55,7 +57,7 @@ def save_splz(data: pd.DataFrame, metadata: Dict, filename: str) -> bool:
     # Add some additional metadata
     metadata_copy = metadata.copy()
     metadata_copy.update(
-        {'version': _SPLZ_VERSION,
+        {'version': __splz_version__,
          'creation_date': datetime.datetime.utcnow().isoformat()+'Z'}
     )
 

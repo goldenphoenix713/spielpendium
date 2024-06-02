@@ -15,6 +15,8 @@ from spielpendium.constants import IMAGE_SIZE
 from spielpendium.data.file_io import load_splz, save_splz
 from spielpendium.data.games_interface import import_user_data
 
+__author__ = 'Eduardo Ruiz'
+
 __all__ = ['Games']
 
 
