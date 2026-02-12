@@ -1,0 +1,117 @@
+[project]
+name = "spielpendium"
+version = "0.1.0"
+description = "A tool to organize games and export to document."
+authors = [
+    { name = "Eduardo Ruiz", email = "eduardo.j.ruiz@gmail.com" }
+]
+maintainers = [
+    { name = "Eduardo Ruiz", email = "eduardo.j.ruiz@gmail.com" }
+]
+license = "GPL-3.0-or-later"
+license-files = ["LICEN[CS]E*", "vendored/licenses/*.txt", "AUTHORS.md"]
+readme = "README.md"
+keywords = ["board games", "boardgames", "Board Game Geek", "BGG", "Spielpendium"]
+requires-python = "==3.11.*"
+dependencies = [
+    "bgg-api>=1.1.16",
+    "dash>=4.0.0",
+    "dash-iconify>=0.1.2",
+    "dash-mantine-components>=2.5.1",
+    "dotenv>=0.9.9",
+    "pandas>=3.0.0",
+    "python-dotenv>=1.2.1",
+    "requests>=2.32.5",
+    "xmltodict>=1.0.2",
+]
+
+reportMissingImports = true
+reportMissingTypeStubs = false
+
+[dependency-groups]
+dev = [
+    "pandas-stubs>=3.0.0.260204",
+    "scipy-stubs>=1.17.0.2",
+    "types-openpyxl>=3.1.5.20250919",
+    "types-python-dateutil>=2.9.0.20260124",
+    "types-requests>=2.32.4.20260107",
+    "types-xlrd>=2.0.0.20251020",
+    "mypy>=1.13.0",
+    "ruff>=0.15.0",
+    "pytest>=8.0.0",
+    "types-xmltodict>=1.0.1.20260113",
+]
+
+[tool.ruff]
+# Configure Ruff globally
+target-version = "py311"
+line-length = 79
+fix = true
+indent-width = 4
+
+
+[tool.ruff.lint]
+# Enable a wide range of linting rules for strict checking
+select = [
+    "E", # pycodestyle errors
+    "W", # pycodestyle warnings
+    "F", # pyflakes
+    "I", # isort
+    "N", # pep8-naming
+    "UP", # pyupgrade
+    "B", # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking (helps with type hints)
+    "A", # flake8-builtins
+    "DJ", # flake8-django (if using Django, otherwise omit)
+    # Add more rule codes as needed for strictness
+]
+ignore = [
+    # E501 is typically ignored if using a formatter that handles line length
+    "E501",
+]
+future-annotations = true
+
+[tool.ruff.format]
+# Configure Ruff formatter (replaces black, isort)
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+preview = true
+
+[tool.ruff.lint.isort]
+# Ruff handles import sorting, configure as needed
+force-single-line = false
+order-by-type = true
+
+[tool.mypy]
+# Enable strict mypy settings
+python_version = "3.11"
+# Global options:
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+# strict mode equivalent flags:
+strict = true
+# Additional strict flags not covered by `strict = true`:
+warn_unreachable = true
+warn_redundant_casts = true
+
+# Dash imports may cause mypy errors because they lack type hints (stub files)
+# You may need to ignore missing imports for specific libraries:
+[[tool.mypy.overrides]]
+module = [
+    "dash.*",
+    "dash-mantine-components.*",
+    "dash-iconify.*",
+    "plotly.*",
+    "pandas.*", # Pandas also often needs this
+]
+ignore_missing_imports = true
+
+
+[tool.ruff.lint.flake8-annotations]
+mypy-init-return = true
