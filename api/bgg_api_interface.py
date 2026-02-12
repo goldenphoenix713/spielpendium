@@ -7,14 +7,13 @@ import urllib.parse
 import requests
 import xmltodict
 
-import log
 from config import (
     BGG_API_TOKEN,
     BGG_API_URL,
     MAX_API_CHECKS,
     TIME_BETWEEN_API_CHECKS,
 )
-from util import database
+from util import database, log
 from util.database.scripts import SQLScripts
 
 __author__ = "Eduardo Ruiz"

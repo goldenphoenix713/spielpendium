@@ -7,7 +7,7 @@ import os
 import pathlib
 from typing import TYPE_CHECKING, Any
 
-import log
+from util import log
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator
