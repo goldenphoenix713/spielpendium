@@ -1,14 +1,13 @@
 import unittest
 
-from src.network import search_bgg, get_connection_status, ConnectionStatus
+from api import ConnectionStatus, get_connection_status, search_bgg
 
 __author__ = "Eduardo Ruiz"
 
 
 class TestNetwork(unittest.TestCase):
-
     def __init__(self, *args, **kwargs):
-        super(TestNetwork, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.search_term = "Catan"
 
     def test_search(self):

@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass
 
 import pandas as pd
 
-# from spielpendium.data.games_interface import import_user_data
+# from data.games_interface import import_user_data
 
 __author__ = "Eduardo Ruiz"
 
@@ -46,9 +46,9 @@ class Game:
     def to_series(self) -> pd.Series:
         return pd.Series(asdict(self))
 
-    @classmethod
-    def from_bgg(cls, name: str) -> Game:
-        pass
+    # @classmethoduv
+    # def from_bgg(cls, name: str) -> Game:
+    #     pass
 
 
 class Games(list):  # type: ignore[type-arg]

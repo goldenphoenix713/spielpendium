@@ -3,6 +3,7 @@
 import concurrent.futures
 import time
 import urllib.parse
+from typing import Any
 
 import requests
 import xmltodict
@@ -175,7 +176,8 @@ def user_exists(username: str) -> bool:
     command = SQLScripts.user_exists
     with database.SqliteDB() as db:
         db.execute(command, [username])
-        return db.fetchone()[0] == 1
+        ret: bool = db.fetchone()[0] == 1
+        return ret
 
 
 def save_user_xml(username: str, xml: str):
@@ -187,7 +189,7 @@ def save_user_xml(username: str, xml: str):
 def get_game_info(
     game_ids: int | list[int],
     get_stats: bool = False,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     """Gets details for a game with a certain game id.
 
     :param game_ids: The BGG game id(s) to get information for.
