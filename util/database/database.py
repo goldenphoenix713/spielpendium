@@ -36,7 +36,7 @@ class SqliteDB:
             traceback.print_exc()
             raise ex
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self.connection is None or self.cursor is None:
             self.connection = None
             self.cursor = None
