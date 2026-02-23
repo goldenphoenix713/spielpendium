@@ -19,9 +19,11 @@ dependencies = [
     "dash-iconify>=0.1.2",
     "dash-mantine-components>=2.5.1",
     "dotenv>=0.9.9",
+    "lxml>=6.0.2",
     "pandas>=3.0.0",
     "python-dotenv>=1.2.1",
     "requests>=2.32.5",
+    "sqlalchemy>=2.0.46",
     "xmltodict>=1.0.2",
 ]
 
@@ -65,7 +67,6 @@ select = [
     "SIM", # flake8-simplify
     "TCH", # flake8-type-checking (helps with type hints)
     "A", # flake8-builtins
-    "DJ", # flake8-django (if using Django, otherwise omit)
     # Add more rule codes as needed for strictness
 ]
 ignore = [
