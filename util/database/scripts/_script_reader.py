@@ -2,16 +2,7 @@
 
 from __future__ import annotations
 
-import glob
-import os
-import pathlib
-from typing import TYPE_CHECKING, Any
 from create_database import create_database
-
-from util import log
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
 
 __author__ = "Eduardo Ruiz"
 
