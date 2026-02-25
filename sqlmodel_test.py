@@ -180,7 +180,7 @@ class UserSettings(SQLModel, table=True):
     value: str
 
 
-sqlite_file_name = "database.db"
+sqlite_file_name = "database.sqlite"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 engine = create_engine(sqlite_url, echo=True)
