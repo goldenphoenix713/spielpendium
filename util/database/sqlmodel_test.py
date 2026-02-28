@@ -1,46 +1,84 @@
+import os  # Added import for os
 from datetime import datetime  # noqa: TC003
-from uuid import UUID, uuid4  # noqa: TC003
+from uuid import uuid4  # noqa: TC003
 
+from sqlalchemy.types import BINARY
 from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
+
+import config
+
+
+# Define a custom Field for UUIDs to simplify
+# We create a function to generate a Field with BLOB(16)
+def BinaryUUIDField(**kwargs):  # noqa: N802
+    return Field(  # type: ignore
+        default_factory=lambda: uuid4().bytes,
+        sa_type=BINARY(16),
+        **kwargs,
+    )
+
 
 # --- LINK MODELS ---
 
 
 class GameSearchLink(SQLModel, table=True):
-    game_id: UUID = Field(foreign_key="game.id", primary_key=True, repr=False)
-    search_id: UUID = Field(
+    game_id: bytes = BinaryUUIDField(
+        foreign_key="game.id", primary_key=True, repr=False
+    )
+    search_id: bytes = BinaryUUIDField(
         foreign_key="search.id", primary_key=True, repr=False
     )
 
 
 class RelatedGame(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True, repr=False)
-    source_game_id: UUID = Field(foreign_key="game.id", repr=False)
-    target_game_id: UUID = Field(foreign_key="game.id", repr=False)
-    relationship_type: str
+    """
+    Self-referential link for games.
+    E.g., Game A is an expansion of Game B.
+    """
+
+    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
+    source_game_id: bytes = BinaryUUIDField(foreign_key="game.id", repr=False)
+    target_game_id: bytes = BinaryUUIDField(foreign_key="game.id", repr=False)
+    relationship_type_id: bytes = BinaryUUIDField(
+        foreign_key="gamerelationship.id", repr=False
+    )
+    relationship_type: "GameRelationship" = Relationship(  # noqa:UP037
+        back_populates="related_games_link"
+    )
 
 
 class GameCategoryLink(SQLModel, table=True):
-    category_id: UUID = Field(
+    category_id: bytes = BinaryUUIDField(
         foreign_key="category.id", primary_key=True, repr=False
     )
-    game_id: UUID = Field(foreign_key="game.id", primary_key=True, repr=False)
+    game_id: bytes = BinaryUUIDField(
+        foreign_key="game.id", primary_key=True, repr=False
+    )
 
 
 class PersonGameLink(SQLModel, table=True):
-    person_id: UUID = Field(
+    person_id: bytes = BinaryUUIDField(
         foreign_key="person.id", primary_key=True, repr=False
     )
-    game_id: UUID = Field(foreign_key="game.id", primary_key=True, repr=False)
-    role: str = Field(primary_key=True)
+    game_id: bytes = BinaryUUIDField(
+        foreign_key="game.id", primary_key=True, repr=False
+    )
+    role_id: bytes = BinaryUUIDField(
+        foreign_key="personrole.id", primary_key=True, repr=False
+    )
+    person_role: "PersonRole" = Relationship(  # noqa:UP037
+        back_populates="person_game_links"
+    )
 
 
 class CollectionItem(SQLModel, table=True):
-    collection_id: UUID = Field(
+    collection_id: bytes = BinaryUUIDField(
         foreign_key="collection.id", primary_key=True, repr=False
     )
-    game_id: UUID = Field(foreign_key="game.id", primary_key=True, repr=False)
-    ownership_status_id: UUID = Field(
+    game_id: bytes = BinaryUUIDField(
+        foreign_key="game.id", primary_key=True, repr=False
+    )
+    ownership_status_id: bytes = BinaryUUIDField(
         foreign_key="ownershipstatus.id", repr=False
     )
     collection: "Collection" = Relationship(back_populates="items")  # noqa:UP037
@@ -51,24 +89,26 @@ class CollectionItem(SQLModel, table=True):
 
 
 class PublisherGameLink(SQLModel, table=True):
-    publisher_id: UUID = Field(
+    publisher_id: bytes = BinaryUUIDField(
         foreign_key="publisher.id", primary_key=True, repr=False
     )
-    game_id: UUID = Field(foreign_key="game.id", primary_key=True, repr=False)
+    game_id: bytes = BinaryUUIDField(
+        foreign_key="game.id", primary_key=True, repr=False
+    )
 
 
 # --- MAIN MODELS ---
 
 
 class Collection(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True, repr=False)
+    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
     username: str
     name: str
     items: list[CollectionItem] = Relationship(back_populates="collection")
 
 
 class Publisher(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True, repr=False)
+    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
     name: str
     games: list["Game"] = Relationship(  # noqa:UP037
         back_populates="publishers", link_model=PublisherGameLink
@@ -76,7 +116,7 @@ class Publisher(SQLModel, table=True):
 
 
 class Search(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True, repr=False)
+    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
     query: str
     date_time: datetime
     games: list["Game"] = Relationship(  # noqa:UP037
@@ -84,8 +124,16 @@ class Search(SQLModel, table=True):
     )
 
 
+class GameRelationship(SQLModel, table=True):
+    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
+    type: str  # e.g., "expansion", "reimplementation", "accessory"
+    related_games_link: list[RelatedGame] = Relationship(
+        back_populates="relationship_type"
+    )
+
+
 class OwnershipStatus(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True, repr=False)
+    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
     name: str
     collection_items: list[CollectionItem] = Relationship(
         back_populates="ownership_status"
@@ -93,14 +141,14 @@ class OwnershipStatus(SQLModel, table=True):
 
 
 class Person(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True, repr=False)
+    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
     name: str
     games_illustrated: list["Game"] = Relationship(  # noqa:UP037
         back_populates="artists",
         link_model=PersonGameLink,
         sa_relationship_kwargs={
             "primaryjoin": "Person.id==PersonGameLink.person_id",
-            "secondaryjoin": "and_(Game.id==PersonGameLink.game_id, PersonGameLink.role=='artist')",
+            "secondaryjoin": "and_(Game.id==PersonGameLink.game_id, PersonGameLink.role_id==select(PersonRole.id).where(PersonRole.role=='artist').scalar_subquery())",
             "overlaps": "games_authored",
         },
     )
@@ -109,14 +157,22 @@ class Person(SQLModel, table=True):
         link_model=PersonGameLink,
         sa_relationship_kwargs={
             "primaryjoin": "Person.id==PersonGameLink.person_id",
-            "secondaryjoin": "and_(Game.id==PersonGameLink.game_id, PersonGameLink.role=='author')",
+            "secondaryjoin": "and_(Game.id==PersonGameLink.game_id, PersonGameLink.role_id==select(PersonRole.id).where(PersonRole.role=='author').scalar_subquery())",
             "overlaps": "games_illustrated",
         },
     )
 
 
+class PersonRole(SQLModel, table=True):
+    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
+    role: str
+    person_game_links: list[PersonGameLink] = Relationship(
+        back_populates="person_role"
+    )
+
+
 class Category(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True, repr=False)
+    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
     name: str
     games: list["Game"] = Relationship(  # noqa:UP037
         back_populates="categories", link_model=GameCategoryLink
@@ -124,7 +180,7 @@ class Category(SQLModel, table=True):
 
 
 class Game(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True, repr=False)
+    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
     name: str
     sub_name: str | None = None
     version: float
@@ -140,18 +196,19 @@ class Game(SQLModel, table=True):
     bgg_rating: float | None = Field(repr=False)
     bgg_rank: int | None = Field(repr=False)
     complexity: float = Field(repr=False)
-
     publishers: list[Publisher] = Relationship(
         back_populates="games", link_model=PublisherGameLink
     )
     searches: list[Search] = Relationship(
         back_populates="games", link_model=GameSearchLink
     )
+    # Self-referential relationships
     related_to: list["Game"] = Relationship(  # noqa:UP037
         link_model=RelatedGame,
         sa_relationship_kwargs={
             "primaryjoin": "Game.id==RelatedGame.source_game_id",
             "secondaryjoin": "Game.id==RelatedGame.target_game_id",
+            "overlaps": "related_from",
         },
     )
     related_from: list["Game"] = Relationship(  # noqa:UP037
@@ -159,6 +216,7 @@ class Game(SQLModel, table=True):
         sa_relationship_kwargs={
             "primaryjoin": "Game.id==RelatedGame.target_game_id",
             "secondaryjoin": "Game.id==RelatedGame.source_game_id",
+            "overlaps": "related_to",
         },
     )
     categories: list[Category] = Relationship(
@@ -169,7 +227,8 @@ class Game(SQLModel, table=True):
         link_model=PersonGameLink,
         sa_relationship_kwargs={
             "primaryjoin": "Game.id==PersonGameLink.game_id",
-            "secondaryjoin": "and_(Person.id==PersonGameLink.person_id, PersonGameLink.role=='artist')",
+            "secondaryjoin": "and_(Person.id==PersonGameLink.person_id, PersonGameLink.role_id==select(PersonRole.id).where(PersonRole.role=='artist').scalar_subquery())",
+            "overlaps": "authors,games_authored",
         },
     )
     authors: list[Person] = Relationship(
@@ -177,7 +236,8 @@ class Game(SQLModel, table=True):
         link_model=PersonGameLink,
         sa_relationship_kwargs={
             "primaryjoin": "Game.id==PersonGameLink.game_id",
-            "secondaryjoin": "and_(Person.id==PersonGameLink.person_id, PersonGameLink.role=='author')",
+            "secondaryjoin": "and_(Person.id==PersonGameLink.person_id, PersonGameLink.role_id==select(PersonRole.id).where(PersonRole.role=='author').scalar_subquery())",
+            "overlaps": "artists,games_illustrated",
         },
     )
     collection_items: list[CollectionItem] = Relationship(
@@ -186,32 +246,47 @@ class Game(SQLModel, table=True):
 
 
 class UserSettings(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True, repr=False)
+    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
     keyword: str
     value: str
 
 
-sqlite_file_name = "../../database.sqlite"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
-engine = create_engine(sqlite_url, echo=False)
+# Module-level engine creation
+engine = create_engine(f"sqlite:///{config.DB_FILE}", echo=False)
 
 
 def create_db_and_tables():
-    SQLModel.metadata.create_all(engine)
+    """Creates database tables if they don't exist, and optionally wipes DB."""
+    if config.DEBUG and os.path.exists(config.DB_FILE):
+        os.remove(config.DB_FILE)
+        SQLModel.metadata.create_all(engine)  # Create tables after wiping
+    elif not config.DB_FILE.exists():
+        SQLModel.metadata.create_all(engine)
 
 
 if __name__ == "__main__":
-    import os
-
-    if os.path.exists(sqlite_file_name):
-        os.remove(sqlite_file_name)
     create_db_and_tables()
-    with Session(engine) as session:
+
+    with Session(engine) as session:  # Use the module-level engine
+        # Add new roles and relationships first
+        author_role = PersonRole(role="author")
+        artist_role = PersonRole(role="artist")
+        expansion_relationship = GameRelationship(type="expansion")
+
+        session.add_all([author_role, artist_role, expansion_relationship])
+        session.commit()
+
+        session.refresh(author_role)
+        session.refresh(artist_role)
+        session.refresh(expansion_relationship)
+
         owned = OwnershipStatus(name="owned")
         category = Category(name="fun")
         publisher = Publisher(name="publisher")
         author = Person(name="author")
         artist = Person(name="artist")
+
+        # Create game
         game = Game(
             name="Catan",
             version=3.0,
@@ -227,15 +302,25 @@ if __name__ == "__main__":
             bgg_rating=7.3,
             bgg_rank=105,
             complexity=2.1,
-            publishers=[publisher],
-            categories=[category],
         )
-        auth_link = PersonGameLink(
-            person_id=author.id, game_id=game.id, role="author"
+
+        # Manually create links for publishers and categories
+        publisher_link = PublisherGameLink(
+            publisher_id=publisher.id, game_id=game.id
         )
-        art_link = PersonGameLink(
-            person_id=artist.id, game_id=game.id, role="artist"
+        category_link = GameCategoryLink(
+            category_id=category.id, game_id=game.id
         )
+
+        # Manually create links for roles
+        author_link = PersonGameLink(
+            person_id=author.id, game_id=game.id, role_id=author_role.id
+        )
+        artist_link = PersonGameLink(
+            person_id=artist.id, game_id=game.id, role_id=artist_role.id
+        )
+
+        # Create an expansion
         expansion = Game(
             name="Catan Expansion",
             version=3.0,
@@ -249,15 +334,22 @@ if __name__ == "__main__":
             max_play_time=90,
             complexity=2.1,
         )
+
         rel = RelatedGame(
             source_game_id=expansion.id,
             target_game_id=game.id,
-            relationship_type="expansion",
+            relationship_type_id=expansion_relationship.id,
         )
-        collection = Collection(name="My Col", username="user")
-        item = CollectionItem(
+
+        collection = Collection(
+            name="My Collection",
+            username="user",
+        )
+
+        collection_item = CollectionItem(
             collection=collection, game=game, ownership_status=owned
         )
+
         session.add_all([
             owned,
             category,
@@ -265,16 +357,23 @@ if __name__ == "__main__":
             author,
             artist,
             game,
-            auth_link,
-            art_link,
             expansion,
+            publisher_link,
+            category_link,
+            author_link,
+            artist_link,
             rel,
             collection,
-            item,
+            collection_item,
         ])
         session.commit()
+
         session.refresh(game)
+
+        print("\n--- Output ---")
         print(f"Game: {game.name}")
         print(f"Expansions: {[g.name for g in game.related_from]}")
         print(f"Authors: {[p.name for p in game.authors]}")
         print(f"Artists: {[p.name for p in game.artists]}")
+        print(f"Publishers: {[p.name for p in game.publishers]}")
+        print(f"Categories: {[c.name for c in game.categories]}")

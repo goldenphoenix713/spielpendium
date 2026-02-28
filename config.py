@@ -16,7 +16,7 @@ TIME_BETWEEN_API_CHECKS = int(os.getenv("TIME_BETWEEN_API_CHECKS", "5"))
 
 IMAGE_SIZE = int(os.getenv("IMAGE_SIZE", "64"))
 
-ROOT_DIR = Path(__file__).parents[2].absolute()
+ROOT_DIR = Path(__file__).parent
 
 DEBUG = os.getenv("DEBUG", False)
 LOG_DIR = ROOT_DIR / os.getenv("LOG_DIR", "log")
