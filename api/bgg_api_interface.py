@@ -18,7 +18,7 @@ from config import (
     MAX_API_CHECKS,
     TIME_BETWEEN_API_CHECKS,
 )
-from util.database.sqlmodel_test import (
+from util.database.models import (
     Collection,
     CollectionItem,
     Game,
@@ -145,7 +145,9 @@ def user_exists(username: str) -> bool:
         return collection is not None
 
 
-def save_collection_data_to_db(username: str, collection_data: dict[str, Any]):
+def save_collection_data_to_db(
+    username: str, collection_data: dict[str, Any]
+) -> None:
     """
     Saves/updates a user's game collection in the database using SQLModel.
     collection_data is the dict parsed from the BGG API XML response.
@@ -257,6 +259,7 @@ def save_collection_data_to_db(username: str, collection_data: dict[str, Any]):
         log.info(f"Collection for user {username} saved/updated in DB.")
 
 
+# noinspection PyTypeChecker
 def get_user_collection_from_db(username: str) -> Collection | None:
     """Retrieves a user's collection from the database using SQLModel."""
     with Session(engine) as session:
@@ -265,11 +268,11 @@ def get_user_collection_from_db(username: str) -> Collection | None:
             .where(Collection.username == username)
             .options(
                 # Using selectinload for eager loading as Relationship.of_type isn't standard
-                selectinload(Collection.items).selectinload(
-                    CollectionItem.game
+                selectinload(Collection.items).selectinload(  # type: ignore[arg-type]
+                    CollectionItem.game  # type: ignore[arg-type]
                 ),
-                selectinload(Collection.items).selectinload(
-                    CollectionItem.ownership_status
+                selectinload(Collection.items).selectinload(  # type: ignore[arg-type]
+                    CollectionItem.ownership_status  # type: ignore[arg-type]
                 ),
             )
         )
@@ -409,17 +412,17 @@ if __name__ == "__main__":
     # Example: Get user collection
     # Note: The output will now be a SQLModel Collection object, not a raw dict.
     # You might need to adjust how you print it or convert it to dict for display.
-    collection = get_user_game_collection(
+    user_collection = get_user_game_collection(
         "phoenix713", filters={"own": True}, force_update=True
     )
-    if collection:
+    if user_collection:
         print("\n--- Collection from SQLModel ---")
         print(
-            f"Collection ID: {UUID(bytes=collection.id)}"
+            f"Collection ID: {UUID(bytes=user_collection.id)}"
         )  # Convert bytes UUID back to readable UUID
-        print(f"Username: {collection.username}")
-        print(f"Collection Name: {collection.name}")
-        for item in collection.items:
+        print(f"Username: {user_collection.username}")
+        print(f"Collection Name: {user_collection.name}")
+        for item in user_collection.items:
             # Need to handle potential None if relationships aren't loaded or data is incomplete
             gamename = item.game.name if item.game else "N/A"
             ownership_status_name = (

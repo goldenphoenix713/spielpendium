@@ -31,6 +31,10 @@ dependencies = [
     "xmltodict>=1.0.2",
 ]
 
+#[build-system]
+#requires = ["uv_build>=0.10.6,<0.11.0"]
+#build-backend = "uv_build"
+
 reportMissingImports = true
 reportMissingTypeStubs = false
 
@@ -101,10 +105,12 @@ disallow_any_generics = true
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
 mypy_path = "."
+follow_imports = "silent"
 no_implicit_optional = true
 exclude = [
-    "old",
-    ".cache,"
+    "old*",
+    ".cache*,",
+    "test*",
 ]
 # strict mode equivalent flags:
 strict = true
