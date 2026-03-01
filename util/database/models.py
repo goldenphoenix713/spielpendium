@@ -6,7 +6,7 @@ from uuid import uuid4  # noqa: TC003
 from sqlalchemy.types import BINARY
 from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
 
-import config
+from config import DB_FILE, DEBUG
 
 __author__ = "Eduardo Ruiz"
 
@@ -205,6 +205,7 @@ class Category(SQLModel, table=True):
 
 class Game(SQLModel, table=True):
     id: bytes = BinaryUUIDField(primary_key=True, repr=False)
+    bgg_id: int = Field(repr=False)
     name: str
     sub_name: str | None = None
     version: float
@@ -276,15 +277,19 @@ class UserSettings(SQLModel, table=True):
 
 
 # Module-level engine creation
-engine = create_engine(f"sqlite:///{config.DB_FILE}", echo=False)
+engine = create_engine(f"sqlite:///{DB_FILE}", echo=DEBUG)
 
 
 def create_db_and_tables() -> None:
     """Creates database tables if they don't exist."""
-    if config.DEBUG and os.path.exists(config.DB_FILE):
-        os.remove(config.DB_FILE)
-        SQLModel.metadata.create_all(engine)  # Create tables after wiping
-    elif not config.DB_FILE.exists():
+    if DEBUG and os.path.exists(DB_FILE):
+        # For debugging, start fresh each time.
+        os.remove(DB_FILE)
+
+        # Create tables after wiping
+        SQLModel.metadata.create_all(engine)
+    elif not DB_FILE.exists():
+        # Create initial tables
         SQLModel.metadata.create_all(engine)
 
 
