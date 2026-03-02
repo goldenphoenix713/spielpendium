@@ -14,6 +14,7 @@ readme = "README.md"
 keywords = ["board games", "boardgames", "Board Game Geek", "BGG", "Spielpendium"]
 requires-python = "==3.11.*"
 dependencies = [
+    "beautifulsoup4>=4.14.3",
     "bgg-api>=1.1.16",
     "dash>=4.0.0",
     "dash-iconify>=0.1.2",

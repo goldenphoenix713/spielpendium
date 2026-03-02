@@ -4,7 +4,13 @@ from typing import Any
 from uuid import uuid4  # noqa: TC003
 
 from sqlalchemy.types import BINARY
-from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
+from sqlmodel import (
+    Field,
+    Relationship,
+    Session,
+    SQLModel,
+    create_engine,
+)
 
 from config import DB_FILE, DEBUG
 
@@ -205,7 +211,9 @@ class Category(SQLModel, table=True):
 
 class Game(SQLModel, table=True):
     id: bytes = BinaryUUIDField(primary_key=True, repr=False)
-    bgg_id: int = Field(repr=False)
+    bgg_id: int = Field(
+        unique=True, index=True, nullable=False
+    )  # New field for BGG ID
     name: str
     sub_name: str | None = None
     version: float
@@ -317,6 +325,7 @@ if __name__ == "__main__":
 
         # Create game
         game = Game(
+            bgg_id=13,  # Added bgg_id as it is now nullable=False
             name="Catan",
             version=3.0,
             image=b"img",
@@ -351,6 +360,7 @@ if __name__ == "__main__":
 
         # Create an expansion
         expansion = Game(
+            bgg_id=362,  # Added bgg_id as it is now nullable=False
             name="Catan Expansion",
             version=3.0,
             image=b"img",

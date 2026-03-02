@@ -1,14 +1,18 @@
 """The BGG API side of the Spielpendium-BGG interface."""
 
+from __future__ import annotations
+
 import concurrent.futures
 import time
 import urllib.parse
-from typing import Any
+from typing import TYPE_CHECKING, Any
+from xml.parsers.expat import ExpatError
 
 import requests
 import xmltodict
-from loguru import logger
-from sqlalchemy.orm import selectinload  # Added for eager loading
+from bs4 import BeautifulSoup
+from loguru import logger as log
+from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
 from config import (
@@ -18,13 +22,25 @@ from config import (
     TIME_BETWEEN_API_CHECKS,
 )
 from util.database.models import (
+    Category,
     Collection,
     CollectionItem,
     Game,
+    GameCategoryLink,
+    GameRelationship,
     OwnershipStatus,
+    Person,
+    PersonGameLink,
+    PersonRole,
+    Publisher,
+    PublisherGameLink,
+    RelatedGame,
     create_db_and_tables,
     engine,
 )
+
+if TYPE_CHECKING:
+    from sqlmodel import SQLModel
 
 __author__ = "Eduardo Ruiz"
 
@@ -74,16 +90,17 @@ def get_xml_info(
     :type url: str
     :param query: A dictionary containing query parameters for the get request.
     :type query: dict[str, str]
-    :raises urllib.error.HTTPError: If there's any error in retrieving data at
-            the URL.
-    :raises ValueError: If the retrieved data cannot be converted to a dict
+    :raises requests.exceptions.HTTPError: If there's any error in retrieving
+            data at the URL.
+    :raises xmltodict.expat.ExpatError: If the retrieved data cannot be
+            converted to a dict
     :return: The information from the XML converted into a dict.
     :rtype: dict[str, Any]
     """
 
     data: dict[str, Any] = {}
 
-    for _ in range(MAX_API_CHECKS):
+    for ii in range(MAX_API_CHECKS):
         with requests.session() as session:
             response = session.get(
                 url,
@@ -92,7 +109,7 @@ def get_xml_info(
             )
         # Code 202 means data is still being generated
         if response.status_code == 202:
-            logger.info(
+            log.info(
                 f"Waiting for API to generate data at {url}. "
                 f"Next check in {TIME_BETWEEN_API_CHECKS} seconds"
             )
@@ -102,19 +119,27 @@ def get_xml_info(
         # If we reach here, it's not a 202. If it's not 200 either,
         # quit (error)
         if response.status_code != 200:
-            logger.error(
+            log.error(
                 f"API did not generate data at {url} after "
                 f"checking {MAX_API_CHECKS} times. "
             )
             response.raise_for_status()
 
         data_bytes = response.content
-        logger.debug(f"Information retrieved successfully from {url}.")
+        log.debug(f"Information retrieved successfully from {url}.")
 
         # Convert the bytes object to a dict.
-        data = xmltodict.parse(data_bytes)
-        logger.debug("Data successfully converted to dict.")
-        break
+        try:
+            data = xmltodict.parse(data_bytes)
+            log.debug("Data successfully converted to dict.")
+            return data
+        except ExpatError as e:
+            log.error(f"Failed to parse XML from {url}: {e}.")
+            if ii < MAX_API_CHECKS - 1:
+                time.sleep(TIME_BETWEEN_API_CHECKS)
+                continue
+            else:
+                raise
 
     return data
 
@@ -125,7 +150,7 @@ def search_bgg(search_query: str, exact_flag: bool = False) -> dict[str, Any]:
     :param search_query: The query to search for.
     :type search_query: str
     :param exact_flag: A flag that tells the BGG API whether to only return
-           exact matches or not.
+        exact matches or not.
     :type exact_flag: bool
     :return: Dictionary with the search results.
     :rtype: dict[str, Any]
@@ -133,7 +158,7 @@ def search_bgg(search_query: str, exact_flag: bool = False) -> dict[str, Any]:
     search_query = urllib.parse.quote(search_query)
     search_url = f"{BGG_API_URL}search"
 
-    query = {"search": search_query, "exact": str(int(exact_flag))}
+    query = {"query": search_query, "exact": str(int(exact_flag))}
     return get_xml_info(search_url, query)
 
 
@@ -150,6 +175,309 @@ def user_exists_in_db(username: str) -> bool:
         statement = select(Collection).where(Collection.username == username)
         collection = session.exec(statement).first()
         return collection is not None
+
+
+def _process_and_save_game_details(
+    session: Session, bgg_id: int, game_detail_data: dict[str, Any]
+) -> Game | None:
+    """Helper function to process detailed game data from BGG API.
+
+    :param session: The SQLModel session to use.
+    :param bgg_id: The BGG ID of the game.
+    :param game_detail_data: The dictionary parsed from the BGG API response.
+    :return: The saved or updated Game object, or None if processing fails.
+    """
+    items_data = game_detail_data.get("items", {})
+    game_item_data = items_data.get("item")
+
+    if not game_item_data:
+        log.error(f"No game item data found for bgg_id: {bgg_id} in response.")
+        return None
+
+    if isinstance(game_item_data, list):
+        if len(game_item_data) > 1:
+            log.warning(
+                f"Multiple items returned for bgg_id {bgg_id}. "
+                "Processing only the first."
+            )
+        game_item_data = game_item_data[0]
+
+    game_statement = select(Game).where(Game.bgg_id == bgg_id)
+    game = session.exec(game_statement).first()
+
+    if not game:
+        game = Game(bgg_id=bgg_id)
+        session.add(game)
+        session.flush()
+
+    # --- Populate Game fields ---
+    names = game_item_data.get("name")
+    if isinstance(names, list):
+        primary_name = next(
+            (n["#text"] for n in names if n.get("@type") == "primary"), None
+        )
+        game.name = primary_name or (
+            names[0]["#text"] if names else f"Unknown Game {bgg_id}"
+        )
+    elif isinstance(names, dict):
+        game.name = (
+            names.get("#text")
+            or names.get("@value")
+            or f"Unknown Game {bgg_id}"
+        )
+    else:
+        game.name = f"Unknown Game {bgg_id}"
+
+    game.sub_name = (
+        next(
+            (n["#text"] for n in names if n.get("@type") == "alternate"), None
+        )
+        if isinstance(names, list)
+        else None
+    )
+
+    game.version = float(
+        game_item_data.get("yearpublished", {}).get("@value", 0)
+    )
+
+    # Placeholder for image fetching
+    game.image = b""
+
+    game.description = game_item_data.get("description", "") or ""
+    if (
+        game.description
+        and "<" in game.description
+        and ">" in game.description
+    ):
+        soup = BeautifulSoup(game.description, "html.parser")
+        game.description = soup.get_text()
+
+    game.release_year = int(
+        game_item_data.get("yearpublished", {}).get("@value", 0)
+    )
+
+    game.min_players = int(
+        game_item_data.get("minplayers", {}).get("@value", 0)
+    )
+    game.max_players = int(
+        game_item_data.get("maxplayers", {}).get("@value", 0)
+    )
+    game.min_age = int(game_item_data.get("minage", {}).get("@value", 0))
+    game.min_play_time = int(
+        game_item_data.get("minplaytime", {}).get("@value", 0)
+    )
+    game.max_play_time = int(
+        game_item_data.get("maxplaytime", {}).get("@value", 0)
+    )
+
+    # Stats and Ranks
+    ratings = game_item_data.get("statistics", {}).get("ratings", {})
+    game.bgg_rating = float(ratings.get("average", {}).get("@value", 0.0))
+
+    ranks = ratings.get("ranks", {}).get("rank", [])
+    if isinstance(ranks, dict):
+        ranks = [ranks]
+    boardgame_rank_value = next(
+        (r.get("@value") for r in ranks if r.get("@name") == "boardgame"),
+        "N/A",
+    )
+    game.bgg_rank = (
+        int(boardgame_rank_value)
+        if boardgame_rank_value not in ["N/A", None]
+        else None
+    )
+
+    game.complexity = float(
+        ratings.get("averageweight", {}).get("@value", 0.0)
+    )
+    game.recommended_players = None
+
+    session.add(game)
+
+    # Helper to get/create entity and link
+    def get_or_create_entity_and_link(
+        sess: Session,
+        model: type[SQLModel],
+        link_model: type[SQLModel],
+        entity_name_key: str,
+        link_entity_id_attr: str,
+        link_game_id_attr: str,
+        bgg_data_list: list[dict[str, Any]],
+        role_id: bytes | None = None,
+    ) -> None:
+        for data in bgg_data_list:
+            item_name = data.get("#text") or data.get("@value")
+            if not item_name:
+                continue
+
+            entity_statement = select(model).where(model.name == item_name)  # type: ignore[attr-defined]
+            entity = sess.exec(entity_statement).first()
+            if not entity:
+                entity = model(name=item_name)
+                sess.add(entity)
+                sess.flush()
+
+            link_exists_statement = select(link_model).where(
+                getattr(link_model, link_entity_id_attr) == entity.id,  # type: ignore[attr-defined]
+                getattr(link_model, link_game_id_attr) == game.id,
+            )
+            if role_id:
+                link_exists_statement = link_exists_statement.where(
+                    PersonGameLink.role_id == role_id
+                )
+
+            if not sess.exec(link_exists_statement).first():
+                link_kwargs = {
+                    link_entity_id_attr: entity.id,  # type: ignore[attr-defined]
+                    link_game_id_attr: game.id,
+                }
+                if role_id:
+                    link_kwargs["role_id"] = role_id
+                sess.add(link_model(**link_kwargs))
+
+    # Publishers
+    publishers_data = game_item_data.get("boardgamepublisher", [])
+    if isinstance(publishers_data, dict):
+        publishers_data = [publishers_data]
+    get_or_create_entity_and_link(
+        session,
+        Publisher,
+        PublisherGameLink,
+        "name",
+        "publisher_id",
+        "game_id",
+        publishers_data,
+    )
+
+    # Categories
+    categories_data = game_item_data.get("boardgamecategory", [])
+    if isinstance(categories_data, dict):
+        categories_data = [categories_data]
+    get_or_create_entity_and_link(
+        session,
+        Category,
+        GameCategoryLink,
+        "name",
+        "category_id",
+        "game_id",
+        categories_data,
+    )
+
+    # Persons
+    author_role = session.exec(
+        select(PersonRole).where(PersonRole.role == "author")
+    ).first()
+    if not author_role:
+        author_role = PersonRole(role="author")
+        session.add(author_role)
+        session.flush()
+
+    artist_role = session.exec(
+        select(PersonRole).where(PersonRole.role == "artist")
+    ).first()
+    if not artist_role:
+        artist_role = PersonRole(role="artist")
+        session.add(artist_role)
+        session.flush()
+
+    designers_data = game_item_data.get("boardgamedesigner", [])
+    if isinstance(designers_data, dict):
+        designers_data = [designers_data]
+    get_or_create_entity_and_link(
+        session,
+        Person,
+        PersonGameLink,
+        "name",
+        "person_id",
+        "game_id",
+        designers_data,
+        role_id=author_role.id,
+    )
+
+    artists_data = game_item_data.get("boardgameartist", [])
+    if isinstance(artists_data, dict):
+        artists_data = [artists_data]
+    get_or_create_entity_and_link(
+        session,
+        Person,
+        PersonGameLink,
+        "name",
+        "person_id",
+        "game_id",
+        artists_data,
+        role_id=artist_role.id,
+    )
+
+    # Related Games
+    for link_type_key in [
+        "boardgameexpansion",
+        "boardgamereimplementation",
+        "boardgameaccessory",
+        "boardgamecompilation",
+    ]:
+        linked_items = game_item_data.get(link_type_key, [])
+        if isinstance(linked_items, dict):
+            linked_items = [linked_items]
+
+        if not linked_items:
+            continue
+
+        relationship_type_name = link_type_key.replace(
+            "boardgame", ""
+        ).replace("item", "")
+        relationship_type_statement = select(GameRelationship).where(
+            GameRelationship.type == relationship_type_name
+        )
+        relationship_type = session.exec(relationship_type_statement).first()
+        if not relationship_type:
+            relationship_type = GameRelationship(type=relationship_type_name)
+            session.add(relationship_type)
+            session.flush()
+
+        for linked_item_data in linked_items:
+            target_bgg_id_str = linked_item_data.get("@objectid")
+            if not target_bgg_id_str:
+                continue
+            target_bgg_id = int(target_bgg_id_str)
+
+            target_game_statement = select(Game).where(
+                Game.bgg_id == target_bgg_id
+            )
+            target_game = session.exec(target_game_statement).first()
+            if not target_game:
+                target_game = Game(
+                    bgg_id=target_bgg_id,
+                    name=linked_item_data.get("#text")
+                    or f"Related Game {target_bgg_id}",
+                    version=0.0,
+                    image=b"",
+                    description="",
+                    release_year=0,
+                    min_players=0,
+                    max_players=0,
+                    min_age=0,
+                    min_play_time=0,
+                    max_play_time=0,
+                    complexity=0.0,
+                )
+                session.add(target_game)
+                session.flush()
+
+            related_link_statement = select(RelatedGame).where(
+                RelatedGame.source_game_id == game.id,
+                RelatedGame.target_game_id == target_game.id,
+                RelatedGame.relationship_type_id == relationship_type.id,
+            )
+            if not session.exec(related_link_statement).first():
+                session.add(
+                    RelatedGame(
+                        source_game_id=game.id,
+                        target_game_id=target_game.id,
+                        relationship_type_id=relationship_type.id,
+                    )
+                )
+
+    return game
 
 
 def save_collection_data_to_db(
@@ -188,7 +516,7 @@ def save_collection_data_to_db(
         for item_data in bgg_items:
             game_id_str = item_data.get("@objectid")
             if not game_id_str:
-                logger.warning(
+                log.warning(
                     f"Skipping collection item without objectid: {item_data}"
                 )
                 continue
@@ -266,7 +594,7 @@ def save_collection_data_to_db(
                 collection_item.ownership_status_id = ownership_status.id
 
         session.commit()
-        logger.info(f"Collection for user {username} saved/updated in DB.")
+        log.info(f"Collection for user {username} saved/updated in DB.")
 
 
 def get_user_collection_from_db(username: str) -> Collection | None:
@@ -316,10 +644,10 @@ def get_user_game_collection(
         collection_from_db = get_user_collection_from_db(username)
 
     if collection_from_db and not force_update:
-        logger.info(f"Collection for {username} loaded from database.")
+        log.info(f"Collection for {username} loaded from database.")
         return collection_from_db
     else:
-        logger.info(f"Fetching collection for {username} from BGG API.")
+        log.info(f"Fetching collection for {username} from BGG API.")
         username_safe = urllib.parse.quote(username)
         collection_url = f"{BGG_API_URL}collection"
 
@@ -350,6 +678,14 @@ def get_user_game_collection(
 def get_game_info(
     game_ids: int | list[int],
     get_stats: bool = False,
+    get_versions: bool = False,
+    get_videos: bool = False,
+    get_comments: bool = False,
+    get_marketplacelistings: bool = False,
+    get_trading: bool = False,
+    get_want: bool = False,
+    get_rank: bool = False,
+    get_image_list: bool = False,
 ) -> dict[str, Any]:
     """Gets details for a game with a certain game id.
 
@@ -357,6 +693,22 @@ def get_game_info(
     :type game_ids: int | list[int]
     :param get_stats: Whether to get detailed game stats or not.
     :type get_stats: bool
+    :param get_versions: Whether to include versions data.
+    :type get_versions: bool
+    :param get_videos: Whether to include videos data.
+    :type get_videos: bool
+    :param get_comments: Whether to include comments data.
+    :type get_comments: bool
+    :param get_marketplacelistings: Whether to include marketplace listings.
+    :type get_marketplacelistings: bool
+    :param get_trading: Whether to include trading data.
+    :type get_trading: bool
+    :param get_want: Whether to include 'want' data.
+    :type get_want: bool
+    :param get_rank: Whether to include rank data.
+    :type get_rank: bool
+    :param get_image_list: Whether to include images data.
+    :type get_image_list: bool
     :return: The details of the game(s) as a dictionary parsed from an XML.
     :rtype: dict[str, Any]
     """
@@ -367,13 +719,24 @@ def get_game_info(
 
     # Generate the url (BGG API v2 'thing' endpoint for game details)
     url = BGG_API_URL + "thing"  # Base URL for thing (game/expansion)
-    query = {"id": ",".join([str(a) for a in game_ids])}
+    query = {
+        "id": ",".join([str(a) for a in game_ids]),
+        "stats": "1" if get_stats else "0",
+        "versions": "1" if get_versions else "0",
+        "videos": "1" if get_videos else "0",
+        "comments": "1" if get_comments else "0",
+        "marketplacelistings": "1" if get_marketplacelistings else "0",
+        "trading": "1" if get_trading else "0",
+        "want": "1" if get_want else "0",
+        "rank": "1" if get_rank else "0",
+        "images": "1" if get_image_list else "0",
+    }
+
+    # Clean up '0' values to avoid sending unnecessary query parameters
+    query = {k: v for k, v in query.items() if v != "0"}
 
     # TODO BGG API Limits "thing" searches to 20 items at a time.
     #  Need to add a limiter here.
-
-    if get_stats:
-        query["stats"] = "1"
 
     return get_xml_info(url, query=query)
 

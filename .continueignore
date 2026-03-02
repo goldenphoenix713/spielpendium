@@ -1,0 +1,35 @@
+# === Custom Workflow Folders ===
+old/
+ref/
+
+# === Temporary Test Files ===
+# Ignores files like "test_logic.py" or "draft_test.py" in the root
+# but allows files inside a proper /tests/ directory to be indexed.
+/*test*
+!/tests/
+
+# === PyCharm / JetBrains ===
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# === Python Build & Caches ===
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# === Virtual Environments ===
+.venv/
+venv/
+env/
+
+# === Version Control ===
+.git/
+
+# === Environment Variables & Secrets ===
+.env
+.env.*
+secrets.py
