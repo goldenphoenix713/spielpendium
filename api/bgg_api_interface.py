@@ -6,6 +6,7 @@ import concurrent.futures
 import time
 import urllib.parse
 from typing import TYPE_CHECKING, Any
+from uuid import UUID, uuid4
 from xml.parsers.expat import ExpatError
 
 import requests
@@ -116,7 +117,16 @@ def get_xml_info(
             time.sleep(TIME_BETWEEN_API_CHECKS)
             continue
 
-        # If we reach here, it's not a 202. If it's not 200 either,
+        # Handle 429 Too Many Requests
+        if response.status_code == 429:
+            log.warning(
+                f"Rate limited (429) at {url}. "
+                f"Retrying in {TIME_BETWEEN_API_CHECKS * 2} seconds..."
+            )
+            time.sleep(TIME_BETWEEN_API_CHECKS * 2)
+            continue
+
+        # If we reach here, it's not a 202 or 429. If it's not 200 either,
         # quit (error)
         if response.status_code != 200:
             log.error(
@@ -206,18 +216,38 @@ def _process_and_save_game_details(
     game = session.exec(game_statement).first()
 
     if not game:
-        game = Game(bgg_id=bgg_id)
-        session.add(game)
-        session.flush()
+        # Initialize with required fields to avoid IntegrityError
+        game = Game(
+            id=uuid4().bytes,  # Generate UUID for new game
+            bgg_id=bgg_id,
+            name="Loading...",  # Temporary placeholder
+            image=b"",
+            description="",
+            release_year=0,
+            min_players=0,
+            max_players=0,
+            min_age=0,
+            min_play_time=0,
+            max_play_time=0,
+            complexity=0.0,
+        )
+        # We don't add/flush yet; let parsing populate real values first
 
     # --- Populate Game fields ---
     names = game_item_data.get("name")
     if isinstance(names, list):
         primary_name = next(
-            (n["#text"] for n in names if n.get("@type") == "primary"), None
+            (
+                n.get("#text") or n.get("@value")
+                for n in names
+                if n.get("@type") == "primary"
+            ),
+            None,
         )
         game.name = primary_name or (
-            names[0]["#text"] if names else f"Unknown Game {bgg_id}"
+            (names[0].get("#text") or names[0].get("@value"))
+            if names
+            else f"Unknown Game {bgg_id}"
         )
     elif isinstance(names, dict):
         game.name = (
@@ -230,7 +260,12 @@ def _process_and_save_game_details(
 
     game.sub_name = (
         next(
-            (n["#text"] for n in names if n.get("@type") == "alternate"), None
+            (
+                n.get("#text") or n.get("@value")
+                for n in names
+                if n.get("@type") == "alternate"
+            ),
+            None,
         )
         if isinstance(names, list)
         else None
@@ -283,7 +318,7 @@ def _process_and_save_game_details(
     )
     game.bgg_rank = (
         int(boardgame_rank_value)
-        if boardgame_rank_value not in ["N/A", None]
+        if boardgame_rank_value not in ["N/A", None, "Not Ranked"]
         else None
     )
 
@@ -292,7 +327,9 @@ def _process_and_save_game_details(
     )
     game.recommended_players = None
 
+    # Ensure game is added/flushed after populating fields so its ID is available
     session.add(game)
+    session.flush()
 
     # Helper to get/create entity and link
     def get_or_create_entity_and_link(
@@ -313,7 +350,9 @@ def _process_and_save_game_details(
             entity_statement = select(model).where(model.name == item_name)  # type: ignore[attr-defined]
             entity = sess.exec(entity_statement).first()
             if not entity:
-                entity = model(name=item_name)
+                entity = model(
+                    id=uuid4().bytes, name=item_name
+                )  # Generate UUID for new entity
                 sess.add(entity)
                 sess.flush()
 
@@ -368,7 +407,7 @@ def _process_and_save_game_details(
         select(PersonRole).where(PersonRole.role == "author")
     ).first()
     if not author_role:
-        author_role = PersonRole(role="author")
+        author_role = PersonRole(id=uuid4().bytes, role="author")
         session.add(author_role)
         session.flush()
 
@@ -376,7 +415,7 @@ def _process_and_save_game_details(
         select(PersonRole).where(PersonRole.role == "artist")
     ).first()
     if not artist_role:
-        artist_role = PersonRole(role="artist")
+        artist_role = PersonRole(id=uuid4().bytes, role="artist")
         session.add(artist_role)
         session.flush()
 
@@ -430,7 +469,9 @@ def _process_and_save_game_details(
         )
         relationship_type = session.exec(relationship_type_statement).first()
         if not relationship_type:
-            relationship_type = GameRelationship(type=relationship_type_name)
+            relationship_type = GameRelationship(
+                id=uuid4().bytes, type=relationship_type_name
+            )
             session.add(relationship_type)
             session.flush()
 
@@ -446,6 +487,7 @@ def _process_and_save_game_details(
             target_game = session.exec(target_game_statement).first()
             if not target_game:
                 target_game = Game(
+                    id=uuid4().bytes,  # Generate UUID for new game
                     bgg_id=target_bgg_id,
                     name=linked_item_data.get("#text")
                     or f"Related Game {target_bgg_id}",
@@ -471,6 +513,7 @@ def _process_and_save_game_details(
             if not session.exec(related_link_statement).first():
                 session.add(
                     RelatedGame(
+                        id=uuid4().bytes,  # Generate UUID for new related game link
                         source_game_id=game.id,
                         target_game_id=target_game.id,
                         relationship_type_id=relationship_type.id,
@@ -500,7 +543,9 @@ def save_collection_data_to_db(
 
         if not collection:
             collection = Collection(
-                username=username, name=f"{username}'s Collection"
+                id=uuid4().bytes,
+                username=username,
+                name=f"{username}'s Collection",
             )
             session.add(collection)
             session.flush()  # Flush to get the ID for new collection
@@ -512,53 +557,71 @@ def save_collection_data_to_db(
             # Handle single item case from xmltodict
             bgg_items = [bgg_items]
 
-        # For each item in the BGG collection, create/update Game and CollectionItem
+        # For each item in the BGG collection, identify missing games
+        missing_bgg_ids = []
         for item_data in bgg_items:
-            game_id_str = item_data.get("@objectid")
-            if not game_id_str:
+            bgg_id_str = item_data.get("@objectid")
+            if not bgg_id_str:
+                continue
+            current_bgg_id = int(bgg_id_str)
+            game_statement = select(Game).where(Game.bgg_id == current_bgg_id)
+            if not session.exec(game_statement).first():
+                missing_bgg_ids.append(current_bgg_id)
+
+        # Batch fetch missing game details in chunks of 20 (BGG limit)
+        for i in range(0, len(missing_bgg_ids), 20):
+            chunk = missing_bgg_ids[i : i + 20]
+            log.info(
+                f"Fetching details for {len(chunk)} missing games: {chunk}"
+            )
+            game_details_api_response = get_game_info(
+                game_ids=chunk,
+                get_stats=True,
+                get_versions=True,
+                get_videos=True,
+                get_comments=True,
+                get_marketplacelistings=True,
+                get_trading=True,
+                get_want=True,
+                get_rank=True,
+                get_image_list=True,
+            )
+
+            # Process the batch response
+            items_data = game_details_api_response.get("items", {})
+            game_items = items_data.get("item", [])
+            if isinstance(game_items, dict):
+                game_items = [game_items]
+
+            for g_item in game_items:
+                # Wrap each item in a structure compatible with _process_and_save_game_details
+                single_game_data = {"items": {"item": g_item}}
+                bgg_id_val = int(g_item.get("@id", 0))
+                _process_and_save_game_details(
+                    session, bgg_id_val, single_game_data
+                )
+
+        # Re-iterate items to create CollectionItems
+        for item_data in bgg_items:
+            bgg_id_str = item_data.get("@objectid")
+            if not bgg_id_str:
                 log.warning(
                     f"Skipping collection item without objectid: {item_data}"
                 )
                 continue
 
-            # Check if game already exists in DB
-            # Assuming BGG game ID can be converted to UUID bytes (e.g., int -> UUID -> bytes)
-            # This is a critical assumption about the Game.id field type.
-            bgg_id = int(game_id_str)
-            game_statement = select(Game).where(Game.bgg_id == bgg_id)
+            current_bgg_id = int(bgg_id_str)
+
+            game_statement = select(Game).where(Game.bgg_id == current_bgg_id)
             game = session.exec(game_statement).first()
 
             if not game:
-                # If game doesn't exist, we'll need to fetch its full details later
-                # For now, just create a minimal Game object
-                game_name = item_data.get("name", {}).get(
-                    "#text", f"Unknown Game {game_id_str}"
+                log.error(
+                    f"Game with BGG ID {current_bgg_id} still missing after batch fetch."
                 )
-                game = Game(
-                    bgg_id=bgg_id,
-                    name=game_name,
-                    version=0.0,  # Placeholder
-                    image=b"",  # Placeholder
-                    description="",  # Placeholder
-                    release_year=0,  # Placeholder
-                    min_players=0,  # Placeholder
-                    max_players=0,  # Placeholder
-                    min_age=0,  # Placeholder
-                    min_play_time=0,  # Placeholder
-                    max_play_time=0,  # Placeholder
-                    complexity=0.0,  # Placeholder
-                )
-                session.add(game)
-                session.flush()
+                continue
 
             # Find or create OwnershipStatus (e.g., "owned", "want", "prevowned")
-            # The BGG API collection XML typically has status attributes like:
-            # <status own="1" prevowned="0" ... />
-            # We'll need to derive the status name from these.
-            # For simplicity, if 'own' is true, we set to "owned".
-            # The prompt's suggested code sets it to "owned" by default,
-            # which might be too simplistic if other statuses are important.
-            # Sticking to suggested code for now, using "owned".
             status_name = "owned"
             if item_data.get("status", {}).get("@want") == "1":
                 status_name = "want"
@@ -571,7 +634,9 @@ def save_collection_data_to_db(
             )
             ownership_status = session.exec(status_statement).first()
             if not ownership_status:
-                ownership_status = OwnershipStatus(name=status_name)
+                ownership_status = OwnershipStatus(
+                    id=uuid4().bytes, name=status_name
+                )
                 session.add(ownership_status)
                 session.flush()
 
@@ -584,6 +649,7 @@ def save_collection_data_to_db(
 
             if not collection_item:
                 collection_item = CollectionItem(
+                    id=uuid4().bytes,
                     collection_id=collection.id,
                     game_id=game.id,
                     ownership_status_id=ownership_status.id,
@@ -718,7 +784,7 @@ def get_game_info(
         game_ids = [game_ids]
 
     # Generate the url (BGG API v2 'thing' endpoint for game details)
-    url = BGG_API_URL + "thing"  # Base URL for thing (game/expansion)
+    url = f"{BGG_API_URL}thing"  # Base URL for thing (game/expansion)
     query = {
         "id": ",".join([str(a) for a in game_ids]),
         "stats": "1" if get_stats else "0",
@@ -802,46 +868,60 @@ def get_single_image(
 if __name__ == "__main__":
     from uuid import UUID
 
-    create_db_and_tables()  # Ensure DB tables exist
+    # Ensure tables are created and essential roles/relationships exist
+    create_db_and_tables()
 
-    # Example: Get user collection
-    # Note: The output will now be a SQLModel Collection object, not a raw dict.
-    # You might need to adjust how you print it or convert it to dict for display.
+    # Manually create essential PersonRoles and GameRelationships if not already in DB
+    with Session(engine) as session:
+        author_role_statement = select(PersonRole).where(
+            PersonRole.role == "author"
+        )
+        author_role = session.exec(author_role_statement).first()
+        if not author_role:
+            author_role = PersonRole(id=uuid4().bytes, role="author")
+            session.add(author_role)
+
+        artist_role_statement = select(PersonRole).where(
+            PersonRole.role == "artist"
+        )
+        artist_role = session.exec(artist_role_statement).first()
+        if not artist_role:
+            artist_role = PersonRole(id=uuid4().bytes, role="artist")
+            session.add(artist_role)
+
+        # Use a consistent naming for relationship types, e.g., 'expansion'
+        expansion_rel_statement = select(GameRelationship).where(
+            GameRelationship.type == "expansion"
+        )
+        expansion_relationship = session.exec(expansion_rel_statement).first()
+        if not expansion_relationship:
+            expansion_relationship = GameRelationship(
+                id=uuid4().bytes, type="expansion"
+            )
+            session.add(expansion_relationship)
+
+        session.commit()
+        session.refresh(author_role)
+        session.refresh(artist_role)
+        session.refresh(expansion_relationship)
+
     user_collection = get_user_game_collection(
         "phoenix713", filters={"own": True}, force_update=True
     )
     if user_collection:
-        print("\n--- Collection from SQLModel ---")
-        print(
-            f"Collection ID: {UUID(bytes=user_collection.id)}"
-        )  # Convert bytes UUID back to readable UUID
-        print(f"Username: {user_collection.username}")
-        print(f"Collection Name: {user_collection.name}")
+        log.info("\n--- Collection from SQLModel ---")
+        log.info(f"Collection ID: {UUID(bytes=user_collection.id)}")
+        log.info(f"Username: {user_collection.username}")
+        log.info(f"Collection Name: {user_collection.name}")
         for item in user_collection.items:
-            # Need to handle potential None if relationships aren't loaded or data is incomplete
             gamename = item.game.name if item.game else "N/A"
+            bgg_id = item.game.bgg_id if item.game else "N/A"
             ownership_status_name = (
                 item.ownership_status.name if item.ownership_status else "N/A"
             )
-            print(
-                f"  - Game: {gamename} (Owned Status: {ownership_status_name})"
+            log.info(
+                f"  - Game: {gamename} (BGG ID: {bgg_id}) "
+                f"(Owned Status: {ownership_status_name})"
             )
     else:
-        print("Collection not found or could not be fetched.")
-
-    # test_url = "https://www.boardgamegeek.com/xmlapi/boardgame/35424" # Old API endpoint
-    # info = get_xml_info(test_url)
-    # print(dumps(info, indent=2))
-    #
-    # search_results = search_bgg('Catan')
-    # print(dumps(search_results, indent=2))
-    #
-    # game_details = get_game_info([224125, 255907])
-    # print(dumps(game_details, indent=2))
-    #
-    # test_image = ('https://cf.geekdo-images.com/vpET5JF4hXUXA6bqXx0WlQ__'
-    #               'original/img/FyZogAqdllhWqFns_zfjhaUP6jM=/0x0/filters:'
-    #               'format(jpeg)/pic4854460.jpg')
-    # images = get_images(test_image)
-    # print(images)
-    # images[0].save('test.png', 'png')
+        log.info("Collection not found or could not be fetched.")

@@ -285,7 +285,7 @@ class UserSettings(SQLModel, table=True):
 
 
 # Module-level engine creation
-engine = create_engine(f"sqlite:///{DB_FILE}", echo=DEBUG)
+engine = create_engine(f"sqlite:///{DB_FILE}", echo=False)
 
 
 def create_db_and_tables() -> None:
