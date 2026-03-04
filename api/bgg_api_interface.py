@@ -221,7 +221,8 @@ def _process_and_save_game_details(
             id=uuid4().bytes,  # Generate UUID for new game
             bgg_id=bgg_id,
             name="Loading...",  # Temporary placeholder
-            image=b"",
+            image=None,
+            thumbnail=None,
             description="",
             release_year=0,
             min_players=0,
@@ -275,8 +276,31 @@ def _process_and_save_game_details(
         game_item_data.get("yearpublished", {}).get("@value", 0)
     )
 
-    # Placeholder for image fetching
-    game.image = b""
+    # Fetch and store images as binary
+    image_url = game_item_data.get("image")
+    thumb_url = game_item_data.get("thumbnail")
+
+    log.debug(f"Image URL for {bgg_id}: {image_url}")
+    log.debug(f"Thumbnail URL for {bgg_id}: {thumb_url}")
+
+    if image_url or thumb_url:
+        with requests.Session() as img_session:
+            if image_url:
+                try:
+                    game.image = get_single_image(image_url, 10.0, img_session)
+                except Exception as e:
+                    log.warning(
+                        f"Failed to download image for BGG ID {bgg_id}: {e}"
+                    )
+            if thumb_url:
+                try:
+                    game.thumbnail = get_single_image(
+                        thumb_url, 10.0, img_session
+                    )
+                except Exception as e:
+                    log.warning(
+                        f"Failed to download thumbnail for BGG ID {bgg_id}: {e}"
+                    )
 
     game.description = game_item_data.get("description", "") or ""
     if (
@@ -492,7 +516,8 @@ def _process_and_save_game_details(
                     name=linked_item_data.get("#text")
                     or f"Related Game {target_bgg_id}",
                     version=0.0,
-                    image=b"",
+                    image=None,
+                    thumbnail=None,  # Added thumbnail for related games
                     description="",
                     release_year=0,
                     min_players=0,
@@ -851,16 +876,21 @@ def get_single_image(
     :rtype: bytes
     """
 
+    # Do not send BGG API Token to image servers (usually cloudfront/S3)
     response = session.get(
         image_url,
-        headers={"Authorization": f"Bearer {BGG_API_TOKEN}"},
         timeout=timeout,
     )
 
     if response.status_code == 200:
         image = response.content
     else:
-        raise requests.exceptions.Timeout
+        log.error(
+            f"Failed to fetch image from {image_url}. Status code: {response.status_code}"
+        )
+        raise requests.exceptions.HTTPError(
+            f"Failed to fetch image: {response.status_code}"
+        )
 
     return image
 
@@ -872,38 +902,40 @@ if __name__ == "__main__":
     create_db_and_tables()
 
     # Manually create essential PersonRoles and GameRelationships if not already in DB
-    with Session(engine) as session:
+    with Session(engine) as my_session:
         author_role_statement = select(PersonRole).where(
             PersonRole.role == "author"
         )
-        author_role = session.exec(author_role_statement).first()
-        if not author_role:
-            author_role = PersonRole(id=uuid4().bytes, role="author")
-            session.add(author_role)
+        authorrole = my_session.exec(author_role_statement).first()
+        if not authorrole:
+            authorrole = PersonRole(id=uuid4().bytes, role="author")
+            my_session.add(authorrole)
 
         artist_role_statement = select(PersonRole).where(
             PersonRole.role == "artist"
         )
-        artist_role = session.exec(artist_role_statement).first()
-        if not artist_role:
-            artist_role = PersonRole(id=uuid4().bytes, role="artist")
-            session.add(artist_role)
+        artistrole = my_session.exec(artist_role_statement).first()
+        if not artistrole:
+            artistrole = PersonRole(id=uuid4().bytes, role="artist")
+            my_session.add(artistrole)
 
         # Use a consistent naming for relationship types, e.g., 'expansion'
         expansion_rel_statement = select(GameRelationship).where(
             GameRelationship.type == "expansion"
         )
-        expansion_relationship = session.exec(expansion_rel_statement).first()
+        expansion_relationship = my_session.exec(
+            expansion_rel_statement
+        ).first()
         if not expansion_relationship:
             expansion_relationship = GameRelationship(
                 id=uuid4().bytes, type="expansion"
             )
-            session.add(expansion_relationship)
+            my_session.add(expansion_relationship)
 
-        session.commit()
-        session.refresh(author_role)
-        session.refresh(artist_role)
-        session.refresh(expansion_relationship)
+        my_session.commit()
+        my_session.refresh(authorrole)
+        my_session.refresh(artistrole)
+        my_session.refresh(expansion_relationship)
 
     user_collection = get_user_game_collection(
         "phoenix713", filters={"own": True}, force_update=True
@@ -915,12 +947,12 @@ if __name__ == "__main__":
         log.info(f"Collection Name: {user_collection.name}")
         for item in user_collection.items:
             gamename = item.game.name if item.game else "N/A"
-            bgg_id = item.game.bgg_id if item.game else "N/A"
+            bggid = item.game.bgg_id if item.game else "N/A"
             ownership_status_name = (
                 item.ownership_status.name if item.ownership_status else "N/A"
             )
             log.info(
-                f"  - Game: {gamename} (BGG ID: {bgg_id}) "
+                f"  - Game: {gamename} (BGG ID: {bggid}) "
                 f"(Owned Status: {ownership_status_name})"
             )
     else:

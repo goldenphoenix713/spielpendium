@@ -217,7 +217,8 @@ class Game(SQLModel, table=True):
     name: str
     sub_name: str | None = None
     version: float
-    image: bytes = Field(repr=False)
+    image: bytes | None = Field(default=None, repr=False)
+    thumbnail: bytes | None = Field(default=None, repr=False)
     description: str = Field(repr=False)
     release_year: int = Field(repr=False)
     min_players: int = Field(repr=False)
