@@ -1,20 +1,14 @@
-import base64
-
 import dash
 import dash_mantine_components as dmc
 from dash import Input, Output, callback, dcc, html
 
 from api.bgg_api_interface import get_user_game_collection
+from util.images import get_b64_image
 
 dash.register_page(__name__, path="/collection")
 
 
-def get_b64_image(image_bytes: bytes) -> str:
-    """Converts bytes to base64 data URI."""
-    if not image_bytes:
-        return ""
-    encoded = base64.b64encode(image_bytes).decode("ascii")
-    return f"data:image/jpeg;base64,{encoded}"
+# Removed get_b64_image as it is now in util/images.py
 
 
 def create_game_card(game, ownership_status) -> dmc.Card:

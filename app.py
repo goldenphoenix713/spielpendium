@@ -1,9 +1,12 @@
 import dash_mantine_components as dmc
+
+# noinspection PyProtectedMember
 from dash import Dash, _dash_renderer, page_container
 from dash_iconify import DashIconify
 
 from util.database.models import create_db_and_tables
 
+# noinspection PyProtectedMember
 _dash_renderer._set_react_version("18.2.0")  # type: ignore[no-untyped-call]
 
 
@@ -49,7 +52,7 @@ def generate_app() -> Dash:
                         label="Collection",
                         leftSection=DashIconify(icon="game-icons:card-draw"),
                         href="/collection",
-                        active=True,  # Logic to handle active state needed later
+                        active=True,  # Logic to handle active state needed
                     ),
                     dmc.NavLink(
                         label="Statistics",

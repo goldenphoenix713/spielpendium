@@ -40,17 +40,13 @@ client can populate it.)*
 *(Goal: Get a basic Dash application running with Mantine components.)*
 
 * **Task 2.1: Initialize Dash Application**
-    * **Description:** Set up the basic Dash application structure.
-    * **Action:** Create `app.py` (or your main Dash file) with
-      `Dash(__name__, use_pages=True)` and a basic layout. Integrate
-      `dash-mantine-components`.
-
+    * **Status:** **COMPLETED**
+    * **Description:** Set up the basic Dash application structure with Mantine
+      components and layout.
 * **Task 2.2: Define App Layout and Navigation**
-    * **Description:** Create the main layout that will contain your collection
-      view and potentially a header/footer.
-    * **Action:** Implement a `dmc.AppShell` or similar main layout. Use
-      `dcc.Location` if you plan to have separate pages for game details, or
-      stick with modals if it's all within one page.
+    * **Status:** **COMPLETED**
+    * **Description:** Created `app.py` with `dmc.AppShell`, sidebar, and
+      `dash.register_page` routing.
 
 ---
 
@@ -59,26 +55,17 @@ client can populate it.)*
 *(Goal: Display the user's game collection as interactive cards.)*
 
 * **Task 3.1: Fetch Collection Data for UI**
-    * **Description:** In your Dash app, fetch the user's collection from the
-      database using your `get_user_game_collection` function.
-    * **Action:** Implement a Dash callback that triggers on app load (or user
-      login) to call `get_user_game_collection` and store the `Collection`
-      object (or its serialized form) in a `dcc.Store` component.
-
+    * **Status:** **COMPLETED**
+    * **Description:** Implemented `get_user_game_collection` and basic loading
+      logic in `pages/collection.py`.
 * **Task 3.2: Create Game Card Component**
-    * **Description:** Design a reusable UI component for a single game in the
-      collection.
-    * **Action:** Create a Python function that returns a `dmc.Card` (or
-      similar) for a `Game` object, displaying its name, image, and maybe a few
-      key stats (e.g., min players, complexity). Each card should have a unique
-      ID that uses the `Game.bgg_id` to identify which game was clicked.
-
+    * **Status:** **COMPLETED**
+    * **Description:** Designed `create_game_card` using `dmc.Card` with binary
+      thumbnail rendering.
 * **Task 3.3: Render Dynamic Collection Grid**
-    * **Description:** Display all games from the fetched collection in a grid
-      or flex layout.
-    * **Action:** Implement a Dash callback that takes the data from the
-      `dcc.Store` (from Task 3.1) and generates a layout of `dmc.Grid`
-      containing multiple Game Card components (from Task 3.2).
+    * **Status:** **COMPLETED**
+    * **Description:** Implemented `update_grid` callback with `dmc.SimpleGrid`
+      and loading overlays.
 
 ---
 
@@ -87,31 +74,17 @@ client can populate it.)*
 *(Goal: Show comprehensive information for a selected game.)*
 
 * **Task 4.1: Implement Click Callback for Game Cards**
-    * **Description:** When a user clicks on a game card, trigger an action to
-      show its details.
-    * **Action:** Create a Dash callback with `Input` on the game cards (using
-      `ctx.triggered_id` or similar for dynamic IDs based on `Game.bgg_id`)
-      that will open a `dmc.Modal` or navigate to a new page (e.g.,
-      `/game/<bgg_id>`).
-
+    * **Status:** **COMPLETED**
+    * **Description:** Implemented `open_modal` callback triggered by
+      `game-card` indices.
 * **Task 4.2: Fetch and Display Detailed Game Information**
-    * **Description:** Retrieve the full game details from the database (or API
-      if not fully saved yet) and display them in the popup/page.
-    * **Action:** In the card click callback (Task 4.1), use `get_game_info` (
-      which should leverage `save_game_details_to_db` or query the DB directly)
-      to get the `Game` object for the clicked `bgg_id`. Populate the
-      modal/page with description, player info, complexity, etc.
-
+    * **Status:** **COMPLETED**
+    * **Description:** Modal renders full high-res image, description, stats,
+      designers, and publishers.
 * **Task 4.3: Display Associated Games with Collection Status**
+    * **Status:** **IN PROGRESS**
     * **Description:** Within the detail view, list related games and indicate
       if the user owns them.
-    * **Action:** Extend the detail view component to:
-        * Query the `RelatedGame` table for games associated with the current
-          game.
-        * For each associated game, query `CollectionItem` to check if
-          `current_user_collection_id` and `associated_game_id` exists.
-        * Display the associated game names, perhaps with a small icon or text
-          indicating "In Collection."
 
 ---
 
@@ -139,6 +112,10 @@ client can populate it.)*
 
 **Cross-Cutting Concerns:**
 
+* **Testing & Quality Assurance**:
+    * **Status:** **IN PROGRESS**
+    * **Action:** Implemented `pytest` suite for BGG ingestion, binary image
+      handling, and collection synchronization.
 * **Error Handling and Loading States**: Throughout the UI, implement
   `dmc.LoadingOverlay` or other indicators for API calls and database fetches.
   Add robust `try-except` blocks for all data operations.
