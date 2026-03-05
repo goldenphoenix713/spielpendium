@@ -56,14 +56,18 @@ def test_process_and_save_game_details_basic(session: Session):
                     "@id": "3030",
                 },
                 "boardgameartist": {"@value": "Test Artist", "@id": "4040"},
-                "boardgameexpansion": {
-                    "@value": "Test Expansion",
-                    "@objectid": "456",
-                },
-                "boardgamereimplementation": {
-                    "@value": "Test Reimplementation",
-                    "@objectid": "789",
-                },
+                "link": [
+                    {
+                        "@type": "boardgameexpansion",
+                        "@value": "Test Expansion",
+                        "@id": "456",
+                    },
+                    {
+                        "@type": "boardgamereimplementation",
+                        "@value": "Test Reimplementation",
+                        "@id": "789",
+                    },
+                ],
             }
         }
     }

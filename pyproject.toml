@@ -151,3 +151,8 @@ exclude = [
 
 [tool.ty.environment]
 python-version = "3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+norecursedirs = ["old", ".venv", ".git"]
