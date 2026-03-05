@@ -15,6 +15,10 @@ class Settings(BaseSettings):
 
     debug: bool = False
 
+    reset_db: bool = False
+
+    test_user: str = ""
+
     model_config = SettingsConfigDict(
         env_file=ROOT_DIR / ".env", extra="ignore"
     )
@@ -32,3 +36,7 @@ TIME_BETWEEN_API_CHECKS = settings.time_between_api_checks
 IMAGE_SIZE = settings.image_size
 
 DEBUG = settings.debug
+
+RESET_DB = settings.reset_db
+
+TEST_USER = settings.test_user

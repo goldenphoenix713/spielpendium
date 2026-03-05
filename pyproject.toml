@@ -55,6 +55,11 @@ dev = [
     "types-xmltodict>=1.0.1.20260113",
     "pre-commit>=4.5.1",
     "ty>=0.0.19",
+    "types-pygments>=2.19.0.20251121",
+    "types-colorama>=0.4.15.20250801",
+    "types-decorator>=5.2.0.20251101",
+    "types-defusedxml>=0.7.0.20250822",
+    "types-psutil>=7.2.2.20260130",
 ]
 
 [tool.ruff]
@@ -126,8 +131,8 @@ warn_redundant_casts = true
 [[tool.mypy.overrides]]
 module = [
     "dash.*",
-    "dash-mantine-components.*",
-    "dash-iconify.*",
+    "dash_mantine_components.*",
+    "dash_iconify.*",
     "plotly.*",
     "pandas.*", # Pandas also often needs this
 ]

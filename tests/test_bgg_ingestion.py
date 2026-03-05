@@ -7,7 +7,7 @@ from api.bgg_api_interface import (
     _process_and_save_game_details,
     save_collection_data_to_db,
 )
-from util.database.models import (
+from util.models import (
     Collection,
     Game,
     GameRelationship,
@@ -120,7 +120,6 @@ def test_process_and_save_game_details_with_images(session: Session):
                 "@id": "123",
                 "name": {"@type": "primary", "@value": "Image Test Game"},
                 "image": "http://example.com/image.jpg",
-                "thumbnail": "http://example.com/thumb.jpg",
                 "statistics": {
                     "ratings": {
                         "average": {"@value": "5.0"},
@@ -135,17 +134,13 @@ def test_process_and_save_game_details_with_images(session: Session):
     }
 
     mock_image_content = b"fake-image-binary-data"
-    mock_thumb_content = b"fake-thumb-binary-data"
 
     with patch("requests.Session.get") as mock_get:
         # Configure mock to return different content based on URL
         def side_effect(url, **kwargs):
             mock_res = MagicMock()
             mock_res.status_code = 200
-            if "image.jpg" in url:
-                mock_res.content = mock_image_content
-            else:
-                mock_res.content = mock_thumb_content
+            mock_res.content = mock_image_content
             return mock_res
 
         mock_get.side_effect = side_effect
@@ -153,7 +148,6 @@ def test_process_and_save_game_details_with_images(session: Session):
         game = _process_and_save_game_details(session, 123, mock_bgg_data)
 
         assert game.image == mock_image_content
-        assert game.thumbnail == mock_thumb_content
 
 
 def test_save_collection_data_to_db_full_flow(session: Session):

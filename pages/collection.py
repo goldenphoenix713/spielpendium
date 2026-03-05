@@ -1,25 +1,40 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import dash
 import dash_mantine_components as dmc
 from dash import Input, Output, callback, dcc, html
+from sqlalchemy.orm import selectinload
+from sqlmodel import Session, select
 
 from api.bgg_api_interface import get_user_game_collection
+from config import TEST_USER
 from util.images import get_b64_image
+from util.models import (
+    Collection,
+    CollectionItem,
+    Game,
+    RelatedGame,
+    engine,
+)
 
-dash.register_page(__name__, path="/collection")
+if TYPE_CHECKING:
+    from util.models import OwnershipStatus
+
+dash.register_page(__name__, path="/collection")  # type: ignore[no-untyped-call]
 
 
-# Removed get_b64_image as it is now in util/images.py
-
-
-def create_game_card(game, ownership_status) -> dmc.Card:
+def create_game_card(
+    game: Game, ownership_status: OwnershipStatus | None
+) -> dmc.Card:
     """Creates a card component for a single game."""
     return dmc.Card(
         children=[
             dmc.CardSection(
                 dmc.Image(
-                    # Use thumbnail for the grid view for better performance
-                    src=get_b64_image(game.thumbnail or game.image)
-                    if (game.thumbnail or game.image)
+                    src=get_b64_image(game.image)
+                    if game.image
                     else "https://placehold.co/200x200?text=No+Image",
                     h=200,
                     fit="contain",
@@ -39,7 +54,10 @@ def create_game_card(game, ownership_status) -> dmc.Card:
                 mb="xs",
             ),
             dmc.Text(
-                f"{game.min_players}-{game.max_players} Players • {game.min_play_time}-{game.max_play_time} Min",
+                (
+                    f"{game.min_players}-{game.max_players} Players •"
+                    f" {game.min_play_time}-{game.max_play_time} Min"
+                ),
                 size="sm",
                 c="dimmed",
             ),
@@ -111,27 +129,34 @@ layout = dmc.Container(
     Output("modal-game-content", "children"),
     Output("loading-modal", "visible"),
     Input({"type": "game-card", "index": dash.ALL}, "n_clicks"),
+    Input({"type": "related-game-link", "index": dash.ALL}, "n_clicks"),
     prevent_initial_call=True,
 )
-def open_modal(n_clicks):
-    if not any(n_clicks):
+def open_modal(
+    card_clicks: list[int | None] | None, link_clicks: list[int | None] | None
+) -> tuple[bool, str, str, Any, bool]:
+    ctx = dash.callback_context
+    if not ctx.triggered:
         return False, "", "", "", False
 
-    ctx = dash.callback_context
+    # Make sure we have an actual trigger and not a creation
+    card_missing = card_clicks is None or all(x is None for x in card_clicks)
+    link_missing = link_clicks is None or all(x is None for x in link_clicks)
+
+    if card_missing and link_missing:
+        return False, "", "", "", False
+
     triggered_id = ctx.triggered_id["index"]
 
-    # Fetch game details from DB (they should be there since we synced the collection)
-    from sqlmodel import Session, select
+    # We need to distinguish if this was a card click or a link click
+    # but the bgg_id is the index in both cases.
 
-    from util.database.models import (
-        Game,
-        engine,
-    )
-
+    # Fetch game details from DB
     with Session(engine) as session:
         game = session.exec(
             select(Game).where(Game.bgg_id == triggered_id)
         ).first()
+
         if not game:
             return (
                 True,
@@ -141,7 +166,13 @@ def open_modal(n_clicks):
                 False,
             )
 
-        # Prepare description (BeautifulSoup text cleaning was done on ingestion)
+        # Get User's Collection ID
+        user_collection = session.exec(
+            select(Collection).where(Collection.username == TEST_USER)
+        ).first()
+        user_col_id = user_collection.id if user_collection else None
+
+        # Prepare description
         description_paragraphs = [
             html.P(p) for p in game.description.split("\n") if p.strip()
         ]
@@ -152,15 +183,93 @@ def open_modal(n_clicks):
         publishers = [pub.name for pub in game.publishers]
         categories = [cat.name for cat in game.categories]
 
+        # Get Related Games
+        related_links = session.exec(
+            select(RelatedGame)
+            .where(RelatedGame.source_game_id == game.id)
+            .options(selectinload(RelatedGame.relationship_type))  # type: ignore[arg-type]
+        ).all()
+
+        related_games_sections = []
+        if related_links:
+            # Group by relationship type
+            by_type: dict[str, list[tuple[Game, bool]]] = {}
+            for link in related_links:
+                rel_type = link.relationship_type.type
+                if rel_type not in by_type:
+                    by_type[rel_type] = []
+
+                # Fetch target game
+                target_game = session.get(Game, link.target_game_id)
+                if target_game:
+                    # Check if owned
+                    owned = False
+                    if user_col_id:
+                        owned_item = session.exec(
+                            select(CollectionItem).where(
+                                CollectionItem.collection_id == user_col_id,
+                                CollectionItem.game_id == target_game.id,
+                            )
+                        ).first()
+                        owned = owned_item is not None
+
+                    by_type[rel_type].append((target_game, owned))
+
+            for rel_type, games in by_type.items():
+                related_games_sections.append(
+                    dmc.Stack(
+                        [
+                            dmc.Text(
+                                rel_type.capitalize(),
+                                fw=700,
+                                size="sm",
+                                mt="md",
+                            ),
+                            dmc.Group(
+                                [
+                                    dmc.Button(
+                                        [
+                                            g.name,
+                                            dmc.Badge(
+                                                "Owned",
+                                                color="green",
+                                                size="xs",
+                                                ml=5,
+                                            )
+                                            if is_owned
+                                            else None,
+                                        ],
+                                        variant="subtle",
+                                        color="gray",
+                                        size="compact-xs",
+                                        id={
+                                            "type": "related-game-link",
+                                            "index": g.bgg_id,
+                                        },
+                                    )
+                                    for g, is_owned in games
+                                ],
+                                gap="xs",
+                            ),
+                        ],
+                        gap=2,
+                    )
+                )
+
         content = dmc.Grid([
             dmc.GridCol(
-                dmc.Image(
-                    # Use full image for the detail modal
-                    src=get_b64_image(game.image or game.thumbnail),
-                    radius="md",
-                    fit="contain",
-                    style={"maxHeight": "400px"},
-                ),
+                dmc.Stack([
+                    dmc.Image(
+                        # Use full image for the detail modal
+                        src=get_b64_image(game.image)
+                        if game.image
+                        else "https://placehold.co/200x200?text=No+Image",
+                        radius="md",
+                        fit="contain",
+                        style={"maxHeight": "400px"},
+                    ),
+                    *related_games_sections,
+                ]),
                 span=4,
             ),
             dmc.GridCol(
@@ -236,12 +345,9 @@ def open_modal(n_clicks):
         "collection-data-store", "data"
     ),  # Dummy input for now, eventually triggers on load
 )
-def update_grid(_):
-    # Hardcoding username for the prototype phase as discussed
-    username = "phoenix713"
-
+def update_grid(_: Any) -> tuple[Any, bool]:
     # filters={"own": True} ensures we only get owned games
-    collection = get_user_game_collection(username, filters={"own": True})
+    collection = get_user_game_collection(TEST_USER, filters={"own": True})
 
     if not collection or not collection.items:
         return dmc.Alert(
@@ -250,11 +356,14 @@ def update_grid(_):
             color="red",
         ), False
 
-    cards = []
-    # collection.items is a list of CollectionItem, which has .game and .ownership_status
-    for item in collection.items:
-        if item.game:
-            cards.append(create_game_card(item.game, item.ownership_status))
+    # collection.items is a list of CollectionItem, which has .game and
+    # .ownership_status
+    # TODO: Add a sorting field and have that field be the key in sorted
+    cards = [
+        create_game_card(item.game, item.ownership_status)
+        for item in sorted(collection.items, key=lambda x: x.game.name)
+        if item.game
+    ]
 
     return dmc.SimpleGrid(
         cols={"base": 1, "sm": 2, "lg": 4, "xl": 5},

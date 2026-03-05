@@ -12,7 +12,7 @@ from sqlmodel import (
     create_engine,
 )
 
-from config import DB_FILE, DEBUG
+from config import DB_FILE, RESET_DB
 
 __author__ = "Eduardo Ruiz"
 
@@ -178,7 +178,10 @@ class Person(SQLModel, table=True):
         link_model=PersonGameLink,
         sa_relationship_kwargs={
             "primaryjoin": "Person.id==PersonGameLink.person_id",
-            "secondaryjoin": "and_(Game.id==PersonGameLink.game_id, PersonGameLink.role_id==select(PersonRole.id).where(PersonRole.role=='artist').scalar_subquery())",
+            "secondaryjoin": "and_(Game.id==PersonGameLink.game_id, "
+            "PersonGameLink.role_id==select("
+            "PersonRole.id).where("
+            "PersonRole.role=='artist').scalar_subquery())",
             "overlaps": "games_authored",
         },
     )
@@ -187,7 +190,10 @@ class Person(SQLModel, table=True):
         link_model=PersonGameLink,
         sa_relationship_kwargs={
             "primaryjoin": "Person.id==PersonGameLink.person_id",
-            "secondaryjoin": "and_(Game.id==PersonGameLink.game_id, PersonGameLink.role_id==select(PersonRole.id).where(PersonRole.role=='author').scalar_subquery())",
+            "secondaryjoin": "and_(Game.id==PersonGameLink.game_id, "
+            "PersonGameLink.role_id==select("
+            "PersonRole.id).where("
+            "PersonRole.role=='author').scalar_subquery())",
             "overlaps": "games_illustrated",
         },
     )
@@ -218,7 +224,6 @@ class Game(SQLModel, table=True):
     sub_name: str | None = None
     version: float
     image: bytes | None = Field(default=None, repr=False)
-    thumbnail: bytes | None = Field(default=None, repr=False)
     description: str = Field(repr=False)
     release_year: int = Field(repr=False)
     min_players: int = Field(repr=False)
@@ -261,7 +266,10 @@ class Game(SQLModel, table=True):
         link_model=PersonGameLink,
         sa_relationship_kwargs={
             "primaryjoin": "Game.id==PersonGameLink.game_id",
-            "secondaryjoin": "and_(Person.id==PersonGameLink.person_id, PersonGameLink.role_id==select(PersonRole.id).where(PersonRole.role=='artist').scalar_subquery())",
+            "secondaryjoin": "and_(Person.id==PersonGameLink.person_id, "
+            "PersonGameLink.role_id==select("
+            "PersonRole.id).where("
+            "PersonRole.role=='artist').scalar_subquery())",
             "overlaps": "authors,games_authored",
         },
     )
@@ -270,7 +278,10 @@ class Game(SQLModel, table=True):
         link_model=PersonGameLink,
         sa_relationship_kwargs={
             "primaryjoin": "Game.id==PersonGameLink.game_id",
-            "secondaryjoin": "and_(Person.id==PersonGameLink.person_id, PersonGameLink.role_id==select(PersonRole.id).where(PersonRole.role=='author').scalar_subquery())",
+            "secondaryjoin": "and_(Person.id==PersonGameLink.person_id, "
+            "PersonGameLink.role_id==select("
+            "PersonRole.id).where("
+            "PersonRole.role=='author').scalar_subquery())",
             "overlaps": "artists,games_illustrated",
         },
     )
@@ -291,7 +302,7 @@ engine = create_engine(f"sqlite:///{DB_FILE}", echo=False)
 
 def create_db_and_tables() -> None:
     """Creates database tables if they don't exist."""
-    if DEBUG and os.path.exists(DB_FILE):
+    if RESET_DB and os.path.exists(DB_FILE):
         # For debugging, start fresh each time.
         os.remove(DB_FILE)
 

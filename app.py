@@ -4,7 +4,7 @@ import dash_mantine_components as dmc
 from dash import Dash, _dash_renderer, page_container
 from dash_iconify import DashIconify
 
-from util.database.models import create_db_and_tables
+from util.models import create_db_and_tables
 
 # noinspection PyProtectedMember
 _dash_renderer._set_react_version("18.2.0")  # type: ignore[no-untyped-call]
@@ -33,7 +33,7 @@ def generate_app() -> Dash:
                     color="gray",
                     size="lg",
                 ),
-                href="https://github.com/phoenix713/spielpendium",
+                href="https://github.com/goldenphoenix713/spielpendium",
                 target="_blank",
             ),
         ],

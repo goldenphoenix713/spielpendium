@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import concurrent.futures
+import concurrent
 import time
 import urllib.parse
 from typing import TYPE_CHECKING, Any
-from uuid import UUID, uuid4
+from uuid import uuid4
 from xml.parsers.expat import ExpatError
 
 import requests
@@ -22,7 +22,7 @@ from config import (
     MAX_API_CHECKS,
     TIME_BETWEEN_API_CHECKS,
 )
-from util.database.models import (
+from util.models import (
     Category,
     Collection,
     CollectionItem,
@@ -36,7 +36,6 @@ from util.database.models import (
     Publisher,
     PublisherGameLink,
     RelatedGame,
-    create_db_and_tables,
     engine,
 )
 
@@ -132,6 +131,7 @@ def get_xml_info(
             log.error(
                 f"API did not generate data at {url} after "
                 f"checking {MAX_API_CHECKS} times. "
+                f"Status code: {response.status_code}"
             )
             response.raise_for_status()
 
@@ -222,7 +222,6 @@ def _process_and_save_game_details(
             bgg_id=bgg_id,
             name="Loading...",  # Temporary placeholder
             image=None,
-            thumbnail=None,
             description="",
             release_year=0,
             min_players=0,
@@ -278,12 +277,10 @@ def _process_and_save_game_details(
 
     # Fetch and store images as binary
     image_url = game_item_data.get("image")
-    thumb_url = game_item_data.get("thumbnail")
 
     log.debug(f"Image URL for {bgg_id}: {image_url}")
-    log.debug(f"Thumbnail URL for {bgg_id}: {thumb_url}")
 
-    if image_url or thumb_url:
+    if image_url:
         with requests.Session() as img_session:
             if image_url:
                 try:
@@ -291,15 +288,6 @@ def _process_and_save_game_details(
                 except Exception as e:
                     log.warning(
                         f"Failed to download image for BGG ID {bgg_id}: {e}"
-                    )
-            if thumb_url:
-                try:
-                    game.thumbnail = get_single_image(
-                        thumb_url, 10.0, img_session
-                    )
-                except Exception as e:
-                    log.warning(
-                        f"Failed to download thumbnail for BGG ID {bgg_id}: {e}"
                     )
 
     game.description = game_item_data.get("description", "") or ""
@@ -472,22 +460,22 @@ def _process_and_save_game_details(
     )
 
     # Related Games
-    for link_type_key in [
-        "boardgameexpansion",
-        "boardgamereimplementation",
-        "boardgameaccessory",
-        "boardgamecompilation",
-    ]:
-        linked_items = game_item_data.get(link_type_key, [])
-        if isinstance(linked_items, dict):
-            linked_items = [linked_items]
-
-        if not linked_items:
+    links = game_item_data.get("link", [])
+    if isinstance(links, dict):
+        links = [links]
+    for link_data in links:
+        link_type = link_data.get("@type")
+        if link_type not in [
+            "boardgameexpansion",
+            "boardgamereimplementation",
+            "boardgameaccessory",
+            "boardgamecompilation",
+        ]:
             continue
 
-        relationship_type_name = link_type_key.replace(
-            "boardgame", ""
-        ).replace("item", "")
+        relationship_type_name = link_type.replace("boardgame", "").replace(
+            "item", ""
+        )
         relationship_type_statement = select(GameRelationship).where(
             GameRelationship.type == relationship_type_name
         )
@@ -499,51 +487,48 @@ def _process_and_save_game_details(
             session.add(relationship_type)
             session.flush()
 
-        for linked_item_data in linked_items:
-            target_bgg_id_str = linked_item_data.get("@objectid")
-            if not target_bgg_id_str:
-                continue
-            target_bgg_id = int(target_bgg_id_str)
-
-            target_game_statement = select(Game).where(
-                Game.bgg_id == target_bgg_id
+        target_bgg_id_str = link_data.get("@id")
+        if not target_bgg_id_str:
+            continue
+        target_bgg_id = int(target_bgg_id_str)
+        target_game_statement = select(Game).where(
+            Game.bgg_id == target_bgg_id
+        )
+        target_game = session.exec(target_game_statement).first()
+        if not target_game:
+            target_game = Game(
+                id=uuid4().bytes,  # Generate UUID for new game
+                bgg_id=target_bgg_id,
+                name=link_data.get("@value")
+                or f"Related Game {target_bgg_id}",
+                version=0.0,
+                image=None,
+                description="",
+                release_year=0,
+                min_players=0,
+                max_players=0,
+                min_age=0,
+                min_play_time=0,
+                max_play_time=0,
+                complexity=0.0,
             )
-            target_game = session.exec(target_game_statement).first()
-            if not target_game:
-                target_game = Game(
-                    id=uuid4().bytes,  # Generate UUID for new game
-                    bgg_id=target_bgg_id,
-                    name=linked_item_data.get("#text")
-                    or f"Related Game {target_bgg_id}",
-                    version=0.0,
-                    image=None,
-                    thumbnail=None,  # Added thumbnail for related games
-                    description="",
-                    release_year=0,
-                    min_players=0,
-                    max_players=0,
-                    min_age=0,
-                    min_play_time=0,
-                    max_play_time=0,
-                    complexity=0.0,
-                )
-                session.add(target_game)
-                session.flush()
+            session.add(target_game)
+            session.flush()
 
-            related_link_statement = select(RelatedGame).where(
-                RelatedGame.source_game_id == game.id,
-                RelatedGame.target_game_id == target_game.id,
-                RelatedGame.relationship_type_id == relationship_type.id,
-            )
-            if not session.exec(related_link_statement).first():
-                session.add(
-                    RelatedGame(
-                        id=uuid4().bytes,  # Generate UUID for new related game link
-                        source_game_id=game.id,
-                        target_game_id=target_game.id,
-                        relationship_type_id=relationship_type.id,
-                    )
+        related_link_statement = select(RelatedGame).where(
+            RelatedGame.source_game_id == game.id,
+            RelatedGame.target_game_id == target_game.id,
+            RelatedGame.relationship_type_id == relationship_type.id,
+        )
+        if not session.exec(related_link_statement).first():
+            session.add(
+                RelatedGame(
+                    id=uuid4().bytes,
+                    source_game_id=game.id,
+                    target_game_id=target_game.id,
+                    relationship_type_id=relationship_type.id,
                 )
+            )
 
     return game
 
@@ -559,13 +544,13 @@ def save_collection_data_to_db(
                             API XML response.
     :type collection_data: dict[str, Any]
     """
+    # TODO Add a progress bar instead of the loading overlay
     with Session(engine) as session:
         # Find or create the Collection for the user
         collection_statement = select(Collection).where(
             Collection.username == username
         )
         collection = session.exec(collection_statement).first()
-
         if not collection:
             collection = Collection(
                 id=uuid4().bytes,
@@ -897,6 +882,8 @@ def get_single_image(
 
 if __name__ == "__main__":
     from uuid import UUID
+
+    from util.models import create_db_and_tables
 
     # Ensure tables are created and essential roles/relationships exist
     create_db_and_tables()
