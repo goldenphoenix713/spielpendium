@@ -224,3 +224,4 @@ log
 old/
 .idea
 test.*
+.DS_Store
