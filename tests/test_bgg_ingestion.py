@@ -1,7 +1,13 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, SQLModel, col, create_engine, select
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 from api.bgg_api_interface import (
     _process_and_save_game_details,
@@ -16,14 +22,14 @@ from util.models import (
 
 
 @pytest.fixture(name="session")
-def session_fixture():
+def session_fixture() -> Generator[Session, None, None]:
     engine = create_engine("sqlite:///:memory:")
     SQLModel.metadata.create_all(engine)
     with Session(engine) as session:
         yield session
 
 
-def test_process_and_save_game_details_basic(session: Session):
+def test_process_and_save_game_details_basic(session: Session) -> None:
     # Mock BGG API response structure for a single game (Thing endpoint)
     mock_bgg_data = {
         "items": {
@@ -103,21 +109,28 @@ def test_process_and_save_game_details_basic(session: Session):
     expansion_link = next(
         link
         for link in related_links
-        if session.get(GameRelationship, link.relationship_type_id).type
-        == "expansion"
+        if (rel := session.get(GameRelationship, link.relationship_type_id))
+        is not None
+        and rel.type == "expansion"
     )
     reimp_link = next(
         link
         for link in related_links
-        if session.get(GameRelationship, link.relationship_type_id).type
-        == "reimplementation"
+        if (rel := session.get(GameRelationship, link.relationship_type_id))
+        is not None
+        and rel.type == "reimplementation"
     )
 
-    assert session.get(Game, expansion_link.target_game_id).bgg_id == 456
-    assert session.get(Game, reimp_link.target_game_id).bgg_id == 789
+    game_exp = session.get(Game, expansion_link.target_game_id)
+    assert game_exp is not None
+    assert game_exp.bgg_id == 456
+
+    game_reimp = session.get(Game, reimp_link.target_game_id)
+    assert game_reimp is not None
+    assert game_reimp.bgg_id == 789
 
 
-def test_process_and_save_game_details_with_images(session: Session):
+def test_process_and_save_game_details_with_images(session: Session) -> None:
     mock_bgg_data = {
         "items": {
             "item": {
@@ -141,7 +154,7 @@ def test_process_and_save_game_details_with_images(session: Session):
 
     with patch("requests.Session.get") as mock_get:
         # Configure mock to return different content based on URL
-        def side_effect(url, **kwargs):
+        def side_effect(url: str, **kwargs: Any) -> MagicMock:
             mock_res = MagicMock()
             mock_res.status_code = 200
             mock_res.content = mock_image_content
@@ -150,11 +163,12 @@ def test_process_and_save_game_details_with_images(session: Session):
         mock_get.side_effect = side_effect
 
         game = _process_and_save_game_details(session, 123, mock_bgg_data)
+        assert game is not None
 
         assert game.image == mock_image_content
 
 
-def test_save_collection_data_to_db_full_flow(session: Session):
+def test_save_collection_data_to_db_full_flow(session: Session) -> None:
     # Patch the global engine in the module to use our in-memory test engine
     with patch("api.bgg_api_interface.engine", session.get_bind()):
         username = "test_user"
@@ -232,7 +246,7 @@ def test_save_collection_data_to_db_full_flow(session: Session):
             save_collection_data_to_db(username, mock_collection_data)
 
         # Verify games were created
-        games = session.exec(select(Game).order_by(Game.bgg_id)).all()
+        games = session.exec(select(Game).order_by(col(Game.bgg_id))).all()
         assert len(games) == 2
         assert games[0].bgg_id == 101
         assert games[0].name == "Owned Game"
@@ -254,7 +268,7 @@ def test_save_collection_data_to_db_full_flow(session: Session):
         assert wanted_item.ownership_status.name == "want"
 
 
-def test_process_and_save_game_details_not_ranked(session: Session):
+def test_process_and_save_game_details_not_ranked(session: Session) -> None:
     mock_bgg_data = {
         "items": {
             "item": {
@@ -277,10 +291,13 @@ def test_process_and_save_game_details_not_ranked(session: Session):
     }
 
     game = _process_and_save_game_details(session, 999, mock_bgg_data)
+    assert game is not None
     assert game.bgg_rank is None
 
 
-def test_process_and_save_game_details_multiple_names(session: Session):
+def test_process_and_save_game_details_multiple_names(
+    session: Session,
+) -> None:
     mock_bgg_data = {
         "items": {
             "item": {
@@ -295,5 +312,6 @@ def test_process_and_save_game_details_multiple_names(session: Session):
     }
 
     game = _process_and_save_game_details(session, 111, mock_bgg_data)
+    assert game is not None
     assert game.name == "Primary Name"
     assert game.sub_name == "Alternate Name"

@@ -7,7 +7,7 @@ from api.bgg_api_interface import get_single_image
 from util.images import get_b64_image
 
 
-def test_get_b64_image():
+def test_get_b64_image() -> None:
     assert get_b64_image(None) == ""
     assert get_b64_image(b"") == ""
 
@@ -17,7 +17,7 @@ def test_get_b64_image():
     assert get_b64_image(test_bytes) == expected
 
 
-def test_get_single_image_no_auth_header():
+def test_get_single_image_no_auth_header() -> None:
     # Verify that get_single_image does NOT use the BGG_API_TOKEN in headers
     # because it hits S3/Cloudfront which might reject it.
 
@@ -38,7 +38,7 @@ def test_get_single_image_no_auth_header():
         assert "Authorization" not in kwargs["headers"]
 
 
-def test_get_single_image_failure():
+def test_get_single_image_failure() -> None:
     image_url = "https://cf.geekdo-images.com/error.jpg"
     mock_session = MagicMock(spec=requests.Session)
     mock_response = MagicMock()

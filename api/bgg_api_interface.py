@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import concurrent
+import concurrent.futures
 import time
 import urllib.parse
 from typing import TYPE_CHECKING, Any
@@ -213,7 +213,7 @@ def _process_and_save_game_details(
         game_item_data = game_item_data[0]
 
     game_statement = select(Game).where(Game.bgg_id == bgg_id)
-    game = session.exec(game_statement).first()
+    game: Game | None = session.exec(game_statement).first()
 
     if not game:
         # Initialize with required fields to avoid IntegrityError
@@ -221,14 +221,18 @@ def _process_and_save_game_details(
             id=uuid4().bytes,  # Generate UUID for new game
             bgg_id=bgg_id,
             name="Loading...",  # Temporary placeholder
+            version=0.0,
             image=None,
             description="",
             release_year=0,
             min_players=0,
             max_players=0,
+            recommended_players=None,
             min_age=0,
             min_play_time=0,
             max_play_time=0,
+            bgg_rating=None,
+            bgg_rank=None,
             complexity=0.0,
         )
         # We don't add/flush yet; let parsing populate real values first
@@ -507,9 +511,12 @@ def _process_and_save_game_details(
                 release_year=0,
                 min_players=0,
                 max_players=0,
+                recommended_players=None,
                 min_age=0,
                 min_play_time=0,
                 max_play_time=0,
+                bgg_rating=None,
+                bgg_rank=None,
                 complexity=0.0,
             )
             session.add(target_game)
@@ -659,7 +666,6 @@ def save_collection_data_to_db(
 
             if not collection_item:
                 collection_item = CollectionItem(
-                    id=uuid4().bytes,
                     collection_id=collection.id,
                     game_id=game.id,
                     ownership_status_id=ownership_status.id,
@@ -695,7 +701,7 @@ def get_user_collection_from_db(username: str) -> Collection | None:
                 ),
             )
         )
-        collect = session.exec(statement).first()
+        collect: Collection | None = session.exec(statement).first()
         return collect
 
 
@@ -868,7 +874,7 @@ def get_single_image(
     )
 
     if response.status_code == 200:
-        image = response.content
+        image: bytes = response.content
     else:
         log.error(
             f"Failed to fetch image from {image_url}. Status code: {response.status_code}"

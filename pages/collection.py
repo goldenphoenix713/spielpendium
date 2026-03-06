@@ -22,7 +22,7 @@ from util.models import (
 if TYPE_CHECKING:
     from util.models import OwnershipStatus
 
-dash.register_page(__name__, path="/collection")  # type: ignore[no-untyped-call]
+dash.register_page(__name__, path="/collection")
 
 
 def create_game_card(

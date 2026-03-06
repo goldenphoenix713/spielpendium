@@ -380,9 +380,12 @@ if __name__ == "__main__":
             release_year=1996,
             min_players=5,
             max_players=6,
+            recommended_players=5,
             min_age=10,
             min_play_time=60,
             max_play_time=90,
+            bgg_rating=None,
+            bgg_rank=None,
             complexity=2.1,
         )
 
