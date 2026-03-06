@@ -33,23 +33,41 @@ Spielpendium is built using modern Python web technologies:
    ```
 6. Run the application:
    ```bash
-   python app.py
+   uv run python app.py
    ```
+
+## Documentation
+
+| File | Purpose |
+|---|---|
+| `TASKS.md` | Phase-by-phase feature task list |
+| `SUMMARY.md` | High-level project status overview |
+| `AGENTS.md` | Guide for AI coding assistants |
+| `DECISIONS.md` | Architecture decision records (read before refactoring) |
+| `CHANGELOG.md` | Per-session change log |
 
 ## Development
 
 - Code quality is maintained with `ruff` for linting and formatting.
-- Type checking is enforced with strict `mypy` settings.
-- Pre-commit hooks are configured to ensure code guidelines are met before pushing.
-- A `pytest` suite is included for testing the BGG ingestion and data processing pipelines.
+- Type checking is enforced with strict `mypy` and `ty` settings.
+- Pre-commit hooks run ruff, mypy, ty, and pytest automatically on every commit.
+- A `pytest` suite covers BGG ingestion, UI callbacks, models, and utilities.
 
 ### Environment Setup
 
-Create a `.env` file in the root directory (you can use the provided template if available) to configure the application, such as setting the database path.
+Create a `.env` file in the root directory to configure the application
+(database path, BGG username, debug mode, etc.).
 
-### Formatting and Linting
+### Formatting, Linting and Type Checking
 ```bash
-ruff check . --fix
-ruff format .
-mypy .
+uv run ruff check . --fix
+uv run ruff format .
+uv run mypy .
+uv run ty check
+```
+
+### Running Tests
+```bash
+uv run pytest
+uv run pytest --cov=. --cov-report=term-missing
 ```

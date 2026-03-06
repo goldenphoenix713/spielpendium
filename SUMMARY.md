@@ -2,13 +2,15 @@
 
 **Spielpendium** is a board game management tool designed to help enthusiasts organize their collections, explore game details via BoardGameGeek integration, and visualize relationships between games.
 
-## Recent Progress (as of March 2025)
+## Recent Progress (as of March 2026)
 
 Over the recent development cycle, the focus shifted from core data ingestion to project robustness and developer experience:
 
 - **Strict Type Safety**: Implemented comprehensive type hints across the entire codebase. Configured `mypy` with strict settings to prevent type-related bugs.
 - **Improved Code Quality**: Integrated `ruff` for linting and formatting. Standardized the codebase to follow modern Python best practices.
-- **Robust Pre-commit Hooks**: Configured a pre-commit pipeline that enforces code quality, formatting, type checking, and now includes automated **pytest** execution.
+- **Robust Pre-commit Hooks**: Configured a pre-commit pipeline that enforces code quality, formatting, type checking (`mypy` + `ty`), and automated **pytest** execution on every commit.
+- **Expanded Test Coverage**: Added `test_collection.py`, `test_connection_check.py`, and `test_models_extra.py` to cover UI callbacks, API helpers, and model edge cases.
+- **AI Agent Guide**: Created `AGENTS.md` with conventions, architecture notes, and testing patterns to guide AI coding assistants working in this repo.
 - **Enhanced Documentation**: Overhauled `README.md` to provide clear setup instructions, feature overviews, and technology stack details.
 
 ## Current Project Status
