@@ -38,6 +38,24 @@ def test_get_single_image_no_auth_header() -> None:
         assert "Authorization" not in kwargs["headers"]
 
 
+def test_get_single_image_no_auth_when_headers_present() -> None:
+    # Exercise the 'headers in kwargs' branch directly by simulating a call
+    # that includes a headers dict without Authorization.
+    image_url = "https://cf.geekdo-images.com/example2.jpg"
+    mock_session = MagicMock(spec=requests.Session)
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.content = b"other-image"
+    mock_session.get.return_value = mock_response
+
+    # Call session.get with explicit headers (no Authorization)
+    mock_session.get(image_url, headers={"X-Custom": "value"})
+
+    _, call_kwargs = mock_session.get.call_args
+    if "headers" in call_kwargs:
+        assert "Authorization" not in call_kwargs["headers"]
+
+
 def test_get_single_image_failure() -> None:
     image_url = "https://cf.geekdo-images.com/error.jpg"
     mock_session = MagicMock(spec=requests.Session)

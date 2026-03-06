@@ -359,10 +359,11 @@ def update_grid(_: Any) -> tuple[Any, bool]:
     # collection.items is a list of CollectionItem, which has .game and
     # .ownership_status
     # TODO: Add a sorting field and have that field be the key in sorted
+    # Filter first so the sort key never sees a None game
+    valid_items = [item for item in collection.items if item.game]
     cards = [
         create_game_card(item.game, item.ownership_status)
-        for item in sorted(collection.items, key=lambda x: x.game.name)
-        if item.game
+        for item in sorted(valid_items, key=lambda x: x.game.name)
     ]
 
     return dmc.SimpleGrid(
