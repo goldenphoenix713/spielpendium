@@ -7,11 +7,28 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+---
+
+## [0.6.0] — 2026-03-06 — Housekeeping
+
+### Changed
+- Renamed `.geminiignore` → `.aiignore` for tool-agnostic coverage
+
+---
+
+## [0.5.0] — 2026-03-06 — Project Documentation
+
 ### Added
 - `AGENTS.md` — AI coding assistant guide covering architecture, conventions,
   testing patterns, and pre-commit workflow
-- `CHANGELOG.md` (this file)
-- `DECISIONS.md` — architecture decision records explaining key design choices
+- `CHANGELOG.md` (this file) with history back to project start
+- `DECISIONS.md` — architecture decision records (7 ADRs) explaining key
+  design choices and what not to refactor
+
+### Changed
+- `README.md` — added Documentation table, `uv run` prefixes, `ty` mention,
+  separate test-running section
+- `SUMMARY.md` — corrected date to 2026, documented new test files and `ty`
 
 ---
 

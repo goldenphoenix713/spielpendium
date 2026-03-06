@@ -198,6 +198,7 @@ Before opening a PR or committing:
 - [ ] Tests written for new logic (happy path + at least one error path)
 - [ ] `uv run pre-commit run --all-files` passes cleanly
 - [ ] `TASKS.md` updated to reflect new status
+- [ ] `CHANGELOG.md` `[Unreleased]` section updated with a summary of changes
 
 ---
 
