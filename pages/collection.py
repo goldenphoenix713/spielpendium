@@ -8,7 +8,7 @@ from dash import Input, Output, callback, dcc, html
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
-from api.bgg_api_interface import get_user_game_collection
+from api import get_user_game_collection
 from config import TEST_USER
 from util.models import (
     Collection,

@@ -9,10 +9,8 @@ from sqlmodel import Session, SQLModel, col, create_engine, select
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-from api.bgg_api_interface import (
-    _process_and_save_game_details,
-    save_collection_data_to_db,
-)
+from api.bgg_api.collection import save_collection_data_to_db
+from api.bgg_api.game_details import _process_and_save_game_details
 from util.models import (
     Collection,
     Game,
@@ -52,17 +50,27 @@ def test_process_and_save_game_details_basic(session: Session) -> None:
                         },
                     }
                 },
-                "boardgamecategory": {"@value": "Fantasy", "@id": "1010"},
-                "boardgamepublisher": {
-                    "@value": "Test Publisher",
-                    "@id": "2020",
-                },
-                "boardgamedesigner": {
-                    "@value": "Test Designer",
-                    "@id": "3030",
-                },
-                "boardgameartist": {"@value": "Test Artist", "@id": "4040"},
                 "link": [
+                    {
+                        "@type": "boardgamecategory",
+                        "@value": "Fantasy",
+                        "@id": "1010",
+                    },
+                    {
+                        "@type": "boardgamepublisher",
+                        "@value": "Test Publisher",
+                        "@id": "2020",
+                    },
+                    {
+                        "@type": "boardgamedesigner",
+                        "@value": "Test Designer",
+                        "@id": "3030",
+                    },
+                    {
+                        "@type": "boardgameartist",
+                        "@value": "Test Artist",
+                        "@id": "4040",
+                    },
                     {
                         "@type": "boardgameexpansion",
                         "@value": "Test Expansion",
@@ -111,14 +119,14 @@ def test_process_and_save_game_details_basic(session: Session) -> None:
         for link in related_links
         if (rel := session.get(GameRelationship, link.relationship_type_id))
         is not None
-        and rel.type == "expansion"
+        and rel.type == "boardgameexpansion"
     )
     reimp_link = next(
         link
         for link in related_links
         if (rel := session.get(GameRelationship, link.relationship_type_id))
         is not None
-        and rel.type == "reimplementation"
+        and rel.type == "boardgamereimplementation"
     )
 
     game_exp = session.get(Game, expansion_link.target_game_id)
@@ -172,7 +180,7 @@ def test_process_and_save_game_details_with_images(session: Session) -> None:
 
 def test_save_collection_data_to_db_full_flow(session: Session) -> None:
     # Patch the global engine in the module to use our in-memory test engine
-    with patch("api.bgg_api_interface.engine", session.get_bind()):
+    with patch("api.bgg_api.collection.engine", session.get_bind()):
         username = "test_user"
         mock_collection_data = {
             "items": {
@@ -241,7 +249,7 @@ def test_save_collection_data_to_db_full_flow(session: Session) -> None:
             }
         }
 
-        with patch("api.bgg_api_interface.get_game_info") as mock_get_info:
+        with patch("api.bgg_api.collection.get_game_info") as mock_get_info:
             mock_get_info.return_value = mock_game_details
 
             # Run the sync logic

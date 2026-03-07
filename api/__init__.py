@@ -1,4 +1,4 @@
-from .bgg_api_interface import (
+from .bgg_api import (
     get_game_info,
     get_images,
     get_user_game_collection,

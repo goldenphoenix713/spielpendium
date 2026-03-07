@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
-from api.bgg_api_interface import get_single_image
+from api.bgg_api.images import get_single_image
 
 
 def test_get_single_image_no_auth_header() -> None:
@@ -19,7 +19,7 @@ def test_get_single_image_no_auth_header() -> None:
 
     # Use patch to mock the open function so get_single_image doesn't actually try to write to disk
     with patch("builtins.open"):
-        get_single_image(123, image_url, 10.0, mock_session)
+        get_single_image(9999999, image_url, 10.0, mock_session)
 
     # Check that get was called
     args, kwargs = mock_session.get.call_args
@@ -55,4 +55,5 @@ def test_get_single_image_failure() -> None:
     mock_session.get.return_value = mock_response
 
     with pytest.raises(requests.exceptions.HTTPError):
-        get_single_image(123, image_url, 10.0, mock_session)
+        # Use an ID that shouldn't exist
+        get_single_image(9999999, image_url, 10.0, mock_session)
