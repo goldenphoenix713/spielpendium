@@ -82,7 +82,7 @@ client can populate it.)*
     * **Description:** Modal renders full high-res image, description, stats,
       designers, and publishers.
 * **Task 4.3: Display Associated Games with Collection Status**
-    * **Status:** **IN PROGRESS**
+    * **Status:** **COMPLETED**
     * **Description:** Within the detail view, list related games and indicate
       if the user owns them.
 
