@@ -1,5 +1,8 @@
 # Spielpendium - The Board Game Compendium
 
+![Coverage](https://raw.githubusercontent.com/goldenphoenix713/spielpendium/main/coverage.svg)
+[![CI](https://github.com/goldenphoenix713/spielpendium/actions/workflows/ci.yml/badge.svg)](https://github.com/goldenphoenix713/spielpendium/actions/workflows/ci.yml)
+
 Spielpendium allows users to create a compendium of their board games. A user can create their list by searching through BoardGameGeek's online catalog and adding games. Additionally, if a user has a collection on BoardGameGeek, they can import that list.
 
 The name is a portmanteau of "spiel" (German for "game", a reference to Germany's centrality in the board game sphere) and "compendium".
