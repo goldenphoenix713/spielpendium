@@ -39,6 +39,15 @@ spielpendium/
 ├── config/
 │   ├── settings.py            # pydantic-settings Config model
 │   └── directories.py        # Path constants (DB_FILE, etc.)
+├── docs/
+│   ├── AGENTS.md              # (this file) AI coding assistant guide
+│   ├── ARCHITECTURE.md        # System architecture and data flow
+│   ├── BGG_API.md             # BGG API token, rate limits, terms of use
+│   ├── CHANGELOG.md           # Per-session change log
+│   ├── DECISIONS.md           # Architecture decision records
+│   ├── SETUP.md               # Local development setup guide
+│   ├── SUMMARY.md             # High-level project status
+│   └── TASKS.md               # Phase-by-phase feature task list
 ├── pages/
 │   ├── home.py                # Home page
 │   └── collection.py         # Collection grid + detail modal
@@ -49,17 +58,13 @@ spielpendium/
 ├── tests/                     # All pytest tests (see Testing section)
 ├── app.py                     # Dash app entry point — run this to start
 ├── pyproject.toml             # All tool configuration lives here
-├── AGENTS.md                  # (this file) AI coding assistant guide
-├── CHANGELOG.md               # Per-session change log
-├── DECISIONS.md               # Architecture decision records — read before refactoring
-├── TASKS.md                   # Phase-by-phase feature task list
-└── SUMMARY.md                 # High-level project status
+└── README.md                  # Project overview
 ```
 
 > **`old/`** — legacy scripts, do not touch or import from them.
 
 > **Before refactoring** any core design (PKs, image storage, UI framework,
-> etc.), read `DECISIONS.md` first. Many choices that look "improvable" are
+> etc.), read `docs/DECISIONS.md` first. Many choices that look "improvable" are
 > deliberate — the rationale is documented there.
 
 ---
@@ -198,14 +203,14 @@ Before opening a PR or committing:
 - [ ] Type-only imports are inside `if TYPE_CHECKING:`
 - [ ] Tests written for new logic (happy path + at least one error path)
 - [ ] `uv run pre-commit run --all-files` passes cleanly
-- [ ] `TASKS.md` updated to reflect new status
-- [ ] `CHANGELOG.md` `[Unreleased]` section updated with a summary of changes
+- [ ] `docs/TASKS.md` updated to reflect new status
+- [ ] `docs/CHANGELOG.md` `[Unreleased]` section updated with a summary of changes
 
 ---
 
 ## Current Development Focus
 
-See `TASKS.md` for the authoritative task list. As of the latest commit:
+See `docs/TASKS.md` for the authoritative task list. As of the latest commit:
 
 - **Phase 4 (Game Detail View)** is in progress — Task 4.3 (related games with
   ownership badges) is the active work item.
