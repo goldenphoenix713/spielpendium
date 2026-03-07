@@ -7,7 +7,7 @@ from dash_iconify import DashIconify
 from util.models import create_db_and_tables
 
 # noinspection PyProtectedMember
-_dash_renderer._set_react_version("18.2.0")  # type: ignore[no-untyped-call]
+_dash_renderer._set_react_version("18.2.0")  # type: ignore  # ty: ignore[unused-type-ignore-comment, unused-ignore-comment]
 
 
 def generate_app() -> Dash:

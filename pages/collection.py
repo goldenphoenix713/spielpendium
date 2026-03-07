@@ -10,7 +10,6 @@ from sqlmodel import Session, select
 
 from api.bgg_api_interface import get_user_game_collection
 from config import TEST_USER
-from util.images import get_b64_image
 from util.models import (
     Collection,
     CollectionItem,
@@ -22,7 +21,7 @@ from util.models import (
 if TYPE_CHECKING:
     from util.models import OwnershipStatus
 
-dash.register_page(__name__, path="/collection")
+dash.register_page(__name__, path="/collection")  # type: ignore  # ty: ignore[unused-type-ignore-comment, unused-ignore-comment]
 
 
 def create_game_card(
@@ -33,8 +32,8 @@ def create_game_card(
         children=[
             dmc.CardSection(
                 dmc.Image(
-                    src=get_b64_image(game.image)
-                    if game.image
+                    src=f"/assets/images/{game.image_path}"
+                    if game.image_path
                     else "https://placehold.co/200x200?text=No+Image",
                     h=200,
                     fit="contain",
@@ -187,13 +186,13 @@ def open_modal(
         related_links = session.exec(
             select(RelatedGame)
             .where(RelatedGame.source_game_id == game.id)
-            .options(selectinload(RelatedGame.relationship_type))  # type: ignore[arg-type]
+            .options(selectinload(RelatedGame.relationship_type))  # type: ignore[arg-type]  # noqa: E501
         ).all()
 
         related_games_sections = []
         if related_links:
             # Group by relationship type
-            by_type: dict[str, list[tuple[Game, bool]]] = {}
+            by_type: dict[str, list[tuple[Game, str | None]]] = {}
             for link in related_links:
                 rel_type = link.relationship_type.type
                 if rel_type not in by_type:
@@ -202,18 +201,23 @@ def open_modal(
                 # Fetch target game
                 target_game = session.get(Game, link.target_game_id)
                 if target_game:
-                    # Check if owned
-                    owned = False
+                    # Check ownership status
+                    owned_status: str | None = None
                     if user_col_id:
                         owned_item = session.exec(
-                            select(CollectionItem).where(
+                            select(CollectionItem)
+                            .where(
                                 CollectionItem.collection_id == user_col_id,
                                 CollectionItem.game_id == target_game.id,
                             )
+                            .options(
+                                selectinload(CollectionItem.ownership_status)  # type: ignore[arg-type]
+                            )
                         ).first()
-                        owned = owned_item is not None
+                        if owned_item and owned_item.ownership_status:
+                            owned_status = owned_item.ownership_status.name
 
-                    by_type[rel_type].append((target_game, owned))
+                    by_type[rel_type].append((target_game, owned_status))
 
             for rel_type, games in by_type.items():
                 related_games_sections.append(
@@ -236,8 +240,17 @@ def open_modal(
                                                 size="xs",
                                                 ml=5,
                                             )
-                                            if is_owned
-                                            else None,
+                                            if status == "owned"
+                                            else (
+                                                dmc.Badge(
+                                                    "Prev. Owned",
+                                                    color="gray",
+                                                    size="xs",
+                                                    ml=5,
+                                                )
+                                                if status == "prevowned"
+                                                else None
+                                            ),
                                         ],
                                         variant="subtle",
                                         color="gray",
@@ -247,7 +260,7 @@ def open_modal(
                                             "index": g.bgg_id,
                                         },
                                     )
-                                    for g, is_owned in games
+                                    for g, status in games
                                 ],
                                 gap="xs",
                             ),
@@ -261,8 +274,8 @@ def open_modal(
                 dmc.Stack([
                     dmc.Image(
                         # Use full image for the detail modal
-                        src=get_b64_image(game.image)
-                        if game.image
+                        src=f"/assets/images/{game.image_path}"
+                        if game.image_path
                         else "https://placehold.co/200x200?text=No+Image",
                         radius="md",
                         fit="contain",

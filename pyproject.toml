@@ -138,6 +138,7 @@ module = [
     "pandas.*", # Pandas also often needs this
 ]
 ignore_missing_imports = true
+disallow_untyped_calls = false
 
 [[tool.mypy.overrides]]
 module = "sqlmodel.*"

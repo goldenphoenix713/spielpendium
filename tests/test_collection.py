@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
 import dash
@@ -61,6 +61,22 @@ def _make_triggered(bgg_id: int) -> MagicMock:
     ]
     ctx.triggered_id = {"index": bgg_id, "type": "game-card"}
     return ctx
+
+
+def _find_badges(component: Any) -> list[dmc.Badge]:
+    """Recursively collect all dmc.Badge instances in a component tree."""
+    badges: list[dmc.Badge] = []
+    if isinstance(component, dmc.Badge):
+        badges.append(component)
+    children = getattr(component, "children", None)
+    if children is None:
+        return badges
+    if isinstance(children, list):
+        for child in children:
+            badges.extend(_find_badges(child))
+    elif hasattr(children, "children"):  # single component
+        badges.extend(_find_badges(children))
+    return badges
 
 
 # ---------------------------------------------------------------------------
@@ -337,3 +353,116 @@ class TestOpenModal:
 
         assert opened is True
         assert title == "Main Game"
+        # Walk the full component tree to find all badges and verify one is
+        # the green "Owned" badge.
+        badges = _find_badges(content)
+        assert any(
+            b.children == "Owned" and getattr(b, "color", None) == "green"
+            for b in badges
+        ), "Expected green 'Owned' badge in related game section"
+
+    def test_prevowned_related_game_shows_badge(
+        self, session: Session, mem_engine: Engine
+    ) -> None:
+        """open_modal shows a gray 'Prev. Owned' badge for prevowned games."""
+        base = create_mock_game(501, "Main Game 2")
+        expansion = create_mock_game(502, "Old Expansion")
+        rel_type = GameRelationship(type="expansion")
+        status = OwnershipStatus(name="prevowned")
+
+        session.add_all([base, expansion, rel_type, status])
+        session.commit()
+        session.refresh(base)
+        session.refresh(expansion)
+        session.refresh(rel_type)
+        session.refresh(status)
+
+        link = RelatedGame(
+            source_game_id=base.id,
+            target_game_id=expansion.id,
+            relationship_type_id=rel_type.id,
+        )
+        collection = Collection(name="My Collection", username="testuser2")
+        session.add(link)
+        session.add(collection)
+        session.commit()
+        session.refresh(collection)
+
+        session.add(
+            CollectionItem(
+                collection_id=collection.id,
+                game_id=expansion.id,
+                ownership_status_id=status.id,
+            )
+        )
+        session.commit()
+
+        ctx = _make_triggered(501)
+
+        with (
+            patch("pages.collection.dash.callback_context", ctx),
+            patch("pages.collection.engine", mem_engine),
+            patch("pages.collection.TEST_USER", "testuser2"),
+        ):
+            _, title, _, content, _ = open_modal([1], [None])
+
+        assert title == "Main Game 2"
+        badges = _find_badges(content)
+        assert any(
+            b.children == "Prev. Owned" and getattr(b, "color", None) == "gray"
+            for b in badges
+        ), "Expected gray 'Prev. Owned' badge in related game section"
+
+    def test_want_related_game_shows_no_badge(
+        self, session: Session, mem_engine: Engine
+    ) -> None:
+        """open_modal shows no badge when a related game has 'want' status."""
+        base = create_mock_game(601, "Main Game 3")
+        expansion = create_mock_game(602, "Wished Expansion")
+        rel_type = GameRelationship(type="expansion")
+        status = OwnershipStatus(name="want")
+
+        session.add_all([base, expansion, rel_type, status])
+        session.commit()
+        session.refresh(base)
+        session.refresh(expansion)
+        session.refresh(rel_type)
+        session.refresh(status)
+
+        link = RelatedGame(
+            source_game_id=base.id,
+            target_game_id=expansion.id,
+            relationship_type_id=rel_type.id,
+        )
+        collection = Collection(name="My Collection", username="testuser3")
+        session.add(link)
+        session.add(collection)
+        session.commit()
+        session.refresh(collection)
+
+        session.add(
+            CollectionItem(
+                collection_id=collection.id,
+                game_id=expansion.id,
+                ownership_status_id=status.id,
+            )
+        )
+        session.commit()
+
+        ctx = _make_triggered(601)
+
+        with (
+            patch("pages.collection.dash.callback_context", ctx),
+            patch("pages.collection.engine", mem_engine),
+            patch("pages.collection.TEST_USER", "testuser3"),
+        ):
+            _, title, _, content, _ = open_modal([1], [None])
+
+        assert title == "Main Game 3"
+        badges = _find_badges(content)
+        owned_or_prev = [
+            b for b in badges if b.children in ("Owned", "Prev. Owned")
+        ]
+        assert not owned_or_prev, (
+            "Expected no ownership badge for 'want' status"
+        )

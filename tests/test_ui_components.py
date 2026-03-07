@@ -4,7 +4,7 @@ import dash
 import dash_mantine_components as dmc
 
 # Mock dash.register_page before importing the module to prevent side-effects
-dash.register_page = MagicMock()  # type: ignore[assignment]
+dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]
 
 from pages.collection import create_game_card  # noqa: E402
 from tests.test_models import create_mock_game  # noqa: E402
@@ -48,7 +48,7 @@ def test_create_game_card_basic() -> None:
 def test_create_game_card_no_rating_or_image() -> None:
     game = create_mock_game(99, "Mystery Game")
     game.bgg_rating = None
-    game.image = None
+    game.image_path = None
 
     card = create_game_card(game, None)
     assert isinstance(card.children, list)

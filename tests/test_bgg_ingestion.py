@@ -78,7 +78,7 @@ def test_process_and_save_game_details_basic(session: Session) -> None:
         }
     }
 
-    game = _process_and_save_game_details(session, 123, mock_bgg_data)
+    game, _ = _process_and_save_game_details(session, 123, mock_bgg_data)
     assert game is not None
     assert game.name == "Test Game"
     assert game.bgg_id == 123
@@ -162,10 +162,12 @@ def test_process_and_save_game_details_with_images(session: Session) -> None:
 
         mock_get.side_effect = side_effect
 
-        game = _process_and_save_game_details(session, 123, mock_bgg_data)
-        assert game is not None
+        game, _ = _process_and_save_game_details(session, 123, mock_bgg_data)
+    session.commit()
 
-        assert game.image == mock_image_content
+    assert game is not None
+
+    # We will remove the image assertion in a bit, as _process_and_save_game_details won't set image_path anymore
 
 
 def test_save_collection_data_to_db_full_flow(session: Session) -> None:
@@ -290,7 +292,7 @@ def test_process_and_save_game_details_not_ranked(session: Session) -> None:
         }
     }
 
-    game = _process_and_save_game_details(session, 999, mock_bgg_data)
+    game, _ = _process_and_save_game_details(session, 999, mock_bgg_data)
     assert game is not None
     assert game.bgg_rank is None
 
@@ -311,7 +313,7 @@ def test_process_and_save_game_details_multiple_names(
         }
     }
 
-    game = _process_and_save_game_details(session, 111, mock_bgg_data)
+    game, _ = _process_and_save_game_details(session, 111, mock_bgg_data)
     assert game is not None
     assert game.name == "Primary Name"
     assert game.sub_name == "Alternate Name"

@@ -19,6 +19,7 @@ from sqlmodel import Session, select
 from config import (
     BGG_API_TOKEN,
     BGG_API_URL,
+    IMAGE_DIR,
     MAX_API_CHECKS,
     TIME_BETWEEN_API_CHECKS,
 )
@@ -189,7 +190,7 @@ def user_exists_in_db(username: str) -> bool:
 
 def _process_and_save_game_details(
     session: Session, bgg_id: int, game_detail_data: dict[str, Any]
-) -> Game | None:
+) -> tuple[Game | None, str | None]:
     """Helper function to process detailed game data from BGG API.
 
     :param session: The SQLModel session to use.
@@ -202,7 +203,7 @@ def _process_and_save_game_details(
 
     if not game_item_data:
         log.error(f"No game item data found for bgg_id: {bgg_id} in response.")
-        return None
+        return None, None
 
     if isinstance(game_item_data, list):
         if len(game_item_data) > 1:
@@ -222,7 +223,7 @@ def _process_and_save_game_details(
             bgg_id=bgg_id,
             name="Loading...",  # Temporary placeholder
             version=0.0,
-            image=None,
+            image_path=None,
             description="",
             release_year=0,
             min_players=0,
@@ -279,20 +280,11 @@ def _process_and_save_game_details(
         game_item_data.get("yearpublished", {}).get("@value", 0)
     )
 
-    # Fetch and store images as binary
+    # Image downloading is now done in batch by the caller
     image_url = game_item_data.get("image")
-
     log.debug(f"Image URL for {bgg_id}: {image_url}")
-
-    if image_url:
-        with requests.Session() as img_session:
-            if image_url:
-                try:
-                    game.image = get_single_image(image_url, 10.0, img_session)
-                except Exception as e:
-                    log.warning(
-                        f"Failed to download image for BGG ID {bgg_id}: {e}"
-                    )
+    # Initialize it as None, it will be updated by the caller
+    game.image_path = None
 
     game.description = game_item_data.get("description", "") or ""
     if (
@@ -506,7 +498,7 @@ def _process_and_save_game_details(
                 name=link_data.get("@value")
                 or f"Related Game {target_bgg_id}",
                 version=0.0,
-                image=None,
+                image_path=None,
                 description="",
                 release_year=0,
                 min_players=0,
@@ -537,7 +529,7 @@ def _process_and_save_game_details(
                 )
             )
 
-    return game
+    return game, image_url
 
 
 def save_collection_data_to_db(
@@ -610,13 +602,33 @@ def save_collection_data_to_db(
             if isinstance(game_items, dict):
                 game_items = [game_items]
 
+            images_to_download: list[tuple[int, str]] = []
+
             for g_item in game_items:
                 # Wrap each item in a structure compatible with _process_and_save_game_details
                 single_game_data = {"items": {"item": g_item}}
                 bgg_id_val = int(g_item.get("@id", 0))
-                _process_and_save_game_details(
+                g_obj, g_img_url = _process_and_save_game_details(
                     session, bgg_id_val, single_game_data
                 )
+                if g_obj and g_img_url:
+                    images_to_download.append((bgg_id_val, g_img_url))
+
+            if images_to_download:
+                log.info(
+                    f"Batch downloading {len(images_to_download)} images..."
+                )
+                saved_images_dict = get_images(images_to_download)
+                # Update the games with the new image paths
+                for bgg_id_val, image_path in saved_images_dict.items():
+                    if image_path:
+                        game_statement = select(Game).where(
+                            Game.bgg_id == bgg_id_val
+                        )
+                        g_obj = session.exec(game_statement).first()
+                        if g_obj:
+                            g_obj.image_path = image_path
+                session.commit()
 
         # Re-iterate items to create CollectionItems
         for item_data in bgg_items:
@@ -823,48 +835,61 @@ def get_game_info(
     return get_xml_info(url, query=query)
 
 
-def get_images(image_urls: str | list[str]) -> list[bytes]:
-    """Retrieves images from a list of URLs.
+def get_images(
+    images_data: tuple[int, str] | list[tuple[int, str]],
+) -> dict[int, str | None]:
+    """Retrieves images from a list of BGG IDs and URLs and saves them.
 
-    :param image_urls: The image URLs.
-    :type image_urls: str | list[str]
-    :return: The images as a list of bytes.
-    :rtype: list[bytes]
+    :param images_data: A tuple or list of tuples containing (bgg_id, image_url).
+    :type images_data: tuple[int, str] | list[tuple[int, str]]
+    :return: A dictionary mapping bgg_id to image paths as strings (or None for failures).
+    :rtype: dict[int, str | None]
     """
     # Convert to list
-    if isinstance(image_urls, str):
-        image_urls = [image_urls]
+    if isinstance(images_data, tuple):
+        images_data = [images_data]
 
     # Set up pool of subprocesses to each get an image
     with (
         concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor,
         requests.Session() as session,
     ):
-        # Start the load operations and mark each future with its URL
-        future_to_url = {
-            executor.submit(get_single_image, url, 60.0, session): url
-            for url in image_urls
+        # Start the load operations and mark each future with its BGG ID
+        future_to_bgg_id = {
+            executor.submit(
+                get_single_image, bgg_id, url, 60.0, session
+            ): bgg_id
+            for bgg_id, url in images_data
         }
-        images = [
-            future.result()
-            for future in concurrent.futures.as_completed(future_to_url)
-        ]
+        images = {}
+        for future in concurrent.futures.as_completed(future_to_bgg_id):
+            bgg_id = future_to_bgg_id[future]
+            try:
+                images[bgg_id] = future.result()
+            except Exception as e:
+                log.warning(
+                    f"Failed to download image for BGG ID {bgg_id}: {e}"
+                )
+                images[bgg_id] = None
 
     return images
 
 
 def get_single_image(
-    image_url: str, timeout: float, session: requests.Session
-) -> bytes:
-    """Gets the image at the requested url.
+    bgg_id: int, image_url: str, timeout: float, session: requests.Session
+) -> str | None:
+    """Gets the image at the requested url and saves it to disk.
+
+    :param bgg_id: The BGG ID used for naming the image file.
+    :type bgg_id: int
 
     :param image_url: The image url.
     :type image_url: str
     :param timeout: The timeout in seconds.
     :type timeout: float
     :param session: The session to use.
-    :return: The image bytes.
-    :rtype: bytes
+    :return: The path of the image if successful, otherwise None.
+    :rtype: str | None
     """
 
     # Do not send BGG API Token to image servers (usually cloudfront/S3)
@@ -874,7 +899,11 @@ def get_single_image(
     )
 
     if response.status_code == 200:
-        image: bytes = response.content
+        filename = f"{bgg_id}.jpg"
+        image_path = IMAGE_DIR / filename
+        with open(image_path, "wb") as f:
+            f.write(response.content)
+        return filename
     else:
         log.error(
             f"Failed to fetch image from {image_url}. Status code: {response.status_code}"
@@ -882,8 +911,6 @@ def get_single_image(
         raise requests.exceptions.HTTPError(
             f"Failed to fetch image: {response.status_code}"
         )
-
-    return image
 
 
 if __name__ == "__main__":

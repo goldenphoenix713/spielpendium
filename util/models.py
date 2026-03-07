@@ -223,7 +223,7 @@ class Game(SQLModel, table=True):
     name: str
     sub_name: str | None = None
     version: float
-    image: bytes | None = Field(default=None, repr=False)
+    image_path: str | None = Field(default=None, repr=False)
     description: str = Field(repr=False)
     release_year: int = Field(repr=False)
     min_players: int = Field(repr=False)
@@ -340,7 +340,7 @@ if __name__ == "__main__":
             bgg_id=13,  # Added bgg_id as it is now nullable=False
             name="Catan",
             version=3.0,
-            image=b"img",
+            image_path="catan.jpg",
             description="desc",
             release_year=1996,
             min_players=2,
@@ -375,7 +375,7 @@ if __name__ == "__main__":
             bgg_id=362,  # Added bgg_id as it is now nullable=False
             name="Catan Expansion",
             version=3.0,
-            image=b"img",
+            image_path="catan_expansion.jpg",
             description="desc",
             release_year=1996,
             min_players=5,

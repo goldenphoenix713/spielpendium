@@ -1,7 +1,7 @@
 import dash
 import dash_mantine_components as dmc
 
-dash.register_page(__name__, path="/")  # type: ignore[no-untyped-call]
+dash.register_page(__name__, path="/")  # type: ignore  # ty: ignore[unused-type-ignore-comment, unused-ignore-comment]
 
 layout = dmc.Container(
     [

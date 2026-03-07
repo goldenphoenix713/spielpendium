@@ -8,7 +8,7 @@ to fetch game data and user collections.
 ## API Token Requirement
 
 BGG now **requires an Application Token** for all XML API requests. Without a
-valid token, requests may be throttled or rejected.
+valid token, requests will be rejected.
 
 ### Getting a Token
 
