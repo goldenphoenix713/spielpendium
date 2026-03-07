@@ -21,30 +21,41 @@ Spielpendium is built using modern Python web technologies:
 ## Setup and Installation
 
 1. Ensure you have Python 3.11+ installed.
-2. Install `uv` if you haven't already: `pip install uv`
+2. Install `uv` if you haven't already: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 3. Clone the repository and navigate into the directory.
-4. Create and sync the virtual environment using `uv`:
+4. Install dependencies:
    ```bash
    uv sync
    ```
-5. Activate the virtual environment:
-   ```bash
-   source .venv/bin/activate
+5. Create a `.env` file at the project root (see `docs/SETUP.md` for all options).
+   At minimum you need:
+   ```ini
+   BGG_USERNAME=your_bgg_username
+   BGG_API_TOKEN=your_token_here   # Required — see docs/BGG_API.md
+   DB_FILE=db/spielpendium.sqlite
    ```
 6. Run the application:
    ```bash
    uv run python app.py
    ```
 
+> **BGG API Token:** The BGG XML API now requires an Application Token sent
+> as a `Bearer` token in the `Authorization` header. Obtain one at
+> [boardgamegeek.com/applications](https://boardgamegeek.com/applications).
+> See [`docs/BGG_API.md`](docs/BGG_API.md) for full details.
+
 ## Documentation
 
 | File | Purpose |
 |---|---|
-| `TASKS.md` | Phase-by-phase feature task list |
-| `SUMMARY.md` | High-level project status overview |
-| `AGENTS.md` | Guide for AI coding assistants |
-| `DECISIONS.md` | Architecture decision records (read before refactoring) |
-| `CHANGELOG.md` | Per-session change log |
+| [`docs/SETUP.md`](docs/SETUP.md) | Full setup and installation guide |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System architecture and data flow |
+| [`docs/BGG_API.md`](docs/BGG_API.md) | BGG API token, rate limits, and terms of use |
+| [`docs/TASKS.md`](docs/TASKS.md) | Phase-by-phase feature task list |
+| [`docs/SUMMARY.md`](docs/SUMMARY.md) | High-level project status overview |
+| [`docs/AGENTS.md`](docs/AGENTS.md) | Guide for AI coding assistants |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Architecture decision records (read before refactoring) |
+| [`docs/CHANGELOG.md`](docs/CHANGELOG.md) | Per-session change log |
 
 ## Development
 
@@ -55,8 +66,9 @@ Spielpendium is built using modern Python web technologies:
 
 ### Environment Setup
 
-Create a `.env` file in the root directory to configure the application
-(database path, BGG username, debug mode, etc.).
+Create a `.env` file in the root directory. See [`docs/SETUP.md`](docs/SETUP.md)
+for all available options, and [`docs/BGG_API.md`](docs/BGG_API.md) for
+instructions on obtaining a BGG API token.
 
 ### Formatting, Linting and Type Checking
 ```bash

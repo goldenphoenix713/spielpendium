@@ -95,6 +95,7 @@ read from a `.env` file at the project root. Key variables:
 
 | Variable | Purpose |
 |---|---|
+| `BGG_API_TOKEN` | **Required.** Bearer token for the BGG XML API. Get one at [boardgamegeek.com/applications](https://boardgamegeek.com/applications). See `docs/BGG_API.md`. |
 | `BGG_USERNAME` | BGG account to sync collection for |
 | `DB_FILE` | Path to the SQLite database file |
 | `RESET_DB` | If `true`, wipe and recreate the DB on startup |
