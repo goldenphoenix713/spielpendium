@@ -34,7 +34,7 @@ def bgg_is_up() -> bool:
 
     # try to connect to BGG and check the return status.
     try:
-        response = requests.head("https://www.boardgamegeek.com/")
+        response = requests.head("https://boardgamegeek.com/")
         response.raise_for_status()
     except (
         requests.exceptions.HTTPError,
