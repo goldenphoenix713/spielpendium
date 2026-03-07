@@ -12,6 +12,7 @@ Over the recent development cycle, the focus shifted from core data ingestion to
 - **Expanded Test Coverage**: Added `test_collection.py`, `test_connection_check.py`, and `test_models_extra.py` to cover UI callbacks, API helpers, and model edge cases.
 - **AI Agent Guide**: Created `AGENTS.md` with conventions, architecture notes, and testing patterns to guide AI coding assistants working in this repo.
 - **Enhanced Documentation**: Overhauled `README.md` to provide clear setup instructions, feature overviews, and technology stack details.
+- **BGG API Refactoring**: Restructured the monolithic `bgg_api_interface.py` into a modular package (`api/bgg_api/`) to improve maintainability and type safety.
 
 ## Current Project Status
 

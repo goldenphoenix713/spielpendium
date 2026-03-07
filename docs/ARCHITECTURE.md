@@ -19,14 +19,12 @@ their details.
                    │  HTTP GET (XML) + Authorization: Bearer <token>
                    ▼
 ┌──────────────────────────────────────────────┐
-│         api/bgg_api_interface.py             │
+│                  api/bgg_api/                │
 │                                              │
-│  1. get_xml_info()   — fetch + retry logic   │
-│  2. xmltodict.parse() — XML → Python dict    │
-│  3. _process_and_save_game_details()         │
-│     — map dict fields → SQLModel objects     │
-│  4. save_collection_data_to_db()             │
-│     — write Collection + CollectionItems     │
+│  1. client.py        — fetch + retry logic   │
+│  2. xmltodict/lxml   — XML → Python dict     │
+│  3. game_details.py  — map dict → SQLModel   │
+│  4. collection.py    — fetch user collection │
 └──────────────────┬───────────────────────────┘
                    │  SQLModel Session
                    ▼
@@ -42,10 +40,10 @@ their details.
 │  pages/home.py        — welcome/landing      │
 │  pages/collection.py  — game grid + modal   │
 │  callbacks/           — shared callbacks     │
-└──────────────────────────────────────────────┘
-                   │  HTTP (browser)
-                   ▼
-              User's Browser
+└──────────────────────────────────────┬───────┘
+                                       │  HTTP (browser)
+                                       ▼
+                                  User's Browser
 ```
 
 ---
@@ -56,8 +54,17 @@ their details.
 Entry point. Calls `create_db_and_tables()` on startup, then builds and
 returns the `Dash` app with the `MantineProvider` + `AppShell` layout.
 
-### `api/bgg_api_interface.py`
-All BGG communication. Key public functions:
+### `api/`
+This directory contains API-related modules.
+
+*   **`api/bgg_api/`**: All BGG communication, split into a package for maintainability. Key modules:
+    *   **`client.py`**: Base XML fetching and error handling.
+    *   **`game_details.py`**: Parsing game-specific info (stats, related games).
+    *   **`images.py`**: Managing image storage on the filesystem.
+    *   **`collection.py`**: Ingesting user collection status.
+*   **`api/connection_check.py`**: Connectivity helpers.
+
+Public interface handles:
 
 | Function | Purpose |
 |---|---|
@@ -145,7 +152,7 @@ Browser (page load)
         └─► module-level constants (DB_FILE, DEBUG, etc.)
               ├─► util/models.py  (engine path)
               ├─► util/log.py     (log level / file)
-              └─► api/bgg_api_interface.py  (API URL, token, retry settings)
+              └─► api/bgg_api/    (API URL, token, retry settings)
 ```
 
 ---

@@ -33,7 +33,7 @@ list of related games (expansions, reimplementations) with ownership badges.
 ```
 spielpendium/
 ├── api/
-│   ├── bgg_api_interface.py   # BGG data ingestion — XML → DB
+│   ├── bgg_api/               # BGG data ingestion package
 │   └── connection_check.py    # Connectivity helpers
 ├── callbacks/                 # Shared / global Dash callbacks
 ├── config/

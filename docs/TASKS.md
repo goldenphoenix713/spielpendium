@@ -119,7 +119,7 @@ client can populate it.)*
 * **Error Handling and Loading States**: Throughout the UI, implement
   `dmc.LoadingOverlay` or other indicators for API calls and database fetches.
   Add robust `try-except` blocks for all data operations.
-* **Logging**: Ensure consistent logging throughout `api/bgg_api_interface.py`
+* **Logging**: Ensure consistent logging throughout `api/bgg_api/`
   and your Dash callbacks for easier debugging.
 * **`config.py`**: Make sure `config.py` is properly set up with `BGG_API_URL`,
   `BGG_API_TOKEN`, `DB_FILE`, and `DEBUG` for all environments.

@@ -26,8 +26,8 @@ Send the token as a `Bearer` token in the `Authorization` request header:
 Authorization: Bearer <your-token>
 ```
 
-In Spielpendium, this is handled automatically in `api/bgg_api_interface.py`
-via `get_xml_info()`. Set your token in the `.env` file:
+In Spielpendium, this is handled automatically in the `api/bgg_api/`
+package via `get_xml_info()` in `client.py`. Set your token in the `.env` file:
 
 ```ini
 BGG_API_TOKEN=your_token_here
