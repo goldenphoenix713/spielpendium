@@ -9,6 +9,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.7.0] — 2026-03-07 — API Refactor & Type Safety
+
+### Added
+- `api/bgg_api/` structure: split monolithic interface into functional modules:
+  - `client.py` — base HTTP and XML parsing
+  - `game_details.py` — game-specific ingestion logic
+  - `images.py` — image processing and filesystem storage
+  - `collection.py` — BGG collection retrieval
+
+### Changed
+- Replaced monolithic `api/bgg_api_interface.py` with `api/bgg_api/` package
+- Updated all imports in `pages/collection.py`, `tests/test_bgg_ingestion.py`, and `tests/test_utils.py`
+
+### Fixed
+- Argument type mismatch in `Game` model instantiation within `game_details.py`
+- Removed unused attributes (`thumbnail`, `users_rated`) previously incorrectly assigned to `Game` model
+
 ## [0.6.0] — 2026-03-06 — Housekeeping
 
 ### Changed
