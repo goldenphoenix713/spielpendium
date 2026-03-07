@@ -1,7 +1,7 @@
 # Spielpendium - The Board Game Compendium
 
-![Coverage](https://raw.githubusercontent.com/goldenphoenix713/spielpendium/main/coverage.svg)
-[![CI](https://github.com/goldenphoenix713/spielpendium/actions/workflows/ci.yml/badge.svg)](https://github.com/goldenphoenix713/spielpendium/actions/workflows/ci.yml)
+![Coverage](./coverage.svg)
+[![CI](https://github.com/goldenphoenix713/spielpendium/actions/workflows/ci.yml/badge.svg?branch=restructure)](https://github.com/goldenphoenix713/spielpendium/actions/workflows/ci.yml)
 
 Spielpendium allows users to create a compendium of their board games. A user can create their list by searching through BoardGameGeek's online catalog and adding games. Additionally, if a user has a collection on BoardGameGeek, they can import that list.
 
