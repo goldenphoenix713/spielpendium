@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from loguru import logger as log
+from sqlmodel import Session as SQLModelSession
 from sqlmodel import select
 
 from config import BGG_API_URL
@@ -20,14 +21,15 @@ from util.models import (
     Publisher,
     PublisherGameLink,
     RelatedGame,
+    engine,
 )
 
 from .client import get_xml_info
+from .images import get_images
 
 if TYPE_CHECKING:
     from typing import TypeVar
 
-    from sqlmodel import Session as SQLModelSession
     from sqlmodel import SQLModel
 
     TModel = TypeVar("TModel", bound=SQLModel)
@@ -432,3 +434,26 @@ def get_game_info(
     #  Need to add a limiter here.
 
     return get_xml_info(url, query=query)
+
+
+def save_game_data_to_db(game_data: dict[str, Any]) -> None:
+    """Saves game data to the database."""
+    single_game_data = {"items": {"item": game_data}}
+    bgg_id_val = int(game_data.get("@id", 0))
+
+    with SQLModelSession(engine) as session:
+        g_obj, g_img_url = _process_and_save_game_details(
+            session, bgg_id_val, single_game_data
+        )
+
+    if g_img_url:
+        log.info(f"Downloading image for game {bgg_id_val}...")
+        saved_images_dict = get_images([(bgg_id_val, g_img_url)])
+        # Update the games with the new image paths
+        for bgg_id_val, image_path in saved_images_dict.items():
+            if image_path:
+                game_statement = select(Game).where(Game.bgg_id == bgg_id_val)
+                g_obj = session.exec(game_statement).first()
+                if g_obj:
+                    g_obj.image_path = image_path
+        session.commit()

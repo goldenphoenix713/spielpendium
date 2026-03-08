@@ -8,7 +8,8 @@ from dash import Input, Output, callback, dcc, html
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
-from api import get_user_game_collection
+from api import get_game_info, get_user_game_collection
+from api.bgg_api.game_details import save_game_data_to_db
 from config import TEST_USER
 from util.models import (
     Collection,
@@ -156,14 +157,22 @@ def open_modal(
             select(Game).where(Game.bgg_id == triggered_id)
         ).first()
 
-        if not game:
-            return (
-                True,
-                "Error",
-                "",
-                "Game details not found in database.",
-                False,
-            )
+        if not game or not game.description:
+            game_data = get_game_info(triggered_id)
+            save_game_data_to_db(game_data["items"]["item"])
+            session.flush()
+            test_game = session.exec(
+                select(Game).where(Game.bgg_id == triggered_id)
+            ).first()
+            if test_game is None:
+                return (
+                    True,
+                    "Error",
+                    "",
+                    "Game was unable to be added to the database.",
+                    False,
+                )
+            game = test_game
 
         # Get User's Collection ID
         user_collection = session.exec(
@@ -233,7 +242,16 @@ def open_modal(
                                 [
                                     dmc.Button(
                                         [
-                                            g.name,
+                                            dmc.Anchor(
+                                                g.name,
+                                                id={
+                                                    "type": "related-game-link",
+                                                    "index": g.bgg_id,
+                                                },
+                                                href="#",
+                                                variant="subtle",
+                                                size="compact-xs",
+                                            ),
                                             dmc.Badge(
                                                 "Owned",
                                                 color="green",

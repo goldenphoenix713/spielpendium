@@ -109,4 +109,4 @@ def generate_app() -> Dash:
 
 if __name__ == "__main__":
     dash_app = generate_app()
-    dash_app.run(debug=True)
+    dash_app.run(debug=True, use_reloader=False)

@@ -234,7 +234,7 @@ class Game(SQLModel, table=True):
     max_play_time: int = Field(repr=False)
     bgg_rating: float | None = Field(repr=False)
     bgg_rank: int | None = Field(repr=False)
-    complexity: float = Field(repr=False)
+    complexity: float | None = Field(repr=False)
     publishers: list[Publisher] = Relationship(
         back_populates="games", link_model=PublisherGameLink
     )
