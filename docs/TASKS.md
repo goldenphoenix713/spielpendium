@@ -126,3 +126,101 @@ client can populate it.)*
   `BGG_API_TOKEN`, `DB_FILE`, and `DEBUG` for all environments.
 * **Styling**: Apply consistent styling using `dash-mantine-components`
   themeing.
+
+---
+
+---
+
+## Phase 6: Detail View User Experience (UX)
+
+*(Goal: Improve the usability and navigation of the game detail modal.)*
+
+* **Task 6.1: Reset Modal Scroll on Navigation**
+    * **Status:** **PENDING**
+    * **Description:** Ensure the modal content resets to the top when navigating between associated games.
+    * **Action:** Update the modal rendering logic or use a client-side callback to reset scroll position whenever the `bgg_id` changes.
+* **Task 6.2: Implement Navigation History (Back/Forward)**
+    * **Status:** **PENDING**
+    * **Description:** Allow users to navigate through the history of games viewed within the current modal session.
+    * **Action:** Maintain a `dcc.Store` holding a stack of visited `bgg_id`s. Add "Back" and "Forward" buttons to the modal header that update the current `bgg_id` from the stack.
+* **Task 6.3: Expandable Sections for Associated Games**
+    * **Status:** **PENDING**
+    * **Description:** Use accordions or tabs to group associated games by type (Expansions, Reimplementations, etc.).
+    * **Action:** Replace the flat list of associated games with `dmc.Accordion`, allowing users to expand categories and save vertical space.
+* **Task 6.4: Detail Modal Layout Reorganization**
+    * **Status:** **PENDING**
+    * **Description:** Move the "Associated Games" section to the bottom and prioritize core game info.
+    * **Action:** Refactor the modal body to list description and stats first, moving the more voluminous associated games list to a secondary section or the bottom.
+* **Task 6.5: External BGG Link**
+    * **Status:** **PENDING**
+    * **Description:** Provide a direct link to the game's page on BoardGameGeek.
+    * **Action:** Add a `dmc.Anchor` or "View on BGG" button in the modal footer or header.
+
+---
+
+## Phase 7: Data Sync & Progress Tracking
+
+*(Goal: Provide better feedback and control over BGG data synchronization.)*
+
+* **Task 7.1: Collection-Level Refresh Button**
+    * **Status:** **PENDING**
+    * **Description:** Add a button to the main collection view to manually trigger a full BGG sync.
+    * **Action:** Add a "Refresh Collection" button to the header/sidebar that triggers the `save_collection_data_to_db` background process.
+* **Task 7.2: Game-Level Refresh Button**
+    * **Status:** **PENDING**
+    * **Description:** Add a button in the detail modal to refresh data for a specific game.
+    * **Action:** Add a "Sync with BGG" button in the modal that triggers `save_game_details_to_db` for the current `bgg_id`.
+* **Task 7.3: Visual Progress Tracking for Sync**
+    * **Status:** **PENDING**
+    * **Description:** Replace the generic loading overlay with a detailed progress bar during sync.
+    * **Action:** Implement a background task status tracker (possibly using `dcc.Interval` and a status file/DB table) and display a `dmc.Progress` bar showing "X of Y games synced".
+* **Task 7.4: Modal Transition Loading States**
+    * **Status:** **PENDING**
+    * **Description:** Show a clear loading indicator when fetching data for an associated game within the modal.
+    * **Action:** Ensure `dmc.LoadingOverlay` covers the modal content during `bgg_id` transitions.
+
+---
+
+## Phase 8: Advanced Navigation & Filtering
+
+*(Goal: Enhance discovery and visual customization of the collection.)*
+
+* **Task 8.1: Collection Filtering & Search**
+    * **Status:** **PENDING**
+    * **Description:** Allow users to filter the collection by various game attributes.
+    * **Action:** Add sidebar filters for:
+        *   Number of players (min/max)
+        *   Complexity (weight)
+        *   Play time
+        *   Categories/Mechanics (MultiSelect)
+    *   Update the `update_grid` callback to apply these filters to the SQLModel query.
+* **Task 8.2: Theme Customization (Dark/Light Mode)**
+    * **Status:** **PENDING**
+    * **Description:** Implement a theme toggle and refine the color palette.
+    * **Action:** Use Mantine's `ColorSchemeProvider` to allow toggling between light and dark modes. Tweak the theme colors for a more premium look.
+* **Task 8.3: BGG User Profile Link**
+    * **Status:** **PENDING**
+    * **Description:** Link to the user's full collection on BGG.
+    * **Action:** Add a link in the header or sidebar: "View Collection on BoardGameGeek".
+
+---
+
+## Phase 9: Settings & Personalization
+
+*(Goal: Manage user-specific data and improve visual indicators.)*
+
+* **Task 9.1: Enhanced Ownership Badges**
+    * **Status:** **PENDING**
+    * **Description:** Add badges for "Wishlist", "Want to Play", and "Want to Buy" statuses.
+    * **Action:** Map additional BGG collection flags to UI badges. Use distinct colors for each status.
+* **Task 9.2: Badge Layout & Styling Refinement**
+    * **Status:** **PENDING**
+    * **Description:** Improve the placement and visibility of badges on game cards and list items.
+    * **Action:** Reposition badges (e.g., to the left of the title or below) to prevent overflow in the associated games list. Explore using font styling (e.g., bolding) as an alternative indicator.
+* **Task 9.3: Settings Configuration Page**
+    * **Status:** **PENDING**
+    * **Description:** Create a dedicated settings page for user configuration.
+    * **Action:** Implement a page to manage:
+        *   BGG Username
+        *   Auto-sync frequency
+        *   Preferred image quality/caching settings
