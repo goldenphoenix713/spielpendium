@@ -104,7 +104,6 @@ jobs:
         with:
           output: coverage.svg
           overwrite: true
-          coverage_xml: combined-coverage.xml
 
       - name: Commit Coverage Badge
         uses: stefanzweifel/git-auto-commit-action@v5

@@ -8,8 +8,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- Type annotations across all test files (`tests/test_game_details.py`, `tests/test_bgg_collection.py`, etc.) for improved developer experience and catch potential test-logic bugs
+- Expanded test coverage for `api/bgg_api/game_details.py`, `api/bgg_api/collection.py`, and `util/models.py`
 - `save_game_data_to_db` in `api/bgg_api/game_details.py` to allow saving single games rather than only bulk collections
 - Related game badges and clickable navigation elements in the `open_modal` UI (`pages/collection.py`)
+
+### Fixed
+- CI workflow warning: removed unsupported `coverage_xml` input from `tj-actions/coverage-badge-py@v2`
 
 ### Changed
 - Database schema: `Game.complexity` is now optional (`float | None`) to gracefully handle BGG accessories/promos that lack weight ratings
