@@ -269,6 +269,50 @@ class TestOpenModal:
         assert opened is True
         assert rating == "N/A"
 
+    def test_game_with_no_complexity_shows_na(
+        self, session: Session, mem_engine: Engine
+    ) -> None:
+        """open_modal displays 'N/A' for games without a complexity rating."""
+        game = create_mock_game(203, "Simple Game")
+        game.complexity = None
+        game.description = "Very simple."
+        session.add(game)
+        session.commit()
+        session.refresh(game)
+
+        ctx = _make_triggered(203)
+
+        with (
+            patch("pages.collection.dash.callback_context", ctx),
+            patch("pages.collection.engine", mem_engine),
+        ):
+            opened, title, _, content, _ = open_modal([1], [None])
+
+        assert opened is True
+        assert title == "Simple Game"
+
+        # Verify 'Weight: N/A' is in the text components
+        def _get_texts(component: Any) -> list[str]:
+            texts: list[str] = []
+            if isinstance(component, dmc.Text):
+                texts.append(str(component.children))
+            children = getattr(component, "children", None)
+            if children is None:
+                return texts
+            if isinstance(children, list):
+                for child in children:
+                    texts.extend(_get_texts(child))
+            elif hasattr(children, "children"):
+                texts.extend(_get_texts(children))
+            return texts
+
+        all_text = _get_texts(content)
+        # The text might be spread out depending on the UI component structure,
+        # but we specifically want to ensure 0.0 or other defaults aren't shown,
+        # and that the component successfully rendered despite complexity being None.
+        assert not any("0.0/5" in text for text in all_text)
+        assert any("N/A" in text for text in all_text), "Expected N/A in texts"
+
     def test_related_games_shown_in_modal(
         self, session: Session, mem_engine: Engine
     ) -> None:

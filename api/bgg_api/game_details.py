@@ -165,8 +165,6 @@ def _process_and_save_game_details(
             ]:
                 if game_data.get(field) is None:
                     game_data[field] = 0
-            if game_data.get("complexity") is None:
-                game_data["complexity"] = 0.0
 
             game_obj = Game(id=uuid4().bytes, **game_data)
             session.add(game_obj)
@@ -436,24 +434,30 @@ def get_game_info(
     return get_xml_info(url, query=query)
 
 
-def save_game_data_to_db(game_data: dict[str, Any]) -> None:
+def save_game_data_to_db(
+    game_data: dict[str, Any], session: SQLModelSession | None = None
+) -> None:
     """Saves game data to the database."""
     single_game_data = {"items": {"item": game_data}}
     bgg_id_val = int(game_data.get("@id", 0))
+    if session is None:
+        session = SQLModelSession(engine)
 
-    with SQLModelSession(engine) as session:
+    with session:
         g_obj, g_img_url = _process_and_save_game_details(
             session, bgg_id_val, single_game_data
         )
 
-    if g_img_url:
-        log.info(f"Downloading image for game {bgg_id_val}...")
-        saved_images_dict = get_images([(bgg_id_val, g_img_url)])
-        # Update the games with the new image paths
-        for bgg_id_val, image_path in saved_images_dict.items():
-            if image_path:
-                game_statement = select(Game).where(Game.bgg_id == bgg_id_val)
-                g_obj = session.exec(game_statement).first()
-                if g_obj:
-                    g_obj.image_path = image_path
+        if g_img_url:
+            log.info(f"Downloading image for game {bgg_id_val}...")
+            saved_images_dict = get_images([(bgg_id_val, g_img_url)])
+            # Update the games with the new image paths
+            for bgg_id_val, image_path in saved_images_dict.items():
+                if image_path:
+                    game_statement = select(Game).where(
+                        Game.bgg_id == bgg_id_val
+                    )
+                    g_obj = session.exec(game_statement).first()
+                    if g_obj:
+                        g_obj.image_path = image_path
         session.commit()

@@ -41,7 +41,7 @@ Copy the example below into a `.env` file at the project root:
 # .env
 
 # Your BoardGameGeek username (used to sync your collection)
-BGG_USERNAME=your_bgg_username
+TEST_USER=your_bgg_username
 
 # Path to the SQLite database file
 DB_FILE=db/spielpendium.sqlite

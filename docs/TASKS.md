@@ -60,8 +60,8 @@ client can populate it.)*
       logic in `pages/collection.py`.
 * **Task 3.2: Create Game Card Component**
     * **Status:** **COMPLETED**
-    * **Description:** Designed `create_game_card` using `dmc.Card` with binary
-      thumbnail rendering.
+    * **Description:** Designed `create_game_card` using `dmc.Card` with local
+      image caching rendering.
 * **Task 3.3: Render Dynamic Collection Grid**
     * **Status:** **COMPLETED**
     * **Description:** Implemented `update_grid` callback with `dmc.SimpleGrid`
@@ -93,6 +93,7 @@ client can populate it.)*
 *(Goal: Allow seamless navigation between related game detail views.)*
 
 * **Task 5.1: Implement Click Callback for Associated Games**
+    * **Status:** **COMPLETED**
     * **Description:** Make the associated game names clickable within the
       detail view.
     * **Action:** For each associated game displayed in the detail view, wrap
@@ -101,6 +102,7 @@ client can populate it.)*
       `bgg_id` of the associated game.
 
 * **Task 5.2: Update Detail View for Associated Games**
+    * **Status:** **COMPLETED**
     * **Description:** When an associated game is clicked, the detail view
       should update to show that game's information.
     * **Action:** The callback from Task 5.1 should update the state of the
@@ -114,8 +116,8 @@ client can populate it.)*
 
 * **Testing & Quality Assurance**:
     * **Status:** **IN PROGRESS**
-    * **Action:** Implemented `pytest` suite for BGG ingestion, binary image
-      handling, and collection synchronization.
+    * **Action:** Implemented `pytest` suite for BGG ingestion, local image
+      caching handling, and collection synchronization.
 * **Error Handling and Loading States**: Throughout the UI, implement
   `dmc.LoadingOverlay` or other indicators for API calls and database fetches.
   Add robust `try-except` blocks for all data operations.

@@ -30,7 +30,7 @@ Spielpendium is built using modern Python web technologies:
 5. Create a `.env` file at the project root (see `docs/SETUP.md` for all options).
    At minimum you need:
    ```ini
-   BGG_USERNAME=your_bgg_username
+   TEST_USER=your_bgg_username
    BGG_API_TOKEN=your_token_here   # Required — see docs/BGG_API.md
    DB_FILE=db/spielpendium.sqlite
    ```
@@ -60,7 +60,6 @@ Spielpendium is built using modern Python web technologies:
 ## Development
 
 - Code quality is maintained with `ruff` for linting and formatting.
-- Type checking is enforced with strict `mypy` and `ty` settings.
 - Pre-commit hooks run ruff, mypy, ty, and pytest automatically on every commit.
 - A `pytest` suite covers BGG ingestion, UI callbacks, models, and utilities.
 

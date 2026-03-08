@@ -160,7 +160,7 @@ def open_modal(
         if not game or not game.description:
             game_data = get_game_info(triggered_id)
             save_game_data_to_db(game_data["items"]["item"])
-            session.flush()
+            session.commit()
             test_game = session.exec(
                 select(Game).where(Game.bgg_id == triggered_id)
             ).first()
@@ -313,7 +313,10 @@ def open_modal(
                                 fw=700,
                             ),
                             dmc.Text(
-                                f"Weight: {game.complexity:.2f}/5", fw=700
+                                f"Weight: {game.complexity:.2f}/5"
+                                if game.complexity
+                                else "N/A",
+                                fw=700,
                             ),
                         ],
                         gap="xl",

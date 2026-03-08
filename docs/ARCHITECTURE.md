@@ -93,9 +93,8 @@ module-level `engine` connected to `config.DB_FILE`.
 The main page. Renders the game card grid and the game detail modal.
 Callbacks in this file query the DB directly via `Session(engine)`.
 
-### `util/images.py`
-Tiny helper: converts raw image bytes → base64 `data:image/jpeg;base64,…`
-URI for embedding in the browser.
+### `api/bgg_api/images.py`
+Helper module that downloads and saves raw image bytes from BGG to the local `assets/images` directory, returning the final filesystem path for the DB to reference.
 
 ### `util/log.py`
 Configures `loguru` with console + file sinks based on `config.DEBUG` and
@@ -166,7 +165,7 @@ Browser (page load)
 | UI components | dash-mantine-components 2.x (dark-mode-first) |
 | Database | SQLite via SQLModel + SQLAlchemy 2 |
 | BGG client | HTTP + `xmltodict` (raw XML parsing) |
-| Images | Stored as binary blobs in SQLite, served as base64 URIs |
+| Images | Downloaded and cached to the local filesystem (`assets/images`) |
 | Config | `pydantic-settings` + `.env` |
 | Logging | `loguru` |
 | Package manager | `uv` |

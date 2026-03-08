@@ -325,3 +325,62 @@ def test_process_and_save_game_details_multiple_names(
     assert game is not None
     assert game.name == "Primary Name"
     assert game.sub_name == "Alternate Name"
+
+
+def test_save_game_data_to_db(session: Session) -> None:
+    mock_game_data = {
+        "@id": "555",
+        "name": {"@type": "primary", "@value": "Test Single Save"},
+        "description": "A single game save test.",
+        "yearpublished": {"@value": "2025"},
+        "minplayers": {"@value": "1"},
+        "maxplayers": {"@value": "2"},
+        "minage": {"@value": "14"},
+        "minplaytime": {"@value": "45"},
+        "maxplaytime": {"@value": "90"},
+        "statistics": {
+            "ratings": {
+                "average": {"@value": "8.0"},
+                "averageweight": {"@value": "3.5"},
+                "ranks": {"rank": {"@name": "boardgame", "@value": "42"}},
+            }
+        },
+    }
+
+    # Use the injected test session
+    from api.bgg_api.game_details import save_game_data_to_db
+
+    save_game_data_to_db(mock_game_data, session=session)
+
+    # Verify it was saved to the DB
+    game = session.exec(select(Game).where(Game.bgg_id == 555)).first()
+    assert game is not None
+    assert game.name == "Test Single Save"
+    assert game.complexity == 3.5
+
+
+def test_save_game_data_to_db_no_complexity_gracefully_handles(
+    session: Session,
+) -> None:
+    # A game (like an accessory) missing the complexity rating entirely
+    mock_game_data = {
+        "@id": "666",
+        "name": {"@type": "primary", "@value": "Test Accessory Save"},
+        "description": "A shiny new accessory.",
+        "statistics": {
+            "ratings": {
+                "average": {"@value": "0.0"},
+                # 'averageweight' omitted
+            }
+        },
+    }
+
+    from api.bgg_api.game_details import save_game_data_to_db
+
+    save_game_data_to_db(mock_game_data, session=session)
+
+    # Verify it was saved to the DB with None complexity
+    game = session.exec(select(Game).where(Game.bgg_id == 666)).first()
+    assert game is not None
+    assert game.name == "Test Accessory Save"
+    assert game.complexity is None

@@ -16,18 +16,16 @@ Over the recent development cycle, the focus shifted from core data ingestion to
 
 ## Current Project Status
 
-| Phase | Description | Status |
-| :--- | :--- | :--- |
 | **Phase 1** | Database & Data Ingestion Refinement | **COMPLETED** |
 | **Phase 2** | Core Dash Application Setup | **COMPLETED** |
 | **Phase 3** | Collection View UI & Data Display | **COMPLETED** |
-| **Phase 4** | Game Detail Popup & Related Products | **IN PROGRESS** |
-| **Phase 5** | Associated Games Navigation | **PLANNED** |
+| **Phase 4** | Game Detail Popup & Related Products | **COMPLETED** |
+| **Phase 5** | Associated Games Navigation | **COMPLETED** |
 
 ## Key Achievements
 
 1.  **Seamless BGG Ingestion**: Successfully parsing nested BGG XML data into a normalized relational SQLite database using SQLModel.
-2.  **Binary Image Storage**: Handles game thumbnails and high-res images directly in the database for offline accessibility and speed.
+2.  **Local Image Caching**: Downloads and caches game thumbnails and high-res images directly to the local filesystem (`assets/images/`), keeping the SQLite database lightweight and improving rendering performance.
 3.  **Modern UI Foundations**: Established a sleek, dark-mode-first UI using Dash Mantine Components.
 
 ## Current Focus

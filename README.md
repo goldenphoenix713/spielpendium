@@ -33,7 +33,7 @@ Spielpendium is built using modern Python web technologies:
 5. Create a `.env` file at the project root (see `docs/SETUP.md` for all options).
    At minimum you need:
    ```ini
-   BGG_USERNAME=your_bgg_username
+   TEST_USER=your_bgg_username
    BGG_API_TOKEN=your_token_here   # Required — see docs/BGG_API.md
    DB_FILE=db/spielpendium.sqlite
    ```

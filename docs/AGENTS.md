@@ -53,7 +53,6 @@ spielpendium/
 │   └── collection.py         # Collection grid + detail modal
 ├── util/
 │   ├── models.py              # SQLModel ORM models (source of truth for schema)
-│   ├── images.py              # Binary image encode/decode helpers
 │   └── log.py                 # Loguru setup
 ├── tests/                     # All pytest tests (see Testing section)
 ├── app.py                     # Dash app entry point — run this to start
@@ -101,7 +100,7 @@ read from a `.env` file at the project root. Key variables:
 | Variable | Purpose |
 |---|---|
 | `BGG_API_TOKEN` | **Required.** Bearer token for the BGG XML API. Get one at [boardgamegeek.com/applications](https://boardgamegeek.com/applications). See `docs/BGG_API.md`. |
-| `BGG_USERNAME` | BGG account to sync collection for |
+| `TEST_USER` | BGG account to sync collection for |
 | `DB_FILE` | Path to the SQLite database file |
 | `RESET_DB` | If `true`, wipe and recreate the DB on startup |
 | `DEBUG` | Dash debug mode |
@@ -150,7 +149,7 @@ tests/
 ├── test_ui_components.py       # Dash component rendering
 ├── test_collection.py          # update_grid + open_modal callbacks
 ├── test_connection_check.py    # API connectivity checks
-└── test_utils.py               # util/images.py + misc helpers
+└── test_utils.py               # api/bgg_api/images.py + misc helpers
 ```
 
 **Running tests:**

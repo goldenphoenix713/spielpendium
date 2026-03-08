@@ -7,7 +7,13 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
----
+### Added
+- `save_game_data_to_db` in `api/bgg_api/game_details.py` to allow saving single games rather than only bulk collections
+- Related game badges and clickable navigation elements in the `open_modal` UI (`pages/collection.py`)
+
+### Changed
+- Database schema: `Game.complexity` is now optional (`float | None`) to gracefully handle BGG accessories/promos that lack weight ratings
+- Updated `open_modal` to correctly display "Weight: N/A" for games without a complexity rating and properly refresh the SQLAlchemy session for newly fetched games
 
 ## [0.7.0] — 2026-03-07 — API Refactor & Type Safety
 

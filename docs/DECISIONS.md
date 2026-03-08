@@ -62,23 +62,25 @@ state without a strong reason.
 
 ---
 
-## ADR-004: Binary Image Storage in the Database
+## ADR-004: Local Filesystem Image Caching
 
-**Decision:** Game thumbnail and full-resolution images are stored as `bytes`
-BLOBs in the `Game.image` column rather than as files on disk or URLs.
+**Decision:** Game thumbnail and full-resolution images are downloaded and stored
+as files directly in the local `assets/images` directory, and the DB only stores
+the relative filename string (`Game.image_path`).
 
 **Why:**
-- Enables fully offline browsing of the collection once data is synced.
-- Avoids managing a separate image directory or CDN.
-- Simplifies deployment — single DB file contains everything.
+- Avoids inflating the SQLite database to massive unmanageable sizes when syncing
+  large collections or high-res images.
+- Images can be served natively by Dash's static asset router (`/assets/images/...`)
+  without requiring manual base64 binary encoding/decoding on the fly.
+- Still enables fully offline browsing of the collection once data is synced.
 
 **Trade-offs:**
-- Inflates DB file size significantly for large collections.
-- Images must be base64-encoded for rendering in Dash (`data:image/...`).
-  The `util/images.py` helpers handle encoding/decoding.
+- Deleting the `db/` folder doesn't clean up disk space; the `assets/images` folder
+  must be managed separately if wiping state.
 
-**Do not change to:** storing image URLs or file paths without updating
-`util/images.py`, all usages in `pages/collection.py`, and the test fixtures.
+**Do not change to:** storing hotlinked BGG URLs. BGG's CDN has strict
+hotlinking limits and this application is intended to work offline.
 
 ---
 
