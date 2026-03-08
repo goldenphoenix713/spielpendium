@@ -7,6 +7,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-03-08 — CI Fixes & Test Enhancements
+
 ### Added
 - Type annotations across all test files (`tests/test_game_details.py`, `tests/test_bgg_collection.py`, etc.) for improved developer experience and catch potential test-logic bugs
 - Expanded test coverage for `api/bgg_api/game_details.py`, `api/bgg_api/collection.py`, and `util/models.py`
