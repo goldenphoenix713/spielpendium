@@ -9,7 +9,7 @@ import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
 # Must mock register_page before importing the module
-dash.register_page = MagicMock()  # type: ignore[assignment]
+dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]
 
 from pages.collection import open_modal, update_grid  # noqa: E402
 from tests.test_models import create_mock_game  # noqa: E402
@@ -217,6 +217,11 @@ class TestOpenModal:
         with (
             patch("pages.collection.dash.callback_context", ctx),
             patch("pages.collection.engine", mem_engine),
+            patch(
+                "pages.collection.get_game_info",
+                return_value={"items": {"item": {}}},
+            ),
+            patch("pages.collection.save_game_data_to_db"),
         ):
             opened, title, rating, content, loading = open_modal([1], [None])
 
