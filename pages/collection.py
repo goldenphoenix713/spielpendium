@@ -54,7 +54,8 @@ def create_game_card(
                 mb="xs",
             ),
             dmc.Text(
-                (
+                (  # TODO Change the number of players to only one value if min and max are the same
+                    # Also do the same for the time.
                     f"{game.min_players}-{game.max_players} Players •"
                     f" {game.min_play_time}-{game.max_play_time} Min"
                 ),

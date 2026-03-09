@@ -227,3 +227,15 @@ client can populate it.)*
         *   BGG Username
         *   Auto-sync frequency
         *   Preferred image quality/caching settings
+
+---
+
+## Known Bugs
+
+* Number of players repeated when min and max is the same.
+* Time to play also has the same issue as above.
+* Game title should not have a line clamp, but maybe can scroll like a marquee with a slight pause when the start of the title.
+* The entire card should be clickable, not just the details button. Maybe just remove the details button entirely.
+* Some of the ratings badges on the game cards are on the next line after the game name. They should always be on the same line. Alternatiely, place it in a different position.
+* Think about adding something to the header to fill in the empty space between the page name (Spielpendium) and the Github logo link on the right-hand side.
+* The "Powered by BGG" image is too small and has too much padding or margin around it. It can be a big larger to fill in the space for the navbar.
