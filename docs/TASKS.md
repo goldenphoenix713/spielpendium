@@ -155,6 +155,9 @@ client can populate it.)*
     * **Status:** **PENDING**
     * **Description:** Provide a direct link to the game's page on BoardGameGeek.
     * **Action:** Add a `dmc.Anchor` or "View on BGG" button in the modal footer or header.
+* **Task 6.6: Animate Collection Cards**
+    * **Status:** **PENDING**
+    * **Description:** Animate card interface when loading/filtering collection interface.
 
 ---
 
