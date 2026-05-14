@@ -6,6 +6,7 @@ import dash_mantine_components as dmc
 # Mock dash.register_page before importing the module to prevent side-effects
 dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]
 
+from dash import html
 from pages.collection import create_game_card  # noqa: E402
 from tests.test_models import create_mock_game  # noqa: E402
 from util.models import OwnershipStatus  # noqa: E402
@@ -23,9 +24,15 @@ def test_create_game_card_basic() -> None:
     status = OwnershipStatus(name="owned")
 
     # Generate component
-    card = create_game_card(game, status)
+    card_div = create_game_card(game, status)
 
-    # Verify it is a Card component
+    # Verify it is a Div component wrapping a Card
+    assert isinstance(card_div, html.Div)
+    assert card_div.id == {"type": "game-card", "index": 1}
+    # Use to_plotly_json() to verify props in tests
+    assert card_div.to_plotly_json()["props"]["n_clicks"] == 0
+
+    card = card_div.children
     assert isinstance(card, dmc.Card)
     assert isinstance(card.children, list)
 
@@ -42,7 +49,7 @@ def test_create_game_card_basic() -> None:
     assert "60-120 Min" in stats_text.children
 
     button = card.children[3]
-    assert button.id == {"type": "game-card", "index": 1}
+    assert isinstance(button, dmc.Button)
 
 
 def test_create_game_card_no_rating_or_image() -> None:
@@ -50,7 +57,8 @@ def test_create_game_card_no_rating_or_image() -> None:
     game.bgg_rating = None
     game.image_path = None
 
-    card = create_game_card(game, None)
+    card_div = create_game_card(game, None)
+    card = card_div.children
     assert isinstance(card.children, list)
 
     # Check rating fallback

@@ -1,10 +1,22 @@
 from __future__ import annotations
 
+from html import unescape as html_unescape
 from typing import TYPE_CHECKING, Any
 
 import dash
 import dash_mantine_components as dmc
-from dash import Input, Output, callback, dcc, html
+from dash import (
+    ALL,
+    Input,
+    Output,
+    State,
+    callback,
+    clientside_callback,
+    dcc,
+    html,
+    no_update,
+)
+from dash_iconify import DashIconify
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
@@ -20,62 +32,71 @@ from util.models import (
 )
 
 if TYPE_CHECKING:
+    from dash import NoUpdate
+
     from util.models import OwnershipStatus
 
-dash.register_page(__name__, path="/collection")  # type: ignore  # ty: ignore[unused-type-ignore-comment, unused-ignore-comment]
+dash.register_page(__name__, path="/collection")  # type: ignore[no-untyped-call]
 
 
 def create_game_card(
     game: Game, ownership_status: OwnershipStatus | None
-) -> dmc.Card:
+) -> html.Div:
     """Creates a card component for a single game."""
-    return dmc.Card(
-        children=[
-            dmc.CardSection(
-                dmc.Image(
-                    src=f"/assets/images/{game.image_path}"
-                    if game.image_path
-                    else "https://placehold.co/200x200?text=No+Image",
-                    h=200,
-                    fit="contain",
-                ),
-            ),
-            dmc.Group(
-                [
-                    dmc.Text(game.name, fw=500, lineClamp=1),
-                    dmc.Badge(
-                        f"{game.bgg_rating:.1f}" if game.bgg_rating else "N/A",
-                        color="yellow",
-                        variant="light",
+    return html.Div(
+        dmc.Card(
+            children=[
+                dmc.CardSection(
+                    dmc.Image(
+                        src=f"/assets/images/{game.image_path}"
+                        if game.image_path
+                        else "https://placehold.co/200x200?text=No+Image",
+                        h=200,
+                        fit="contain",
                     ),
-                ],
-                justify="space-between",
-                mt="md",
-                mb="xs",
-            ),
-            dmc.Text(
-                (  # TODO Change the number of players to only one value if min and max are the same
-                    # Also do the same for the time.
-                    f"{game.min_players}-{game.max_players} Players •"
-                    f" {game.min_play_time}-{game.max_play_time} Min"
                 ),
-                size="sm",
-                c="dimmed",
-            ),
-            dmc.Button(
-                "Details",
-                variant="light",
-                color="blue",
-                fullWidth=True,
-                mt="md",
-                radius="md",
-                id={"type": "game-card", "index": game.bgg_id},
-            ),
-        ],
-        withBorder=True,
-        shadow="sm",
-        radius="md",
-        w="100%",
+                dmc.Group(
+                    [
+                        dmc.Text(game.name, fw=500, lineClamp=1),
+                        dmc.Badge(
+                            f"{game.bgg_rating:.1f}"
+                            if game.bgg_rating
+                            else "N/A",
+                            color="yellow",
+                            variant="light",
+                        ),
+                    ],
+                    justify="space-between",
+                    mt="md",
+                    mb="xs",
+                ),
+                dmc.Text(
+                    (
+                        # TODO: Change the number of players to only one value if min and max are the same
+                        # Also do the same for the time.
+                        f"{game.min_players}-{game.max_players} Players •"
+                        f" {game.min_play_time}-{game.max_play_time} Min"
+                    ),
+                    size="sm",
+                    c="dimmed",
+                ),
+                dmc.Button(
+                    "Details",
+                    variant="light",
+                    color="blue",
+                    fullWidth=True,
+                    mt="md",
+                    radius="md",
+                ),
+            ],
+            withBorder=True,
+            shadow="sm",
+            radius="md",
+            w="100%",
+        ),
+        id={"type": "game-card", "index": game.bgg_id},
+        n_clicks=0,
+        className="game-card-hover",
     )
 
 
@@ -96,9 +117,47 @@ layout = dmc.Container(
         dmc.Modal(
             title=dmc.Group(
                 [
-                    dmc.Title(id="modal-game-title", order=2),
-                    dmc.Badge(
-                        id="modal-game-rating", color="yellow", size="lg"
+                    dmc.Group(
+                        [
+                            dmc.ActionIcon(
+                                DashIconify(
+                                    icon="tabler:arrow-left", width=20
+                                ),
+                                id="modal-back-button",
+                                variant="subtle",
+                                color="gray",
+                                disabled=True,
+                            ),
+                            dmc.ActionIcon(
+                                DashIconify(
+                                    icon="tabler:arrow-right", width=20
+                                ),
+                                id="modal-forward-button",
+                                variant="subtle",
+                                color="gray",
+                                disabled=True,
+                            ),
+                            dmc.Title(id="modal-game-title", order=2),
+                            dmc.Badge(
+                                id="modal-game-rating",
+                                color="yellow",
+                                size="lg",
+                            ),
+                        ],
+                        gap="sm",
+                    ),
+                    dmc.Anchor(
+                        dmc.Button(
+                            "View on BGG",
+                            variant="outline",
+                            size="xs",
+                            rightSection=DashIconify(
+                                icon="tabler:external-link", width=14
+                            ),
+                        ),
+                        id="modal-bgg-link",
+                        href="#",
+                        target="_blank",
                     ),
                 ],
                 justify="space-between",
@@ -111,6 +170,7 @@ layout = dmc.Container(
                 dmc.LoadingOverlay(
                     id="loading-modal",
                     visible=False,
+                    overlayProps={"radius": "sm", "blur": 2},
                 ),
                 html.Div(
                     id="modal-game-content", style={"minHeight": "300px"}
@@ -118,8 +178,27 @@ layout = dmc.Container(
             ],
         ),
         dcc.Store(id="collection-data-store"),
+        dcc.Store(
+            id="modal-history-store",
+            data={"history": [], "current_index": -1},
+        ),
     ],
     fluid=True,
+)
+
+
+clientside_callback(
+    """
+    function(title) {
+        const modalBody = document.querySelector('.mantine-Modal-body');
+        if (modalBody) {
+            modalBody.scrollTo({top: 0, behavior: 'instant'});
+        }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("modal-game-title", "id"),
+    Input("modal-game-title", "children"),
 )
 
 
@@ -128,42 +207,104 @@ layout = dmc.Container(
     Output("modal-game-title", "children"),
     Output("modal-game-rating", "children"),
     Output("modal-game-content", "children"),
+    Output("modal-bgg-link", "href"),
     Output("loading-modal", "visible"),
-    Input({"type": "game-card", "index": dash.ALL}, "n_clicks"),
-    Input({"type": "related-game-link", "index": dash.ALL}, "n_clicks"),
+    Output("modal-history-store", "data"),
+    Output("modal-back-button", "disabled"),
+    Output("modal-forward-button", "disabled"),
+    Input({"type": "game-card", "index": ALL}, "n_clicks"),
+    Input({"type": "related-game-link", "index": ALL}, "n_clicks"),
+    Input("modal-back-button", "n_clicks"),
+    Input("modal-forward-button", "n_clicks"),
+    Input("game-detail-modal", "opened"),
+    State("modal-history-store", "data"),
     prevent_initial_call=True,
 )
 def open_modal(
-    card_clicks: list[int | None] | None, link_clicks: list[int | None] | None
-) -> tuple[bool, str, str, Any, bool]:
+    card_clicks: list[int | None] | None,
+    link_clicks: list[int | None] | None,
+    back_clicks: int | None,
+    forward_clicks: int | None,
+    modal_opened: bool,
+    history_data: dict[str, Any],
+) -> (
+    tuple[bool, str, str, Any, str, bool, dict[str, Any], bool, bool]
+    | NoUpdate
+):
     ctx = dash.callback_context
     if not ctx.triggered:
-        return False, "", "", "", False
+        return no_update
 
-    # Make sure we have an actual trigger and not a creation
-    card_missing = card_clicks is None or all(x is None for x in card_clicks)
-    link_missing = link_clicks is None or all(x is None for x in link_clicks)
+    triggered_id = ctx.triggered_id
+    trigger = ctx.triggered[0]
 
-    if card_missing and link_missing:
-        return False, "", "", "", False
+    # Handle Modal Close (Reset History) - This has priority and value can be False
+    if triggered_id == "game-detail-modal" and not modal_opened:
+        return (
+            False,
+            "",
+            "",
+            "",
+            "#",
+            False,
+            {"history": [], "current_index": -1},
+            True,
+            True,
+        )
 
-    triggered_id = ctx.triggered_id["index"]
+    # For all other triggers (clicks), ensure it's a real interaction (value > 0)
+    if trigger["value"] is None or trigger["value"] == 0:
+        return no_update
+    history = history_data.get("history", [])
+    current_index = history_data.get("current_index", -1)
+
+    bgg_id = None
+
+    if isinstance(triggered_id, dict):
+        # Card or Link click
+        bgg_id = triggered_id["index"]
+        # Add to history if it's new or different from current
+        if current_index == -1 or history[current_index] != bgg_id:
+            # If we were in the middle of history, truncate the "forward" part
+            history = history[: current_index + 1]
+            history.append(bgg_id)
+            current_index = len(history) - 1
+    elif triggered_id == "modal-back-button":
+        if current_index > 0:
+            current_index -= 1
+            bgg_id = history[current_index]
+    elif triggered_id == "modal-forward-button":
+        if current_index < len(history) - 1:
+            current_index += 1
+            bgg_id = history[current_index]
+    elif triggered_id == "game-detail-modal" and modal_opened:
+        # This can happen if the modal opens but nothing triggered it?
+        # Should be handled by card_clicks check below.
+        pass
+
+    if bgg_id is None:
+        return no_update
+
+    # Prepare history data for return
+    updated_history_data = {"history": history, "current_index": current_index}
+    back_disabled = current_index <= 0
+    forward_disabled = current_index >= len(history) - 1
+
+    # Fetch game details from DB
 
     # We need to distinguish if this was a card click or a link click
     # but the bgg_id is the index in both cases.
 
     # Fetch game details from DB
     with Session(engine) as session:
-        game = session.exec(
-            select(Game).where(Game.bgg_id == triggered_id)
-        ).first()
+        game = session.exec(select(Game).where(Game.bgg_id == bgg_id)).first()
 
         if not game or not game.description:
-            game_data = get_game_info(triggered_id)
+            game_data = get_game_info(bgg_id)
             save_game_data_to_db(game_data["items"]["item"])
             session.commit()
             test_game = session.exec(
-                select(Game).where(Game.bgg_id == triggered_id)
+                select(Game).where(Game.bgg_id == bgg_id)
             ).first()
             if test_game is None:
                 return (
@@ -171,7 +312,11 @@ def open_modal(
                     "Error",
                     "",
                     "Game was unable to be added to the database.",
+                    "#",
                     False,
+                    updated_history_data,
+                    back_disabled,
+                    forward_disabled,
                 )
             game = test_game
 
@@ -182,8 +327,10 @@ def open_modal(
         user_col_id = user_collection.id if user_collection else None
 
         # Prepare description
+        raw_description = game.description or ""
+        clean_description = html_unescape(raw_description).replace("\xad", "")
         description_paragraphs = [
-            html.P(p) for p in game.description.split("\n") if p.strip()
+            html.P(p) for p in clean_description.split("\n") if p.strip()
         ]
 
         # Get Authors and Artists
@@ -198,8 +345,7 @@ def open_modal(
             .where(RelatedGame.source_game_id == game.id)
             .options(selectinload(RelatedGame.relationship_type))  # type: ignore[arg-type]  # noqa: E501
         ).all()
-
-        related_games_sections = []
+        related_games_accordion = None
         if related_links:
             # Group by relationship type
             by_type: dict[str, list[tuple[Game, str | None]]] = {}
@@ -208,10 +354,8 @@ def open_modal(
                 if rel_type not in by_type:
                     by_type[rel_type] = []
 
-                # Fetch target game
                 target_game = session.get(Game, link.target_game_id)
                 if target_game:
-                    # Check ownership status
                     owned_status: str | None = None
                     if user_col_id:
                         owned_item = session.exec(
@@ -221,7 +365,7 @@ def open_modal(
                                 CollectionItem.game_id == target_game.id,
                             )
                             .options(
-                                selectinload(CollectionItem.ownership_status)  # type: ignore[arg-type]
+                                selectinload(CollectionItem.ownership_status)
                             )
                         ).first()
                         if owned_item and owned_item.ownership_status:
@@ -229,139 +373,205 @@ def open_modal(
 
                     by_type[rel_type].append((target_game, owned_status))
 
-            for rel_type, games in by_type.items():
-                related_games_sections.append(
-                    dmc.Stack(
-                        [
-                            dmc.Text(
-                                rel_type.capitalize(),
-                                fw=700,
-                                size="sm",
-                                mt="md",
-                            ),
-                            dmc.Group(
-                                [
-                                    dmc.Button(
-                                        [
-                                            dmc.Anchor(
-                                                g.name,
-                                                id={
-                                                    "type": "related-game-link",
-                                                    "index": g.bgg_id,
-                                                },
-                                                href="#",
-                                                variant="subtle",
-                                                size="compact-xs",
-                                            ),
-                                            dmc.Badge(
-                                                "Owned",
-                                                color="green",
-                                                size="xs",
-                                                ml=5,
-                                            )
-                                            if status == "owned"
-                                            else (
-                                                dmc.Badge(
-                                                    "Prev. Owned",
-                                                    color="gray",
-                                                    size="xs",
-                                                    ml=5,
-                                                )
-                                                if status == "prevowned"
-                                                else None
-                                            ),
-                                        ],
-                                        variant="subtle",
+            # Map technical BGG types to readable names
+            rel_name_map = {
+                "boardgameexpansion": "Expansions / Base Game",
+                "boardgamereimplementation": "Reimplementations / Editions",
+                "boardgameintegration": "Integrations",
+                "boardgamecompilation": "Compilations",
+                "boardgameaccessory": "Accessories",
+            }
+
+            accordion_items = []
+            for rel_type, games in sorted(by_type.items()):
+                display_name = rel_name_map.get(
+                    rel_type,
+                    rel_type.replace("boardgame", " ").title().strip(),
+                )
+                item_content = dmc.Group(
+                    [
+                        dmc.Group(
+                            [
+                                html.Span(
+                                    g.name,
+                                    id={
+                                        "type": "related-game-link",
+                                        "index": g.bgg_id,
+                                    },
+                                    n_clicks=0,
+                                    style={
+                                        "cursor": "pointer",
+                                        "textDecoration": "underline",
+                                        "color": "var(--mantine-color-blue-filled)",
+                                    },
+                                ),
+                                dmc.Badge(
+                                    "Owned",
+                                    color="green",
+                                    size="xs",
+                                    variant="light",
+                                )
+                                if status == "owned"
+                                else (
+                                    dmc.Badge(
+                                        "Prev. Owned",
                                         color="gray",
-                                        size="compact-xs",
-                                        id={
-                                            "type": "related-game-link",
-                                            "index": g.bgg_id,
-                                        },
+                                        size="xs",
+                                        variant="light",
                                     )
-                                    for g, status in games
-                                ],
-                                gap="xs",
+                                    if status == "prevowned"
+                                    else None
+                                ),
+                            ],
+                            gap=5,
+                        )
+                        for g, status in sorted(games, key=lambda x: x[0].name)
+                    ],
+                    gap="xs",
+                )
+
+                accordion_items.append(
+                    dmc.AccordionItem(
+                        [
+                            dmc.AccordionControl(
+                                f"{display_name} ({len(games)})"
                             ),
+                            dmc.AccordionPanel(item_content),
                         ],
-                        gap=2,
+                        value=rel_type,
                     )
                 )
 
-        content = dmc.Grid([
-            dmc.GridCol(
-                dmc.Stack([
+            related_games_accordion = dmc.Stack(
+                [
+                    dmc.Divider(label="Related Games", labelPosition="center"),
+                    dmc.Accordion(
+                        children=accordion_items,
+                        variant="separated",
+                        radius="md",
+                    ),
+                ],
+                mt="xl",
+            )
+
+        content = html.Div([
+            dmc.Grid([
+                dmc.GridCol(
                     dmc.Image(
-                        # Use full image for the detail modal
                         src=f"/assets/images/{game.image_path}"
                         if game.image_path
-                        else "https://placehold.co/200x200?text=No+Image",
+                        else "https://placehold.co/400x400?text=No+Image",
                         radius="md",
                         fit="contain",
-                        style={"maxHeight": "400px"},
+                        style={"maxHeight": "400px", "width": "100%"},
                     ),
-                    *related_games_sections,
-                ]),
-                span=4,
-            ),
-            dmc.GridCol(
-                dmc.Stack([
-                    dmc.Group(
-                        [
-                            dmc.Text(f"Year: {game.release_year}", fw=700),
-                            dmc.Text(
-                                f"Players: {game.min_players}-{game.max_players}",
-                                fw=700,
-                            ),
-                            dmc.Text(
-                                f"Weight: {game.complexity:.2f}/5"
-                                if game.complexity
-                                else "N/A",
-                                fw=700,
-                            ),
-                        ],
-                        gap="xl",
-                    ),
-                    dmc.Divider(),
-                    dmc.ScrollArea(
-                        h=200, children=dmc.Stack(description_paragraphs)
-                    ),
-                    dmc.Divider(),
-                    dmc.Grid([
-                        dmc.GridCol(
-                            dmc.Stack(
-                                [
-                                    dmc.Text("Designers", fw=700, size="sm"),
-                                    dmc.Text(", ".join(authors), size="sm"),
-                                ],
-                                gap=5,
-                            ),
-                            span=6,
+                    span=4,
+                ),
+                dmc.GridCol(
+                    dmc.Stack([
+                        dmc.Group(
+                            [
+                                dmc.Group(
+                                    [
+                                        DashIconify(
+                                            icon="tabler:calendar",
+                                            width=18,
+                                            color="gray",
+                                        ),
+                                        dmc.Text(f"{game.release_year}"),
+                                    ],
+                                    gap=5,
+                                ),
+                                dmc.Group(
+                                    [
+                                        DashIconify(
+                                            icon="tabler:users",
+                                            width=18,
+                                            color="gray",
+                                        ),
+                                        dmc.Text(
+                                            f"{game.min_players}-{game.max_players}"
+                                        ),
+                                    ],
+                                    gap=5,
+                                ),
+                                dmc.Group(
+                                    [
+                                        DashIconify(
+                                            icon="tabler:weight",
+                                            width=18,
+                                            color="gray",
+                                        ),
+                                        dmc.Text(
+                                            f"{game.complexity:.2f}/5"
+                                            if game.complexity
+                                            else "N/A"
+                                        ),
+                                    ],
+                                    gap=5,
+                                ),
+                            ],
+                            gap="xl",
                         ),
-                        dmc.GridCol(
-                            dmc.Stack(
-                                [
-                                    dmc.Text("Artists", fw=700, size="sm"),
-                                    dmc.Text(", ".join(artists), size="sm"),
-                                ],
-                                gap=5,
+                        dmc.Divider(),
+                        dmc.ScrollArea(
+                            h=250,
+                            children=dmc.Stack(description_paragraphs),
+                            type="auto",
+                        ),
+                        dmc.Divider(),
+                        dmc.Grid([
+                            dmc.GridCol(
+                                dmc.Stack(
+                                    [
+                                        dmc.Text(
+                                            "Designers", fw=700, size="sm"
+                                        ),
+                                        dmc.Text(
+                                            ", ".join(authors), size="sm"
+                                        ),
+                                    ],
+                                    gap=2,
+                                ),
+                                span=6,
                             ),
-                            span=6,
+                            dmc.GridCol(
+                                dmc.Stack(
+                                    [
+                                        dmc.Text("Artists", fw=700, size="sm"),
+                                        dmc.Text(
+                                            ", ".join(artists), size="sm"
+                                        ),
+                                    ],
+                                    gap=2,
+                                ),
+                                span=6,
+                            ),
+                        ]),
+                        dmc.Stack(
+                            [
+                                dmc.Text("Publishers", fw=700, size="sm"),
+                                dmc.Text(", ".join(publishers), size="sm"),
+                            ],
+                            gap=2,
+                        ),
+                        dmc.Group(
+                            [
+                                dmc.Badge(
+                                    cat,
+                                    variant="outline",
+                                    color="gray",
+                                    size="sm",
+                                )
+                                for cat in categories
+                            ],
+                            gap="xs",
                         ),
                     ]),
-                    dmc.Stack(
-                        [
-                            dmc.Text("Publishers", fw=700, size="sm"),
-                            dmc.Text(", ".join(publishers), size="sm"),
-                        ],
-                        gap=5,
-                    ),
-                    dmc.Group([
-                        dmc.Badge(cat, variant="outline") for cat in categories
-                    ]),
-                ]),
-                span=8,
-            ),
+                    span=8,
+                ),
+            ]),
+            related_games_accordion,
         ])
 
         return (
@@ -369,7 +579,11 @@ def open_modal(
             game.name,
             f"Rating: {game.bgg_rating:.1f}" if game.bgg_rating else "N/A",
             content,
+            f"https://boardgamegeek.com/boardgame/{game.bgg_id}",
             False,
+            updated_history_data,
+            back_disabled,
+            forward_disabled,
         )
 
 

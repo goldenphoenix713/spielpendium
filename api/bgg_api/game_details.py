@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
@@ -83,7 +84,12 @@ def _process_and_save_game_details(
         sub_name = ", ".join(sub_name_list) if sub_name_list else None
 
         image_url = game_item.get("image")
-        description = game_item.get("description")
+        description_raw = game_item.get("description")
+        description = (
+            html.unescape(description_raw).replace("\xad", "")
+            if description_raw
+            else None
+        )
         release_year_str = game_item.get("yearpublished", {}).get("@value")
         release_year = int(release_year_str) if release_year_str else None
         min_players_str = game_item.get("minplayers", {}).get("@value")

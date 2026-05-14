@@ -7,6 +7,7 @@ import dash
 import dash_mantine_components as dmc
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
+from dash import html
 
 # Must mock register_page before importing the module
 dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]
@@ -57,7 +58,7 @@ def _make_triggered(bgg_id: int) -> MagicMock:
     """Return a fake dash.callback_context with one triggered card click."""
     ctx = MagicMock()
     ctx.triggered = [
-        {"prop_id": f'{{"index":{bgg_id},"type":"game-card"}}.n_clicks'}
+        {"prop_id": f'{{"index":{bgg_id},"type":"game-card"}}.n_clicks', "value": 1}
     ]
     ctx.triggered_id = {"index": bgg_id, "type": "game-card"}
     return ctx
@@ -156,7 +157,8 @@ class TestUpdateGrid:
             grid, _ = update_grid(None)
 
         names = [
-            card.children[1].children[0].children for card in grid.children
+            card.children.children[1].children[0].children
+            for card in grid.children
         ]
         assert names == ["Azul", "Monopoly", "Zombicide"]
 
@@ -193,22 +195,23 @@ class TestOpenModal:
         ctx.triggered = []
 
         with patch("pages.collection.dash.callback_context", ctx):
-            opened, title, rating, content, loading = open_modal(None, None)
+            result = open_modal(
+                None, None, None, None, False, {"history": [], "current_index": -1}
+            )
 
-        assert opened is False
-        assert title == ""
-        assert loading is False
+        assert result == dash.no_update
 
     def test_all_none_clicks_returns_closed(self) -> None:
         """open_modal returns closed when every click value is None."""
         ctx = _make_triggered(42)
+        ctx.triggered[0]["value"] = None
 
         with patch("pages.collection.dash.callback_context", ctx):
-            opened, title, rating, content, loading = open_modal(
-                [None], [None]
+            result = open_modal(
+                [None], [None], None, None, False, {"history": [], "current_index": -1}
             )
 
-        assert opened is False
+        assert result == dash.no_update
 
     def test_game_not_found_in_db(self, mem_engine: Engine) -> None:
         """open_modal returns an error when bgg_id is not in the database."""
@@ -223,8 +226,11 @@ class TestOpenModal:
             ),
             patch("pages.collection.save_game_data_to_db"),
         ):
-            opened, title, rating, content, loading = open_modal([1], [None])
+            result = open_modal(
+                [1], [None], None, None, False, {"history": [], "current_index": -1}
+            )
 
+        opened, title, rating, content, bgg_link, loading, history, back, forward = result
         assert opened is True
         assert title == "Error"
         assert loading is False
@@ -245,8 +251,11 @@ class TestOpenModal:
             patch("pages.collection.dash.callback_context", ctx),
             patch("pages.collection.engine", mem_engine),
         ):
-            opened, title, rating, content, loading = open_modal([1], [None])
+            result = open_modal(
+                [1], [None], None, None, False, {"history": [], "current_index": -1}
+            )
 
+        opened, title, rating, content, bgg_link, loading, history, back, forward = result
         assert opened is True
         assert title == "Terra Mystica"
         assert "7.5" in rating  # from create_mock_game default bgg_rating
@@ -269,8 +278,11 @@ class TestOpenModal:
             patch("pages.collection.dash.callback_context", ctx),
             patch("pages.collection.engine", mem_engine),
         ):
-            opened, title, rating, content, loading = open_modal([1], [None])
+            result = open_modal(
+                [1], [None], None, None, False, {"history": [], "current_index": -1}
+            )
 
+        opened, title, rating, content, bgg_link, loading, history, back, forward = result
         assert opened is True
         assert rating == "N/A"
 
@@ -291,8 +303,11 @@ class TestOpenModal:
             patch("pages.collection.dash.callback_context", ctx),
             patch("pages.collection.engine", mem_engine),
         ):
-            opened, title, _, content, _ = open_modal([1], [None])
+            result = open_modal(
+                [1], [None], None, None, False, {"history": [], "current_index": -1}
+            )
 
+        opened, title, _, content, _, _, _, _, _ = result
         assert opened is True
         assert title == "Simple Game"
 
@@ -312,9 +327,6 @@ class TestOpenModal:
             return texts
 
         all_text = _get_texts(content)
-        # The text might be spread out depending on the UI component structure,
-        # but we specifically want to ensure 0.0 or other defaults aren't shown,
-        # and that the component successfully rendered despite complexity being None.
         assert not any("0.0/5" in text for text in all_text)
         assert any("N/A" in text for text in all_text), "Expected N/A in texts"
 
@@ -324,7 +336,7 @@ class TestOpenModal:
         """open_modal includes related game buttons in the modal content."""
         base = create_mock_game(301, "Base Game")
         expansion = create_mock_game(302, "Big Expansion")
-        rel_type = GameRelationship(type="expansion")
+        rel_type = GameRelationship(type="boardgameexpansion")
 
         session.add(base)
         session.add(expansion)
@@ -348,13 +360,16 @@ class TestOpenModal:
             patch("pages.collection.dash.callback_context", ctx),
             patch("pages.collection.engine", mem_engine),
         ):
-            opened, title, _, content, loading = open_modal([1], [None])
+            result = open_modal(
+                [1], [None], None, None, False, {"history": [], "current_index": -1}
+            )
 
+        opened, title, _, content, _, loading, _, _, _ = result
         assert opened is True
         assert title == "Base Game"
         assert loading is False
-        # Content is a Grid; verify it was built without errors
-        assert isinstance(content, dmc.Grid)
+        # Content is a Div wrapping a Grid; verify it was built without errors
+        assert isinstance(content, html.Div)
 
     def test_owned_related_game_shows_badge(
         self, session: Session, mem_engine: Engine
@@ -362,7 +377,7 @@ class TestOpenModal:
         """open_modal marks a related game as 'Owned' if in user's collection."""
         base = create_mock_game(401, "Main Game")
         expansion = create_mock_game(402, "Owned DLC")
-        rel_type = GameRelationship(type="expansion")
+        rel_type = GameRelationship(type="boardgameexpansion")
         status = OwnershipStatus(name="owned")
 
         session.add_all([base, expansion, rel_type, status])
@@ -398,12 +413,13 @@ class TestOpenModal:
             patch("pages.collection.engine", mem_engine),
             patch("pages.collection.TEST_USER", "testuser"),
         ):
-            opened, title, _, content, loading = open_modal([1], [None])
+            result = open_modal(
+                [1], [None], None, None, False, {"history": [], "current_index": -1}
+            )
 
+        opened, title, _, content, _, loading, _, _, _ = result
         assert opened is True
         assert title == "Main Game"
-        # Walk the full component tree to find all badges and verify one is
-        # the green "Owned" badge.
         badges = _find_badges(content)
         assert any(
             b.children == "Owned" and getattr(b, "color", None) == "green"
@@ -416,7 +432,7 @@ class TestOpenModal:
         """open_modal shows a gray 'Prev. Owned' badge for prevowned games."""
         base = create_mock_game(501, "Main Game 2")
         expansion = create_mock_game(502, "Old Expansion")
-        rel_type = GameRelationship(type="expansion")
+        rel_type = GameRelationship(type="boardgameexpansion")
         status = OwnershipStatus(name="prevowned")
 
         session.add_all([base, expansion, rel_type, status])
@@ -453,8 +469,11 @@ class TestOpenModal:
             patch("pages.collection.engine", mem_engine),
             patch("pages.collection.TEST_USER", "testuser2"),
         ):
-            _, title, _, content, _ = open_modal([1], [None])
+            result = open_modal(
+                [1], [None], None, None, False, {"history": [], "current_index": -1}
+            )
 
+        _, title, _, content, _, _, _, _, _ = result
         assert title == "Main Game 2"
         badges = _find_badges(content)
         assert any(
@@ -468,7 +487,7 @@ class TestOpenModal:
         """open_modal shows no badge when a related game has 'want' status."""
         base = create_mock_game(601, "Main Game 3")
         expansion = create_mock_game(602, "Wished Expansion")
-        rel_type = GameRelationship(type="expansion")
+        rel_type = GameRelationship(type="boardgameexpansion")
         status = OwnershipStatus(name="want")
 
         session.add_all([base, expansion, rel_type, status])
@@ -505,8 +524,11 @@ class TestOpenModal:
             patch("pages.collection.engine", mem_engine),
             patch("pages.collection.TEST_USER", "testuser3"),
         ):
-            _, title, _, content, _ = open_modal([1], [None])
+            result = open_modal(
+                [1], [None], None, None, False, {"history": [], "current_index": -1}
+            )
 
+        _, title, _, content, _, _, _, _, _ = result
         assert title == "Main Game 3"
         badges = _find_badges(content)
         owned_or_prev = [

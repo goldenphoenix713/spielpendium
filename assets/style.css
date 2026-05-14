@@ -1,0 +1,9 @@
+.game-card-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+}
+
+.game-card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--mantine-shadow-md);
+}
