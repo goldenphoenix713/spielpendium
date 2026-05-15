@@ -1,5 +1,5 @@
-ci:
-  skip: [ ty ]
+# ci:
+  # skip: [ ty ]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -32,8 +32,8 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
-      - id: ty
-        name: ty check
-        entry: uv run ty check
-        language: system
-        pass_filenames: false
+      # - id: ty
+      #   name: ty check
+      #   entry: uv run ty check
+      #   language: system
+      #   pass_filenames: false

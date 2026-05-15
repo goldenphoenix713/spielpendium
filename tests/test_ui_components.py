@@ -4,9 +4,10 @@ import dash
 import dash_mantine_components as dmc
 
 # Mock dash.register_page before importing the module to prevent side-effects
-dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]
+dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]  # ty: ignore[invalid-assignment]
 
-from dash import html
+from dash import html  # noqa: E402
+
 from pages.collection import create_game_card  # noqa: E402
 from tests.test_models import create_mock_game  # noqa: E402
 from util.models import OwnershipStatus  # noqa: E402
@@ -28,7 +29,7 @@ def test_create_game_card_basic() -> None:
 
     # Verify it is a Div component wrapping a Card
     assert isinstance(card_div, html.Div)
-    assert card_div.id == {"type": "game-card", "index": 1}
+    assert card_div.id == {"type": "game-card", "index": 1}  # ty: ignore[unresolved-attribute]
     # Use to_plotly_json() to verify props in tests
     assert card_div.to_plotly_json()["props"]["n_clicks"] == 0
 
@@ -59,15 +60,15 @@ def test_create_game_card_no_rating_or_image() -> None:
 
     card_div = create_game_card(game, None)
     card = card_div.children
-    assert isinstance(card.children, list)
+    assert isinstance(card.children, list)  # ty: ignore[unresolved-attribute]
 
     # Check rating fallback
-    group_component = card.children[1]
+    group_component = card.children[1]  # ty: ignore[unresolved-attribute]
     assert isinstance(group_component.children, list)
     badge = group_component.children[1]
     assert badge.children == "N/A"
 
     # Check image fallback
-    image_section = card.children[0]
+    image_section = card.children[0]  # ty: ignore[unresolved-attribute]
     image = image_section.children
     assert "placehold.co" in image.src

@@ -6,13 +6,16 @@ from unittest.mock import MagicMock, patch
 import dash
 import dash_mantine_components as dmc
 import pytest
-from sqlmodel import Session, SQLModel, create_engine
 from dash import html
+from sqlmodel import Session, SQLModel, create_engine
 
 # Must mock register_page before importing the module
-dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]
+dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]  # ty: ignore[invalid-assignment]
 
-from pages.collection import open_modal, update_grid  # noqa: E402
+from pages.collection import (  # noqa: E402
+    open_modal,
+    update_grid,
+)
 from tests.test_models import create_mock_game  # noqa: E402
 from util.models import (  # noqa: E402
     Collection,
@@ -26,8 +29,6 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
     from sqlalchemy.engine import Engine
-
-    from util.models import Game
 
 
 # ---------------------------------------------------------------------------
@@ -58,7 +59,10 @@ def _make_triggered(bgg_id: int) -> MagicMock:
     """Return a fake dash.callback_context with one triggered card click."""
     ctx = MagicMock()
     ctx.triggered = [
-        {"prop_id": f'{{"index":{bgg_id},"type":"game-card"}}.n_clicks', "value": 1}
+        {
+            "prop_id": f'{{"index":{bgg_id},"type":"game-card"}}.n_clicks',
+            "value": 1,
+        }
     ]
     ctx.triggered_id = {"index": bgg_id, "type": "game-card"}
     return ctx
@@ -85,76 +89,75 @@ def _find_badges(component: Any) -> list[dmc.Badge]:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Default filter/sort args for update_grid ("no filter" state)
+# ---------------------------------------------------------------------------
+_DEFAULT_GRID_ARGS = {
+    "sort_by": "name",
+    "sort_dir": "asc",
+    "name": "",
+    "players": [1, 10],
+    "play_time": [0, 300],
+    "complexity": [1.0, 5.0],
+    "bgg_rating": [1.0, 10.0],
+    "bgg_rank_max": None,
+    "year": [1900, 2100],
+    "categories": [],
+}
+
+
 class TestUpdateGrid:
+    def _make_game_dict(self, bgg_id: int, name: str, **kwargs: Any) -> dict:
+        """Build a minimal serialized game dict for use in update_grid tests."""
+        return {
+            "bgg_id": bgg_id,
+            "name": name,
+            "image_path": None,
+            "bgg_rating": kwargs.get("bgg_rating", 7.5),
+            "bgg_rank": kwargs.get("bgg_rank", 100),
+            "min_players": kwargs.get("min_players", 2),
+            "max_players": kwargs.get("max_players", 4),
+            "min_play_time": kwargs.get("min_play_time", 60),
+            "max_play_time": kwargs.get("max_play_time", 120),
+            "complexity": kwargs.get("complexity", 2.5),
+            "release_year": kwargs.get("release_year", 2020),
+            "min_age": kwargs.get("min_age", 10),
+            "categories": kwargs.get("categories", []),
+            "ownership_status": kwargs.get("ownership_status", "owned"),
+        }
+
     def test_returns_grid_on_success(self) -> None:
-        """update_grid builds a SimpleGrid when games are returned."""
-        mock_game = create_mock_game(1, "Catan")
-        mock_item = MagicMock()
-        mock_item.game = mock_game
-        mock_item.ownership_status = MagicMock(name="owned")
-
-        mock_collection = MagicMock()
-        mock_collection.items = [mock_item]
-
-        with patch(
-            "pages.collection.get_user_game_collection",
-            return_value=mock_collection,
-        ):
-            grid, loading = update_grid(None)
+        """update_grid builds a SimpleGrid when games are supplied."""
+        games = [self._make_game_dict(1, "Catan")]
+        grid, loading, count = update_grid(games, **_DEFAULT_GRID_ARGS)
 
         assert isinstance(grid, dmc.SimpleGrid)
         assert loading is False
         assert len(grid.children) == 1
+        assert "1 of 1" in count
 
-    def test_returns_alert_when_collection_is_none(self) -> None:
-        """update_grid shows an error alert when the API returns None."""
-        with patch(
-            "pages.collection.get_user_game_collection",
-            return_value=None,
-        ):
-            result, loading = update_grid(None)
+    def test_returns_alert_when_games_none(self) -> None:
+        """update_grid shows an error alert when no games are in the store."""
+        grid, loading, count = update_grid(None, **_DEFAULT_GRID_ARGS)
 
-        assert isinstance(result, dmc.Alert)
+        assert isinstance(grid, dmc.Alert)
         assert loading is False
 
-    def test_returns_alert_when_collection_items_empty(self) -> None:
-        """update_grid shows an error alert when collection has no items."""
-        mock_collection = MagicMock()
-        mock_collection.items = []
+    def test_returns_alert_when_games_empty(self) -> None:
+        """update_grid shows an error alert when store has empty list."""
+        grid, loading, count = update_grid([], **_DEFAULT_GRID_ARGS)
 
-        with patch(
-            "pages.collection.get_user_game_collection",
-            return_value=mock_collection,
-        ):
-            result, loading = update_grid(None)
-
-        assert isinstance(result, dmc.Alert)
+        assert isinstance(grid, dmc.Alert)
         assert loading is False
 
     def test_games_sorted_alphabetically(self) -> None:
-        """update_grid sorts cards by game name."""
-        game_a = create_mock_game(1, "Azul")
-        game_z = create_mock_game(2, "Zombicide")
-        game_m = create_mock_game(3, "Monopoly")
-
-        def make_item(game: Game) -> MagicMock:
-            item = MagicMock()
-            item.game = game
-            item.ownership_status = None
-            return item
-
-        mock_collection = MagicMock()
-        mock_collection.items = [
-            make_item(game_z),
-            make_item(game_m),
-            make_item(game_a),
+        """update_grid sorts cards by game name by default."""
+        games = [
+            self._make_game_dict(1, "Zombicide"),
+            self._make_game_dict(2, "Azul"),
+            self._make_game_dict(3, "Monopoly"),
         ]
-
-        with patch(
-            "pages.collection.get_user_game_collection",
-            return_value=mock_collection,
-        ):
-            grid, _ = update_grid(None)
+        grid, _, _ = update_grid(games, **_DEFAULT_GRID_ARGS)
 
         names = [
             card.children.children[1].children[0].children
@@ -162,25 +165,28 @@ class TestUpdateGrid:
         ]
         assert names == ["Azul", "Monopoly", "Zombicide"]
 
-    def test_items_with_no_game_are_skipped(self) -> None:
-        """update_grid skips CollectionItems where .game is None/falsy."""
-        real_item = MagicMock()
-        real_item.game = create_mock_game(1, "Pandemic")
-        real_item.ownership_status = None
+    def test_name_filter(self) -> None:
+        """update_grid filters games by name substring."""
+        games = [
+            self._make_game_dict(1, "Pandemic"),
+            self._make_game_dict(2, "Catan"),
+        ]
+        args = {**_DEFAULT_GRID_ARGS, "name": "catan"}
+        grid, _, count = update_grid(games, **args)
 
-        ghost_item = MagicMock()
-        ghost_item.game = None
-
-        mock_collection = MagicMock()
-        mock_collection.items = [real_item, ghost_item]
-
-        with patch(
-            "pages.collection.get_user_game_collection",
-            return_value=mock_collection,
-        ):
-            grid, _ = update_grid(None)
-
+        assert isinstance(grid, dmc.SimpleGrid)
         assert len(grid.children) == 1
+        assert "1 of 2" in count
+
+    def test_no_match_returns_yellow_alert(self) -> None:
+        """update_grid returns a yellow 'No Results' alert when nothing matches."""
+        games = [self._make_game_dict(1, "Pandemic")]
+        args = {**_DEFAULT_GRID_ARGS, "name": "zzznomatch"}
+        alert, _, count = update_grid(games, **args)
+
+        assert isinstance(alert, dmc.Alert)
+        assert getattr(alert, "color", None) == "yellow"
+        assert "0 of 1" in count
 
 
 # ---------------------------------------------------------------------------
@@ -196,7 +202,12 @@ class TestOpenModal:
 
         with patch("pages.collection.dash.callback_context", ctx):
             result = open_modal(
-                None, None, None, None, False, {"history": [], "current_index": -1}
+                None,
+                None,
+                None,
+                None,
+                False,
+                {"history": [], "current_index": -1},
             )
 
         assert result == dash.no_update
@@ -208,7 +219,12 @@ class TestOpenModal:
 
         with patch("pages.collection.dash.callback_context", ctx):
             result = open_modal(
-                [None], [None], None, None, False, {"history": [], "current_index": -1}
+                [None],
+                [None],
+                None,
+                None,
+                False,
+                {"history": [], "current_index": -1},
             )
 
         assert result == dash.no_update
@@ -227,10 +243,25 @@ class TestOpenModal:
             patch("pages.collection.save_game_data_to_db"),
         ):
             result = open_modal(
-                [1], [None], None, None, False, {"history": [], "current_index": -1}
+                [1],
+                [None],
+                None,
+                None,
+                False,
+                {"history": [], "current_index": -1},
             )
 
-        opened, title, rating, content, bgg_link, loading, history, back, forward = result
+        (
+            opened,
+            title,
+            rating,
+            content,
+            bgg_link,
+            loading,
+            history,
+            back,
+            forward,
+        ) = result
         assert opened is True
         assert title == "Error"
         assert loading is False
@@ -252,10 +283,25 @@ class TestOpenModal:
             patch("pages.collection.engine", mem_engine),
         ):
             result = open_modal(
-                [1], [None], None, None, False, {"history": [], "current_index": -1}
+                [1],
+                [None],
+                None,
+                None,
+                False,
+                {"history": [], "current_index": -1},
             )
 
-        opened, title, rating, content, bgg_link, loading, history, back, forward = result
+        (
+            opened,
+            title,
+            rating,
+            content,
+            bgg_link,
+            loading,
+            history,
+            back,
+            forward,
+        ) = result
         assert opened is True
         assert title == "Terra Mystica"
         assert "7.5" in rating  # from create_mock_game default bgg_rating
@@ -279,10 +325,25 @@ class TestOpenModal:
             patch("pages.collection.engine", mem_engine),
         ):
             result = open_modal(
-                [1], [None], None, None, False, {"history": [], "current_index": -1}
+                [1],
+                [None],
+                None,
+                None,
+                False,
+                {"history": [], "current_index": -1},
             )
 
-        opened, title, rating, content, bgg_link, loading, history, back, forward = result
+        (
+            opened,
+            title,
+            rating,
+            content,
+            bgg_link,
+            loading,
+            history,
+            back,
+            forward,
+        ) = result
         assert opened is True
         assert rating == "N/A"
 
@@ -304,7 +365,12 @@ class TestOpenModal:
             patch("pages.collection.engine", mem_engine),
         ):
             result = open_modal(
-                [1], [None], None, None, False, {"history": [], "current_index": -1}
+                [1],
+                [None],
+                None,
+                None,
+                False,
+                {"history": [], "current_index": -1},
             )
 
         opened, title, _, content, _, _, _, _, _ = result
@@ -361,7 +427,12 @@ class TestOpenModal:
             patch("pages.collection.engine", mem_engine),
         ):
             result = open_modal(
-                [1], [None], None, None, False, {"history": [], "current_index": -1}
+                [1],
+                [None],
+                None,
+                None,
+                False,
+                {"history": [], "current_index": -1},
             )
 
         opened, title, _, content, _, loading, _, _, _ = result
@@ -414,7 +485,12 @@ class TestOpenModal:
             patch("pages.collection.TEST_USER", "testuser"),
         ):
             result = open_modal(
-                [1], [None], None, None, False, {"history": [], "current_index": -1}
+                [1],
+                [None],
+                None,
+                None,
+                False,
+                {"history": [], "current_index": -1},
             )
 
         opened, title, _, content, _, loading, _, _, _ = result
@@ -470,7 +546,12 @@ class TestOpenModal:
             patch("pages.collection.TEST_USER", "testuser2"),
         ):
             result = open_modal(
-                [1], [None], None, None, False, {"history": [], "current_index": -1}
+                [1],
+                [None],
+                None,
+                None,
+                False,
+                {"history": [], "current_index": -1},
             )
 
         _, title, _, content, _, _, _, _, _ = result
@@ -525,7 +606,12 @@ class TestOpenModal:
             patch("pages.collection.TEST_USER", "testuser3"),
         ):
             result = open_modal(
-                [1], [None], None, None, False, {"history": [], "current_index": -1}
+                [1],
+                [None],
+                None,
+                None,
+                False,
+                {"history": [], "current_index": -1},
             )
 
         _, title, _, content, _, _, _, _, _ = result

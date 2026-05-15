@@ -1,9 +1,11 @@
 import dash_mantine_components as dmc
 
 # noinspection PyProtectedMember
-from dash import Dash, _dash_renderer, page_container
+from dash import Dash, _dash_renderer, dcc, page_container
 from dash_iconify import DashIconify
 
+import util.filters  # noqa: F401 — registers filter callbacks
+from util.filters import generate_sidebar
 from util.models import create_db_and_tables
 
 # noinspection PyProtectedMember
@@ -25,6 +27,39 @@ def generate_app() -> Dash:
             dmc.Group([
                 DashIconify(icon="game-icons:meeple", width=30),
                 dmc.Title("Spielpendium", order=3),
+                dmc.Group(
+                    gap="xs",
+                    p="md",
+                    children=[
+                        dmc.Anchor(
+                            dmc.Button(
+                                "Collection",
+                                leftSection=DashIconify(
+                                    icon="game-icons:card-draw", width=16
+                                ),
+                                variant="subtle",
+                            ),
+                            href="/collection",
+                            underline="never",
+                        ),
+                        dmc.Button(
+                            "Statistics",
+                            leftSection=DashIconify(
+                                icon="game-icons:histogram", width=16
+                            ),
+                            variant="subtle",
+                            disabled=True,
+                        ),
+                        dmc.Button(
+                            "Settings",
+                            leftSection=DashIconify(
+                                icon="game-icons:gears", width=16
+                            ),
+                            variant="subtle",
+                            disabled=True,
+                        ),
+                    ],
+                ),
             ]),
             dmc.Anchor(
                 dmc.ActionIcon(
@@ -39,51 +74,11 @@ def generate_app() -> Dash:
         ],
     )
 
-    # Navbar content
-    navbar_content = dmc.Stack(
-        justify="space-between",
+    # Navbar content: filters sidebar
+    navbar_content = dmc.ScrollArea(
         h="100%",
-        children=[
-            dmc.Stack(
-                gap="xs",
-                p="md",
-                children=[
-                    dmc.NavLink(
-                        label="Collection",
-                        leftSection=DashIconify(icon="game-icons:card-draw"),
-                        href="/collection",
-                        active=True,  # Logic to handle active state needed
-                    ),
-                    dmc.NavLink(
-                        label="Statistics",
-                        leftSection=DashIconify(icon="game-icons:histogram"),
-                        href="/stats",
-                        disabled=True,
-                    ),
-                    dmc.NavLink(
-                        label="Settings",
-                        leftSection=DashIconify(icon="game-icons:gears"),
-                        href="/settings",
-                        disabled=True,
-                    ),
-                ],
-            ),
-            dmc.Stack(
-                align="center",
-                mb="md",
-                children=[
-                    dmc.Anchor(
-                        dmc.Image(
-                            src="assets/powered-by-bgg-reversed-rgb.svg",
-                            w=150,
-                            fit="contain",
-                        ),
-                        href="https://boardgamegeek.com/",
-                        target="_blank",
-                    )
-                ],
-            ),
-        ],
+        type="scroll",
+        children=generate_sidebar(),
     )
 
     app.layout = dmc.MantineProvider(
@@ -93,6 +88,9 @@ def generate_app() -> Dash:
                 dmc.AppShellHeader(header_content, px="md"),
                 dmc.AppShellNavbar(navbar_content),
                 dmc.AppShellMain(children=page_container),
+                dcc.Store(
+                    id="collection-store", storage_type="local", data=[]
+                ),
             ],
             header={"height": 60},
             navbar={

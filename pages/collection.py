@@ -23,6 +23,7 @@ from sqlmodel import Session, select
 from api import get_game_info, get_user_game_collection
 from api.bgg_api.game_details import save_game_data_to_db
 from config import TEST_USER
+from util.filters import apply_filters_and_sort, game_to_dict
 from util.models import (
     Collection,
     CollectionItem,
@@ -103,6 +104,11 @@ def create_game_card(
 layout = dmc.Container(
     [
         dmc.Title("My Collection", order=2, mb="lg"),
+        dmc.Group(
+            justify="flex-end",
+            mb="xs",
+            children=[dmc.Text("", id="result-count", size="sm", c="dimmed")],
+        ),
         html.Div(
             style={"position": "relative", "minHeight": "200px"},
             children=[
@@ -343,7 +349,7 @@ def open_modal(
         related_links = session.exec(
             select(RelatedGame)
             .where(RelatedGame.source_game_id == game.id)
-            .options(selectinload(RelatedGame.relationship_type))  # type: ignore[arg-type]  # noqa: E501
+            .options(selectinload(RelatedGame.relationship_type))  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
         ).all()
         related_games_accordion = None
         if related_links:
@@ -365,7 +371,7 @@ def open_modal(
                                 CollectionItem.game_id == target_game.id,
                             )
                             .options(
-                                selectinload(CollectionItem.ownership_status)
+                                selectinload(CollectionItem.ownership_status)  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
                             )
                         ).first()
                         if owned_item and owned_item.ownership_status:
@@ -588,35 +594,153 @@ def open_modal(
 
 
 @callback(
-    Output("collection-grid", "children"),
-    Output("loading-collection", "visible"),
-    Input(
-        "collection-data-store", "data"
-    ),  # Dummy input for now, eventually triggers on load
+    Output("collection-store", "data"),
+    Input("collection-data-store", "data"),
 )
-def update_grid(_: Any) -> tuple[Any, bool]:
-    # filters={"own": True} ensures we only get owned games
+def load_collection_store(_: Any) -> list[dict[str, Any]]:
+    """Load the user's collection into the shared dcc.Store once on page load."""
     collection = get_user_game_collection(TEST_USER, filters={"own": True})
-
     if not collection or not collection.items:
-        return dmc.Alert(
-            "No games found in collection or failed to load.",
-            title="Error",
-            color="red",
-        ), False
-
-    # collection.items is a list of CollectionItem, which has .game and
-    # .ownership_status
-    # TODO: Add a sorting field and have that field be the key in sorted
-    # Filter first so the sort key never sees a None game
-    valid_items = [item for item in collection.items if item.game]
-    cards = [
-        create_game_card(item.game, item.ownership_status)
-        for item in sorted(valid_items, key=lambda x: x.game.name)
+        return []
+    return [
+        game_to_dict(item.game, item.ownership_status)
+        for item in collection.items
+        if item.game
     ]
 
-    return dmc.SimpleGrid(
-        cols={"base": 1, "sm": 2, "lg": 4, "xl": 5},
-        spacing="lg",
-        children=cards,
-    ), False
+
+@callback(
+    Output("collection-grid", "children"),
+    Output("loading-collection", "visible"),
+    Output("result-count", "children"),
+    Input("collection-store", "data"),
+    Input("sort-by", "value"),
+    Input("sort-dir", "value"),
+    Input("name-filter", "value"),
+    Input("players-filter", "value"),
+    Input("time-filter", "value"),
+    Input("complexity-filter", "value"),
+    Input("bgg-rating-filter", "value"),
+    Input("bgg-rank-filter", "value"),
+    Input("year-filter", "value"),
+    Input("category-filter", "value"),
+)
+def update_grid(
+    games: list[dict[str, Any]] | None,
+    sort_by: str,
+    sort_dir: str,
+    name: str,
+    players: list[int],
+    play_time: list[int],
+    complexity: list[float],
+    bgg_rating: list[float],
+    bgg_rank_max: int | None,
+    year: list[int],
+    categories: list[str],
+) -> tuple[Any, bool, str]:
+    """Filter, sort and render the game grid based on current filter state."""
+    if not games:
+        return (
+            dmc.Alert(
+                "No games found in collection or failed to load.",
+                title="Error",
+                color="red",
+            ),
+            False,
+            "",
+        )
+
+    filtered = apply_filters_and_sort(
+        games,
+        name=name or "",
+        players=players,
+        play_time=play_time,
+        complexity=complexity,
+        bgg_rating=bgg_rating,
+        bgg_rank_max=bgg_rank_max,
+        year=year,
+        categories=categories or [],
+        sort_by=sort_by or "name",
+        sort_dir=sort_dir or "asc",
+    )
+
+    total = len(games)
+    shown = len(filtered)
+    count_text = f"Showing {shown} of {total} games"
+
+    if not filtered:
+        return (
+            dmc.Alert(
+                "No games match the current filters.",
+                title="No Results",
+                color="yellow",
+            ),
+            False,
+            count_text,
+        )
+
+    # Build cards from the serialized dicts (no DB access needed)
+    cards = [
+        html.Div(
+            dmc.Card(
+                children=[
+                    dmc.CardSection(
+                        dmc.Image(
+                            src=f"/assets/images/{g['image_path']}"
+                            if g.get("image_path")
+                            else "https://placehold.co/200x200?text=No+Image",
+                            h=200,
+                            fit="contain",
+                        ),
+                    ),
+                    dmc.Group(
+                        [
+                            dmc.Text(g["name"], fw=500, lineClamp=1),
+                            dmc.Badge(
+                                f"{g['bgg_rating']:.1f}"
+                                if g.get("bgg_rating")
+                                else "N/A",
+                                color="yellow",
+                                variant="light",
+                            ),
+                        ],
+                        justify="space-between",
+                        mt="md",
+                        mb="xs",
+                    ),
+                    dmc.Text(
+                        f"{g['min_players']}-{g['max_players']} Players "
+                        f"• {g['min_play_time']}-{g['max_play_time']} Min",
+                        size="sm",
+                        c="dimmed",
+                    ),
+                    dmc.Button(
+                        "Details",
+                        variant="light",
+                        color="blue",
+                        fullWidth=True,
+                        mt="md",
+                        radius="md",
+                    ),
+                ],
+                withBorder=True,
+                shadow="sm",
+                radius="md",
+                w="100%",
+            ),
+            id={"type": "game-card", "index": g["bgg_id"]},
+            n_clicks=0,
+            className="game-card-hover",
+        )
+        for g in filtered
+    ]
+
+    return (
+        dmc.SimpleGrid(
+            cols={"base": 1, "sm": 2, "lg": 4, "xl": 5},
+            spacing="lg",
+            children=cards,
+        ),
+        False,
+        count_text,
+    )

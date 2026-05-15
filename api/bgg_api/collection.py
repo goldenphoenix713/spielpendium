@@ -244,12 +244,15 @@ def get_user_collection_from_db(username: str) -> Collection | None:
             select(Collection)
             .where(Collection.username == username)
             .options(
-                # Using selectinload for eager loading as Relationship.of_type isn't standard
-                selectinload(Collection.items).selectinload(  # type: ignore[arg-type]
-                    CollectionItem.game  # type: ignore[arg-type]
+                selectinload(Collection.items)  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+                .selectinload(  # type: ignore[arg-type]
+                    CollectionItem.game  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+                )
+                .selectinload(  # type: ignore[arg-type]
+                    Game.categories  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
                 ),
-                selectinload(Collection.items).selectinload(  # type: ignore[arg-type]
-                    CollectionItem.ownership_status  # type: ignore[arg-type]
+                selectinload(Collection.items).selectinload(  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+                    CollectionItem.ownership_status  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
                 ),
             )
         )
