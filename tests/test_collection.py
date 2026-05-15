@@ -13,8 +13,9 @@ from sqlmodel import Session, SQLModel, create_engine
 dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]  # ty: ignore[invalid-assignment]
 
 from pages.collection import (  # noqa: E402
+    filter_collection,
     open_modal,
-    update_grid,
+    render_grid,
 )
 from tests.test_models import create_mock_game  # noqa: E402
 from util.models import (  # noqa: E402
@@ -92,7 +93,7 @@ def _find_badges(component: Any) -> list[dmc.Badge]:
 # ---------------------------------------------------------------------------
 # Default filter/sort args for update_grid ("no filter" state)
 # ---------------------------------------------------------------------------
-_DEFAULT_GRID_ARGS = {
+_DEFAULT_FILTERS: dict[str, Any] = {
     "sort_by": "name",
     "sort_dir": "asc",
     "name": "",
@@ -103,10 +104,11 @@ _DEFAULT_GRID_ARGS = {
     "bgg_rank_max": None,
     "year": [1900, 2100],
     "categories": [],
+    "ownership": [],  # empty = show all statuses
 }
 
 
-class TestUpdateGrid:
+class TestGridCallbacks:
     def _make_game_dict(self, bgg_id: int, name: str, **kwargs: Any) -> dict:
         """Build a minimal serialized game dict for use in update_grid tests."""
         return {
@@ -129,7 +131,10 @@ class TestUpdateGrid:
     def test_returns_grid_on_success(self) -> None:
         """update_grid builds a SimpleGrid when games are supplied."""
         games = [self._make_game_dict(1, "Catan")]
-        grid, loading, count = update_grid(games, **_DEFAULT_GRID_ARGS)
+        filtered, count, page, total_pages = filter_collection(
+            games, _DEFAULT_FILTERS
+        )
+        grid, loading, _ = render_grid(filtered, 1)
 
         assert isinstance(grid, dmc.SimpleGrid)
         assert loading is False
@@ -138,15 +143,23 @@ class TestUpdateGrid:
 
     def test_returns_alert_when_games_none(self) -> None:
         """update_grid shows an error alert when no games are in the store."""
-        grid, loading, count = update_grid(None, **_DEFAULT_GRID_ARGS)
+        filtered, count, page, total_pages = filter_collection(
+            None, _DEFAULT_FILTERS
+        )
+        assert filtered == []
 
+        grid, loading, _ = render_grid(filtered, 1)
         assert isinstance(grid, dmc.Alert)
         assert loading is False
 
     def test_returns_alert_when_games_empty(self) -> None:
         """update_grid shows an error alert when store has empty list."""
-        grid, loading, count = update_grid([], **_DEFAULT_GRID_ARGS)
+        filtered, count, page, total_pages = filter_collection(
+            [], _DEFAULT_FILTERS
+        )
+        assert filtered == []
 
+        grid, loading, _ = render_grid(filtered, 1)
         assert isinstance(grid, dmc.Alert)
         assert loading is False
 
@@ -157,7 +170,8 @@ class TestUpdateGrid:
             self._make_game_dict(2, "Azul"),
             self._make_game_dict(3, "Monopoly"),
         ]
-        grid, _, _ = update_grid(games, **_DEFAULT_GRID_ARGS)
+        filtered, _, _, _ = filter_collection(games, _DEFAULT_FILTERS)
+        grid, _, _ = render_grid(filtered, 1)
 
         names = [
             card.children.children[1].children[0].children
@@ -171,8 +185,9 @@ class TestUpdateGrid:
             self._make_game_dict(1, "Pandemic"),
             self._make_game_dict(2, "Catan"),
         ]
-        args = {**_DEFAULT_GRID_ARGS, "name": "catan"}
-        grid, _, count = update_grid(games, **args)
+        filters = {**_DEFAULT_FILTERS, "name": "catan"}
+        filtered, count, _, _ = filter_collection(games, filters)
+        grid, _, _ = render_grid(filtered, 1)
 
         assert isinstance(grid, dmc.SimpleGrid)
         assert len(grid.children) == 1
@@ -181,12 +196,28 @@ class TestUpdateGrid:
     def test_no_match_returns_yellow_alert(self) -> None:
         """update_grid returns a yellow 'No Results' alert when nothing matches."""
         games = [self._make_game_dict(1, "Pandemic")]
-        args = {**_DEFAULT_GRID_ARGS, "name": "zzznomatch"}
-        alert, _, count = update_grid(games, **args)
+        filters = {**_DEFAULT_FILTERS, "name": "zzznomatch"}
+        filtered, count, _, _ = filter_collection(games, filters)
+        alert, _, _ = render_grid(filtered, 1)
 
         assert isinstance(alert, dmc.Alert)
         assert getattr(alert, "color", None) == "yellow"
         assert "0 of 1" in count
+
+    def test_ownership_filter(self) -> None:
+        """update_grid filters games by ownership status."""
+        games = [
+            self._make_game_dict(1, "Pandemic", ownership_status="owned"),
+            self._make_game_dict(2, "Catan", ownership_status="prevowned"),
+            self._make_game_dict(3, "Azul", ownership_status="want"),
+        ]
+        filters = {**_DEFAULT_FILTERS, "ownership": ["owned"]}
+        filtered, count, _, _ = filter_collection(games, filters)
+        grid, _, _ = render_grid(filtered, 1)
+
+        assert isinstance(grid, dmc.SimpleGrid)
+        assert len(grid.children) == 1
+        assert "1 of 3" in count
 
 
 # ---------------------------------------------------------------------------

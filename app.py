@@ -5,7 +5,7 @@ from dash import Dash, _dash_renderer, dcc, page_container
 from dash_iconify import DashIconify
 
 import util.filters  # noqa: F401 — registers filter callbacks
-from util.filters import generate_sidebar
+from util.filters import generate_drawer_content, generate_sidebar
 from util.models import create_db_and_tables
 
 # noinspection PyProtectedMember
@@ -25,11 +25,19 @@ def generate_app() -> Dash:
         px="md",
         children=[
             dmc.Group([
+                dmc.ActionIcon(
+                    DashIconify(icon="tabler:menu-2", width=20),
+                    id="burger-button",
+                    variant="subtle",
+                    size="lg",
+                    hiddenFrom="sm",
+                ),
                 DashIconify(icon="game-icons:meeple", width=30),
                 dmc.Title("Spielpendium", order=3),
                 dmc.Group(
                     gap="xs",
                     p="md",
+                    visibleFrom="sm",
                     children=[
                         dmc.Anchor(
                             dmc.Button(
@@ -81,25 +89,46 @@ def generate_app() -> Dash:
         children=generate_sidebar(),
     )
 
+    # Mobile filter drawer
+    mobile_drawer = dmc.Drawer(
+        id="mobile-filter-drawer",
+        title="Filters & Sort",
+        opened=False,
+        position="left",
+        size=300,
+        padding="md",
+        children=dmc.ScrollArea(
+            h="100%",
+            type="scroll",
+            children=dmc.Stack(
+                gap="lg",
+                children=generate_drawer_content(),
+            ),
+        ),
+    )
+
     app.layout = dmc.MantineProvider(
         forceColorScheme="dark",
-        children=dmc.AppShell(
-            [
-                dmc.AppShellHeader(header_content, px="md"),
-                dmc.AppShellNavbar(navbar_content),
-                dmc.AppShellMain(children=page_container),
-                dcc.Store(
-                    id="collection-store", storage_type="local", data=[]
-                ),
-            ],
-            header={"height": 60},
-            navbar={
-                "width": 300,
-                "breakpoint": "sm",
-                "collapsed": {"mobile": True},
-            },
-            padding="md",
-        ),
+        children=[
+            mobile_drawer,
+            dmc.AppShell(
+                [
+                    dmc.AppShellHeader(header_content, px="md"),
+                    dmc.AppShellNavbar(navbar_content),
+                    dmc.AppShellMain(children=page_container),
+                    dcc.Store(
+                        id="collection-store", storage_type="local", data=[]
+                    ),
+                ],
+                header={"height": 60},
+                navbar={
+                    "width": 300,
+                    "breakpoint": "sm",
+                    "collapsed": {"mobile": True},
+                },
+                padding="md",
+            ),
+        ],
     )
 
     return app

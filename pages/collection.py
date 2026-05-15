@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from html import unescape as html_unescape
 from typing import TYPE_CHECKING, Any
 
@@ -38,6 +39,8 @@ if TYPE_CHECKING:
     from util.models import OwnershipStatus
 
 dash.register_page(__name__, path="/collection")  # type: ignore[no-untyped-call]
+
+PAGE_SIZE = 50
 
 
 def create_game_card(
@@ -105,9 +108,19 @@ layout = dmc.Container(
     [
         dmc.Title("My Collection", order=2, mb="lg"),
         dmc.Group(
-            justify="flex-end",
+            justify="space-between",
             mb="xs",
-            children=[dmc.Text("", id="result-count", size="sm", c="dimmed")],
+            children=[
+                dmc.Button(
+                    "Refresh Database",
+                    id="refresh-database-btn",
+                    leftSection=DashIconify(icon="tabler:refresh", width=16),
+                    variant="light",
+                    color="blue",
+                    size="xs",
+                ),
+                dmc.Text("", id="result-count", size="sm", c="dimmed"),
+            ],
         ),
         html.Div(
             style={"position": "relative", "minHeight": "200px"},
@@ -120,6 +133,13 @@ layout = dmc.Container(
                 html.Div(id="collection-grid"),
             ],
         ),
+        dmc.Group(
+            dmc.Pagination(
+                id="collection-pagination", total=1, value=1, mt="xl", mb="xl"
+            ),
+            justify="center",
+        ),
+        dcc.Store(id="filtered-collection-store", data=[]),
         dmc.Modal(
             title=dmc.Group(
                 [
@@ -596,10 +616,24 @@ def open_modal(
 @callback(
     Output("collection-store", "data"),
     Input("collection-data-store", "data"),
+    Input("refresh-database-btn", "n_clicks"),
+    running=[
+        (Output("refresh-database-btn", "loading"), True, False),
+    ],
 )
-def load_collection_store(_: Any) -> list[dict[str, Any]]:
-    """Load the user's collection into the shared dcc.Store once on page load."""
-    collection = get_user_game_collection(TEST_USER, filters={"own": True})
+def load_collection_store(
+    _: Any, _n_clicks: int | None
+) -> list[dict[str, Any]]:
+    """Load the user's collection into the shared dcc.Store."""
+    force_update = dash.ctx.triggered_id == "refresh-database-btn" and bool(
+        _n_clicks
+    )
+
+    collection = get_user_game_collection(
+        TEST_USER,
+        filters={},  # Pass empty dict to load all ownership statuses (bypasses own=1 default)
+        force_update=force_update,
+    )
     if not collection or not collection.items:
         return []
     return [
@@ -610,74 +644,59 @@ def load_collection_store(_: Any) -> list[dict[str, Any]]:
 
 
 @callback(
-    Output("collection-grid", "children"),
-    Output("loading-collection", "visible"),
+    Output("filtered-collection-store", "data"),
     Output("result-count", "children"),
+    Output("collection-pagination", "value"),
+    Output("collection-pagination", "total"),
     Input("collection-store", "data"),
-    Input("sort-by", "value"),
-    Input("sort-dir", "value"),
-    Input("name-filter", "value"),
-    Input("players-filter", "value"),
-    Input("time-filter", "value"),
-    Input("complexity-filter", "value"),
-    Input("bgg-rating-filter", "value"),
-    Input("bgg-rank-filter", "value"),
-    Input("year-filter", "value"),
-    Input("category-filter", "value"),
+    Input("filters-store", "data"),
 )
-def update_grid(
+def filter_collection(
     games: list[dict[str, Any]] | None,
-    sort_by: str,
-    sort_dir: str,
-    name: str,
-    players: list[int],
-    play_time: list[int],
-    complexity: list[float],
-    bgg_rating: list[float],
-    bgg_rank_max: int | None,
-    year: list[int],
-    categories: list[str],
-) -> tuple[Any, bool, str]:
-    """Filter, sort and render the game grid based on current filter state."""
+    filters: dict[str, Any] | None,
+) -> tuple[list[dict[str, Any]], str, int, int]:
+    """Filter and sort the collection, then calculate pagination bounds."""
     if not games:
-        return (
-            dmc.Alert(
-                "No games found in collection or failed to load.",
-                title="Error",
-                color="red",
-            ),
-            False,
-            "",
-        )
+        return [], "", 1, 1
 
-    filtered = apply_filters_and_sort(
-        games,
-        name=name or "",
-        players=players,
-        play_time=play_time,
-        complexity=complexity,
-        bgg_rating=bgg_rating,
-        bgg_rank_max=bgg_rank_max,
-        year=year,
-        categories=categories or [],
-        sort_by=sort_by or "name",
-        sort_dir=sort_dir or "asc",
-    )
+    filtered = apply_filters_and_sort(games, filters or {})
 
     total = len(games)
     shown = len(filtered)
     count_text = f"Showing {shown} of {total} games"
 
+    total_pages = max(1, math.ceil(shown / PAGE_SIZE))
+
+    return filtered, count_text, 1, total_pages
+
+
+@callback(
+    Output("collection-grid", "children"),
+    Output("loading-collection", "visible"),
+    Output("collection-pagination", "style"),
+    Input("filtered-collection-store", "data"),
+    Input("collection-pagination", "value"),
+)
+def render_grid(
+    filtered: list[dict[str, Any]],
+    page: int | None,
+) -> tuple[Any, bool, dict[str, str]]:
+    """Render the current page of the filtered game grid."""
     if not filtered:
         return (
             dmc.Alert(
-                "No games match the current filters.",
+                "No games match the current filters or failed to load.",
                 title="No Results",
                 color="yellow",
             ),
             False,
-            count_text,
+            {"display": "none"},
         )
+
+    page = page or 1
+    start_idx = (page - 1) * PAGE_SIZE
+    end_idx = start_idx + PAGE_SIZE
+    page_games = filtered[start_idx:end_idx]
 
     # Build cards from the serialized dicts (no DB access needed)
     cards = [
@@ -732,8 +751,12 @@ def update_grid(
             n_clicks=0,
             className="game-card-hover",
         )
-        for g in filtered
+        for g in page_games
     ]
+
+    pagination_style = (
+        {"display": "none"} if len(filtered) <= PAGE_SIZE else {}
+    )
 
     return (
         dmc.SimpleGrid(
@@ -742,5 +765,5 @@ def update_grid(
             children=cards,
         ),
         False,
-        count_text,
+        pagination_style,
     )

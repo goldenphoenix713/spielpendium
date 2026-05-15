@@ -251,6 +251,20 @@ def get_user_collection_from_db(username: str) -> Collection | None:
                 .selectinload(  # type: ignore[arg-type]
                     Game.categories  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
                 ),
+                selectinload(Collection.items)  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+                .selectinload(  # type: ignore[arg-type]
+                    CollectionItem.game  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+                )
+                .selectinload(  # type: ignore[arg-type]
+                    Game.authors  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+                ),
+                selectinload(Collection.items)  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+                .selectinload(  # type: ignore[arg-type]
+                    CollectionItem.game  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+                )
+                .selectinload(  # type: ignore[arg-type]
+                    Game.publishers  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+                ),
                 selectinload(Collection.items).selectinload(  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
                     CollectionItem.ownership_status  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
                 ),
@@ -276,7 +290,7 @@ def get_user_game_collection(
     :return: A SQLModel Collection object or None if not found.
     :rtype: Collection | None
     """
-    if filters:
+    if filters is not None:
         for key in filters:
             if key not in COLLECTION_FILTERS:
                 raise ValueError(
