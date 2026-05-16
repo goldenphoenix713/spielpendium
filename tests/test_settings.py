@@ -4,7 +4,6 @@ from unittest.mock import patch
 
 from sqlmodel import Session, SQLModel, create_engine
 
-from config import TEST_USER
 from util.models import UserSettings
 from util.settings import (
     get_active_username,
@@ -22,8 +21,8 @@ def test_settings_logic():
     # Patch the engine used in util.settings
     with patch("util.settings.engine", engine):
         # Initial state (defaults)
-        assert get_active_username() == TEST_USER
-        assert get_all_usernames() == [TEST_USER]
+        assert get_active_username() == ""
+        assert get_all_usernames() == []
 
         # Set a simple setting
         set_setting("theme", "dark")

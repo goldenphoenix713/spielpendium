@@ -52,9 +52,8 @@ def test_settings_callbacks():
     ]
 
     # sync_auto_refresh_value
-    assert sync_auto_refresh_value(True) == 1
-    assert sync_auto_refresh_value(False) == 0
-    assert sync_auto_refresh_value(None) == 1
+    assert sync_auto_refresh_value(True) is True
+    assert sync_auto_refresh_value(False) is False
 
     # update_swatch_color
     style = update_swatch_color("red")
@@ -74,7 +73,10 @@ def test_save_settings_callback():
         # n_clicks is None
         import dash
 
-        assert save_settings(None, ["dark", "blue"]) == (
+        assert save_settings(
+            None, "user", ["user"], 50, "dark", "blue", True
+        ) == (
+            dash.no_update,
             dash.no_update,
             dash.no_update,
             dash.no_update,
@@ -82,9 +84,39 @@ def test_save_settings_callback():
         )
 
         # n_clicks is 1
-        res = save_settings(1, ["dark", "blue"])
+        res = save_settings(1, "user", ["user"], 50, "dark", "blue", True)
         assert isinstance(res[0], dmc.Notification)
         assert res[1] == "dark"
         assert res[2] == "blue"
-        assert res[3] == dash.no_update
+        assert res[3] == "user"
+        assert res[4] == ["user"]
+        assert mock_set.call_count == 6
+
+        # Test empty usernames list alignment
+        res_empty = save_settings(1, "user", [], 50, "dark", "blue", True)
+        assert res_empty[3] == ""
+        assert res_empty[4] == []
+
+        # Test active user fallback alignment
+        res_fallback = save_settings(
+            1, "other_user", ["user1", "user2"], 50, "dark", "blue", True
+        )
+        assert res_fallback[3] == "user1"
+        assert res_fallback[4] == ["user1", "user2"]
+
+
+def test_handle_onboarding_callback():
+    import dash
+
+    from pages.home import handle_onboarding
+
+    # n_clicks is None
+    assert handle_onboarding(None, "user") == dash.no_update
+    assert handle_onboarding(1, "") == dash.no_update
+
+    with patch("pages.home.set_setting") as mock_set:
+        res = handle_onboarding(1, "new_user")
+        assert res[0] == "/collection"
+        assert res[1] == "new_user"
+        assert "new_user" in res[2]
         assert mock_set.call_count == 2

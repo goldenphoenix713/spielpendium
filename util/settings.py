@@ -5,7 +5,6 @@ from typing import Any, cast
 
 from sqlmodel import Session, select
 
-from config import TEST_USER
 from util.models import UserSettings, engine
 
 
@@ -36,7 +35,9 @@ def set_setting(keyword: str, value: Any) -> None:
     Save or update a setting in the database.
     Complex types (list, dict) are automatically JSON-serialized.
     """
-    if isinstance(value, (list, dict)):
+    if value is None:
+        str_val = ""
+    elif isinstance(value, (list, dict)):
         str_val = json.dumps(value)
     else:
         str_val = str(value)
@@ -60,9 +61,12 @@ def set_setting(keyword: str, value: Any) -> None:
 
 def get_active_username() -> str:
     """Helper to get the current active BGG username."""
-    return cast("str", get_setting("active_bgg_username", TEST_USER))
+    val = get_setting("active_bgg_username", "")
+    if not val or val == "None":
+        return ""
+    return cast("str", val)
 
 
 def get_all_usernames() -> list[str]:
     """Helper to get the list of all configured BGG usernames."""
-    return cast("list[str]", get_setting("bgg_usernames", [TEST_USER]))
+    return cast("list[str]", get_setting("bgg_usernames", []))

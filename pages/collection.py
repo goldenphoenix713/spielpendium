@@ -207,7 +207,6 @@ layout = dmc.Container(
         ),
         dcc.Store(id="filtered-collection-store", data=[]),
         dcc.Interval(id="sync-interval", interval=1000, disabled=True),
-        dcc.Store(id="sync-trigger-store", data=0),
         dmc.Modal(
             title=dmc.Group(
                 [
@@ -286,7 +285,6 @@ layout = dmc.Container(
                 ),
             ],
         ),
-        dcc.Store(id="collection-data-store"),
         dcc.Store(
             id="modal-history-store",
             data={"history": [], "current_index": -1},
@@ -309,6 +307,15 @@ clientside_callback(
     Output("modal-game-title", "id"),
     Input("modal-game-title", "children"),
 )
+
+
+@callback(
+    Output("sync-game-btn", "disabled"),
+    Input("active-user-store", "data"),
+)
+def disable_sync_game_btn_if_no_user(active_user: str | None) -> bool:
+    """Disable the sync game button in the modal if no user is connected."""
+    return not active_user
 
 
 @callback(
@@ -622,6 +629,21 @@ def open_modal(
                                 dmc.Group(
                                     [
                                         DashIconify(
+                                            icon="tabler:cake",
+                                            width=18,
+                                            color="gray",
+                                        ),
+                                        dmc.Text(
+                                            f"{game.min_age}+"
+                                            if game.min_age
+                                            else "Any age"
+                                        ),
+                                    ],
+                                    gap=5,
+                                ),
+                                dmc.Group(
+                                    [
+                                        DashIconify(
                                             icon="tabler:weight",
                                             width=18,
                                             color="gray",
@@ -712,18 +734,30 @@ def open_modal(
 
 
 @callback(
+    Output("refresh-database-btn", "disabled"),
+    Input("active-user-store", "data"),
+)
+def disable_refresh_btn_if_no_user(active_user: str | None) -> bool:
+    """Disable the refresh button if no user is connected."""
+    return not active_user
+
+
+@callback(
     Output("sync-interval", "disabled"),
     Output("sync-progress-container", "style"),
     Output("refresh-database-btn", "loading"),
     Input("refresh-database-btn", "n_clicks"),
+    State("active-user-store", "data"),
     prevent_initial_call=True,
 )
-def start_sync(n_clicks: int | None) -> tuple[bool, dict[str, str], bool]:
+def start_sync(
+    n_clicks: int | None, active_user: str | None
+) -> tuple[bool, dict[str, str], bool] | NoUpdate:
     """Starts the collection sync in a background thread."""
-    if not n_clicks:
-        return True, {"display": "none"}, False
+    if not n_clicks or not active_user:
+        return no_update
 
-    username = get_active_username()
+    username = active_user
 
     def run_sync():
         try:
@@ -784,12 +818,11 @@ def update_progress(
 
 @callback(
     Output("collection-store", "data"),
-    Input("collection-data-store", "data"),
     Input("sync-trigger-store", "data"),
     Input("active-user-store", "data"),
 )
 def load_collection_store(
-    _: Any, sync_trigger: int, active_user: str | None
+    sync_trigger: int, active_user: str | None
 ) -> list[dict[str, Any]]:
     """Load the user's collection into the shared dcc.Store."""
     if not active_user:

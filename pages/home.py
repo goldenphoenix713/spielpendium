@@ -210,13 +210,14 @@ def render_home_content(active_user: str | None) -> dmc.Container:
 @callback(
     Output("url", "pathname", allow_duplicate=True),
     Output("active-user-store", "data"),
+    Output("managed-users-store", "data", allow_duplicate=True),
     Input("onboarding-submit", "n_clicks"),
     State("onboarding-username", "value"),
     prevent_initial_call=True,
 )
 def handle_onboarding(
     n_clicks: int | None, username: str | None
-) -> tuple[str, str] | NoUpdate:
+) -> tuple[str, str, list[str]] | NoUpdate:
     if not n_clicks or not username:
         return dash.no_update
 
@@ -235,4 +236,4 @@ def handle_onboarding(
         set_setting("bgg_usernames", existing_usernames)
 
     # Redirect to collection and update local store
-    return "/collection", username
+    return "/collection", username, existing_usernames

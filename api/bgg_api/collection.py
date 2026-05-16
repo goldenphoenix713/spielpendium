@@ -300,17 +300,9 @@ def get_user_game_collection(
     filters: dict[str, int | bool] | None = None,
     force_update: bool = False,
 ) -> Collection | None:
-    """Grabs a user's game collection from BGG or the database.
+    if not username or str(username).strip().lower() in ("none", "null", ""):
+        return None
 
-    :param username: The username whose collection were grabbing.
-    :type username: str
-    :param filters: Additional filters for the game collection.
-    :type filters: dict[str, int | bool]
-    :param force_update: Whether to force an update from the BGG API.
-    :type force_update: bool
-    :return: A SQLModel Collection object or None if not found.
-    :rtype: Collection | None
-    """
     if filters is not None:
         for key in filters:
             if key not in COLLECTION_FILTERS:

@@ -134,6 +134,8 @@ def render_statistics_content(username: str | None) -> dmc.Container:
     player_counts["6+"] = 0
     for g in games:
         for p in range(g.min_players, g.max_players + 1):
+            if p <= 0:
+                continue
             if p <= 5:
                 player_counts[str(p)] += 1
             else:
@@ -273,7 +275,7 @@ def render_statistics_content(username: str | None) -> dmc.Container:
         children=[
             dmc.Title("Collection Statistics", order=1, mb="xl"),
             dmc.SimpleGrid(
-                cols={"base": 1, "sm": 2, "md": 4},
+                cols=4,
                 spacing="lg",
                 mb="xl",
                 children=[

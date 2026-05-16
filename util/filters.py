@@ -63,6 +63,7 @@ def _build_filter_components(location: str) -> list[Any]:
             {"label": "Year Released", "value": "release_year"},
             {"label": "Complexity", "value": "complexity"},
             {"label": "Play Time", "value": "min_play_time"},
+            {"label": "Minimum Age", "value": "min_age"},
         ],
         allowDeselect=False,
     )
@@ -120,6 +121,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 min=1,
                 max=PLAYERS_MAX,
                 step=1,
+                minRange=1,
                 value=FILTER_DEFAULTS["players"],
                 label={"function": "playersFormatter"},  # ty: ignore[invalid-argument-type]
                 marks=[
@@ -145,6 +147,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 min=0,
                 max=PLAY_TIME_MAX,
                 step=15,
+                minRange=1,
                 value=FILTER_DEFAULTS["play_time"],
                 label={"function": "playTimeFormatter"},  # ty: ignore[invalid-argument-type]
                 marks=[
@@ -170,6 +173,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 min=1.0,
                 max=5.0,
                 step=0.25,
+                minRange=0.1,
                 value=FILTER_DEFAULTS["complexity"],
                 marks=[{"value": v, "label": str(v)} for v in [1, 2, 3, 4, 5]],
                 mb="xs",
@@ -186,6 +190,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 min=1.0,
                 max=10.0,
                 step=0.1,
+                minRange=0.1,
                 value=FILTER_DEFAULTS["bgg_rating"],
                 marks=[{"value": v, "label": str(v)} for v in range(1, 11)],
                 mb="xs",
@@ -199,7 +204,6 @@ def _build_filter_components(location: str) -> list[Any]:
         placeholder="Any rank",
         value=FILTER_DEFAULTS["bgg_rank_max"],
         min=1,
-        allowDecimal=False,
     )
 
     year = dmc.Stack(
@@ -211,6 +215,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 min=YEAR_MIN,
                 max=CURRENT_YEAR,
                 step=1,
+                minRange=1,
                 value=FILTER_DEFAULTS["year"],
                 label={"function": "yearFormatter"},  # ty: ignore[invalid-argument-type]
                 marks=[
@@ -234,6 +239,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 min=1,
                 max=18,
                 step=1,
+                minRange=1,
                 value=FILTER_DEFAULTS["age"],
                 label={"function": "ageFormatter"},  # ty: ignore[invalid-argument-type]
                 marks=[
@@ -304,75 +310,68 @@ def _build_filter_components(location: str) -> list[Any]:
                 "borderBottom": "1px solid var(--mantine-color-default-border)",
             },
         ),
-        dmc.ScrollArea(
-            offsetScrollbars=True,
-            type="scroll",
-            style={"height": "calc(100vh - 220px)"},
+        name_search,
+        dmc.Space(h="md"),
+        dmc.Accordion(
+            multiple=True,
+            value=["core"],
             children=[
-                name_search,
-                dmc.Space(h="md"),
-                dmc.Accordion(
-                    multiple=True,
-                    value=["core"],
+                dmc.AccordionItem(
+                    value="core",
                     children=[
-                        dmc.AccordionItem(
-                            value="core",
-                            children=[
-                                dmc.AccordionControl("Core Info", fw=500),
-                                dmc.AccordionPanel(
-                                    dmc.Stack([ownership, year, age], gap="md")
-                                ),
-                            ],
-                        ),
-                        dmc.AccordionItem(
-                            value="gameplay",
-                            children=[
-                                dmc.AccordionControl("Gameplay", fw=500),
-                                dmc.AccordionPanel(
-                                    dmc.Stack(
-                                        [players, play_time, complexity],
-                                        gap="md",
-                                    )
-                                ),
-                            ],
-                        ),
-                        dmc.AccordionItem(
-                            value="credits",
-                            children=[
-                                dmc.AccordionControl("Credits & More", fw=500),
-                                dmc.AccordionPanel(
-                                    dmc.Stack(
-                                        [
-                                            bgg_rating,
-                                            bgg_rank,
-                                            categories,
-                                            authors,
-                                            publishers,
-                                        ],
-                                        gap="md",
-                                    )
-                                ),
-                            ],
+                        dmc.AccordionControl("Core Info", fw=500),
+                        dmc.AccordionPanel(
+                            dmc.Stack([ownership, year, age], gap="md")
                         ),
                     ],
                 ),
-                dmc.Space(h="xl"),
-                dmc.Anchor(
-                    dmc.Button(
-                        "View on BoardGameGeek",
-                        variant="light",
-                        color="orange",
-                        fullWidth=True,
-                        leftSection=DashIconify(
-                            icon="si:boardgamegeek", width=16
+                dmc.AccordionItem(
+                    value="gameplay",
+                    children=[
+                        dmc.AccordionControl("Gameplay", fw=500),
+                        dmc.AccordionPanel(
+                            dmc.Stack(
+                                [players, play_time, complexity],
+                                gap="md",
+                            )
                         ),
-                    ),
-                    href=f"https://boardgamegeek.com/collection/user/{get_active_username()}",
-                    target="_blank",
-                    underline="never",
-                    mb="md",
+                    ],
+                ),
+                dmc.AccordionItem(
+                    value="credits",
+                    children=[
+                        dmc.AccordionControl("Credits & More", fw=500),
+                        dmc.AccordionPanel(
+                            dmc.Stack(
+                                [
+                                    bgg_rating,
+                                    bgg_rank,
+                                    categories,
+                                    authors,
+                                    publishers,
+                                ],
+                                gap="md",
+                            )
+                        ),
+                    ],
                 ),
             ],
+        ),
+        dmc.Space(h="xl"),
+        dmc.Anchor(
+            dmc.Button(
+                "View on BoardGameGeek",
+                variant="light",
+                color="orange",
+                fullWidth=True,
+                leftSection=DashIconify(
+                    icon="simple-icons:boardgamegeek", width=16
+                ),
+            ),
+            href=f"https://boardgamegeek.com/collection/user/{get_active_username()}",
+            target="_blank",
+            underline="never",
+            mb="md",
         ),
         dmc.Group(
             dmc.Image(
@@ -417,10 +416,9 @@ def generate_drawer_content() -> list[Any]:
 @callback(
     # category options
     Output({"location": ALL, "control": "categories"}, "data"),
-    # sort
+    # sort / search
     Output({"location": ALL, "control": "sort_by"}, "value"),
     Output({"location": ALL, "control": "sort_dir"}, "value"),
-    # text
     Output({"location": ALL, "control": "name"}, "value"),
     # players
     Output({"location": ALL, "control": "players"}, "max"),
@@ -456,29 +454,31 @@ def populate_filter_bounds(
     """Set filter bounds from the collection and restore any saved state."""
     sf = saved or {}
 
+    def both(val: Any) -> list[Any]:
+        return [val, val]
+
     if not games:
-        dbl: list[list[Any]] = [[], []]
         return (
-            dbl,
-            dbl,
-            dbl,
-            dbl,  # categories data, sort_by, sort_dir, name
-            [10, 10],
-            dbl,  # players max, value
-            [300, 300],
-            dbl,  # play_time max, value
-            dbl,
-            dbl,
-            dbl,
-            dbl,  # complexity, bgg_rating, bgg_rank_max, ownership
-            [1970, 1970],
-            dbl,  # year min, value
-            dbl,  # categories value
-            dbl,  # age value
-            dbl,  # authors data
-            dbl,  # authors value
-            dbl,  # publishers data
-            dbl,  # publishers value
+            both([]),  # categories data
+            both(FILTER_DEFAULTS["sort_by"]),
+            both(FILTER_DEFAULTS["sort_dir"]),
+            both(FILTER_DEFAULTS["name"]),
+            both(PLAYERS_MAX),  # players max
+            both(FILTER_DEFAULTS["players"]),  # players value
+            both(PLAY_TIME_MAX),  # play_time max
+            both(FILTER_DEFAULTS["play_time"]),  # play_time value
+            both(FILTER_DEFAULTS["complexity"]),
+            both(FILTER_DEFAULTS["bgg_rating"]),
+            both(FILTER_DEFAULTS["bgg_rank_max"]),
+            both(FILTER_DEFAULTS["ownership"]),
+            both(YEAR_MIN),  # year min
+            both(FILTER_DEFAULTS["year"]),  # year value
+            both(FILTER_DEFAULTS["categories"]),
+            both(FILTER_DEFAULTS["age"]),
+            both([]),  # authors data
+            both(FILTER_DEFAULTS["authors"]),
+            both([]),  # publishers data
+            both(FILTER_DEFAULTS["publishers"]),
         )
 
     all_cats = sorted({
@@ -519,11 +519,6 @@ def populate_filter_bounds(
         YEAR_MIN,
     )
 
-    # For outputs targeting ALL locations we return a list with one entry per location
-    # (sidebar + drawer = 2 locations)
-    def both(val: Any) -> list[Any]:
-        return [val, val]
-
     return (
         both(cat_data),
         both(sf.get("sort_by", FILTER_DEFAULTS["sort_by"])),
@@ -557,35 +552,29 @@ def populate_filter_bounds(
     State("filters-store", "data"),
 )
 def save_filter_state(
-    _all_values: list[Any],
+    _values: list[Any],
     current_store: dict[str, Any] | None,
 ) -> dict[str, Any]:
     """Generic saver: when any filter component changes, update filters-store."""
     triggered = ctx.triggered_id
-    if not triggered or not isinstance(triggered, dict):
+
+    if not triggered:
         return current_store or dict(FILTER_DEFAULTS)
 
-    control = triggered.get("control", "")
-    location = triggered.get("location", "sidebar")
-
-    # Skip the Clear All button — it's not a value-bearing filter
-    if control == "clear_btn" or control == "ownership_warning":
-        return cast("dict[str, Any]", no_update)
-
-    # Find the value from the triggered component
-    inputs_list = ctx.inputs_list[0]
-    new_val: Any = None
-    for i, inp in enumerate(inputs_list):
-        inp_id = inp.get("id", {})
-        if (
-            inp_id.get("location") == location
-            and inp_id.get("control") == control
-        ):
-            new_val = _all_values[i]
-            break
-
     store = dict(current_store or FILTER_DEFAULTS)
-    store[control] = new_val
+
+    if not ctx.triggered:
+        return store
+
+    new_val = ctx.triggered[0]["value"]
+
+    if isinstance(triggered, dict):
+        control = triggered.get("control", "")
+        # Skip clear_btn
+        if control in ("clear_btn", "ownership_warning"):
+            return cast("dict[str, Any]", no_update)
+        store[control] = new_val
+
     return store
 
 

@@ -85,6 +85,13 @@ def test_get_user_game_collection_invalid_filter() -> None:
         get_user_game_collection("user", filters={"invalid_filter": 1})
 
 
+def test_get_user_game_collection_invalid_username() -> None:
+    assert get_user_game_collection("") is None
+    assert get_user_game_collection(None) is None  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
+    assert get_user_game_collection("None") is None
+    assert get_user_game_collection("null") is None
+
+
 def test_get_user_game_collection_db_hit(mem_engine: Engine) -> None:
     with Session(mem_engine) as session:
         collection = Collection(username="dbuser", name="db collection")

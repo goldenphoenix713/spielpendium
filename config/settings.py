@@ -17,8 +17,6 @@ class Settings(BaseSettings):
 
     reset_db: bool = False
 
-    test_user: str = ""
-
     model_config = SettingsConfigDict(
         env_file=ROOT_DIR / ".env", extra="ignore"
     )
@@ -38,5 +36,3 @@ IMAGE_SIZE = settings.image_size
 DEBUG = settings.debug
 
 RESET_DB = settings.reset_db
-
-TEST_USER = settings.test_user

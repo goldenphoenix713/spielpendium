@@ -70,11 +70,11 @@ def test_populate_filter_bounds():
     saved = {"sort_by": "bgg_rating"}
 
     result = populate_filter_bounds(games, saved)
-    # result is a tuple of 20 elements (based on current implementation)
+    # result is a tuple of 20 elements (based on current unified implementation)
     assert len(result) == 20
     # Check if sort_by is restored
     assert result[1] == ["bgg_rating", "bgg_rating"]
-    # Check if categories data is populated
+    # Check if categories data is populated (still using both() helper)
     assert result[0] == [
         [{"label": "Cat1", "value": "Cat1"}],
         [{"label": "Cat1", "value": "Cat1"}],
@@ -85,6 +85,12 @@ def test_save_filter_state():
     # Mock dash context
     with patch("util.filters.ctx") as mock_ctx:
         mock_ctx.triggered_id = {"location": "sidebar", "control": "name"}
+        mock_ctx.triggered = [
+            {
+                "prop_id": '{"location": "sidebar", "control": "name"}.value',
+                "value": "new_name",
+            }
+        ]
         mock_ctx.inputs_list = [
             [{"id": {"location": "sidebar", "control": "name"}}]
         ]

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import dash_mantine_components as dmc
 
@@ -13,6 +13,7 @@ from dash import (
     _dash_renderer,
     callback,
     dcc,
+    no_update,
     page_container,
 )
 from dash_iconify import DashIconify
@@ -20,7 +21,12 @@ from dash_iconify import DashIconify
 import util.filters  # noqa: F401 — registers filter callbacks
 from util.filters import generate_drawer_content, generate_sidebar
 from util.models import create_db_and_tables
-from util.settings import get_active_username, get_setting
+from util.settings import get_active_username, get_all_usernames, get_setting
+
+if TYPE_CHECKING:
+    from dash import (
+        NoUpdate,
+    )
 
 # noinspection PyProtectedMember
 _dash_renderer._set_react_version("18.2.0")  # type: ignore  # ty: ignore[unused-type-ignore-comment, unused-ignore-comment]
@@ -30,7 +36,7 @@ def generate_app() -> Dash:
     # Ensure database and tables exist on startup
     create_db_and_tables()
 
-    app = Dash(__name__, use_pages=True)
+    app = Dash(__name__, use_pages=True, suppress_callback_exceptions=True)
 
     # Header content
     header_content = dmc.Group(
@@ -44,15 +50,15 @@ def generate_app() -> Dash:
                     id="burger-button",
                     variant="subtle",
                     size="lg",
-                    hiddenFrom="sm",
+                    hiddenFrom="md",
                 ),
                 DashIconify(icon="game-icons:meeple", width=30),
                 dmc.Title("Spielpendium", order=3, mr="xl"),
-                dmc.Divider(orientation="vertical", h=25, visibleFrom="sm"),
+                dmc.Divider(orientation="vertical", h=25, visibleFrom="md"),
                 dmc.Group(
                     gap="xs",
                     p="md",
-                    visibleFrom="sm",
+                    visibleFrom="md",
                     children=[
                         dmc.Anchor(
                             dmc.Button(
@@ -91,7 +97,7 @@ def generate_app() -> Dash:
                             dmc.Button(
                                 "BGG Profile",
                                 leftSection=DashIconify(
-                                    icon="si:boardgamegeek", width=16
+                                    icon="simple-icons:boardgamegeek", width=16
                                 ),
                                 variant="subtle",
                                 color="orange",
@@ -104,6 +110,7 @@ def generate_app() -> Dash:
                     ],
                 ),
             ]),
+            # Desktop GitHub link
             dmc.Anchor(
                 dmc.ActionIcon(
                     DashIconify(icon="radix-icons:github-logo", width=20),
@@ -113,6 +120,68 @@ def generate_app() -> Dash:
                 ),
                 href="https://github.com/goldenphoenix713/spielpendium",
                 target="_blank",
+                visibleFrom="md",
+            ),
+            # Mobile Navigation & GitHub dropdown Menu
+            dmc.Box(
+                dmc.Menu(
+                    [
+                        dmc.MenuTarget(
+                            dmc.ActionIcon(
+                                DashIconify(
+                                    icon="tabler:dots-vertical", width=20
+                                ),
+                                variant="subtle",
+                                color="gray",
+                                size="lg",
+                            )
+                        ),
+                        dmc.MenuDropdown([
+                            dmc.MenuItem(
+                                "Collection",
+                                leftSection=DashIconify(
+                                    icon="game-icons:card-draw", width=16
+                                ),
+                                href="/collection",
+                            ),
+                            dmc.MenuItem(
+                                "Statistics",
+                                leftSection=DashIconify(
+                                    icon="game-icons:histogram", width=16
+                                ),
+                                href="/statistics",
+                            ),
+                            dmc.MenuItem(
+                                "Settings",
+                                leftSection=DashIconify(
+                                    icon="game-icons:gears", width=16
+                                ),
+                                href="/settings",
+                            ),
+                            dmc.MenuItem(
+                                "BGG Profile",
+                                leftSection=DashIconify(
+                                    icon="simple-icons:boardgamegeek", width=16
+                                ),
+                                id="mobile-bgg-profile-link",
+                                href=f"https://boardgamegeek.com/collection/user/{get_active_username()}",
+                                target="_blank",
+                            ),
+                            dmc.MenuDivider(),
+                            dmc.MenuItem(
+                                "GitHub Repository",
+                                leftSection=DashIconify(
+                                    icon="radix-icons:github-logo", width=16
+                                ),
+                                href="https://github.com/goldenphoenix713/spielpendium",
+                                target="_blank",
+                            ),
+                        ]),
+                    ],
+                    position="bottom-end",
+                    shadow="md",
+                ),
+                hiddenFrom="md",
             ),
         ],
     )
@@ -169,14 +238,18 @@ def generate_app() -> Dash:
                 ],
                 navbar={
                     "width": 300,
-                    "breakpoint": "sm",
-                    "collapsed": {"mobile": True},
+                    "breakpoint": "md",
+                    "collapsed": {"mobile": True, "desktop": True},
                 },
-                header={"height": 60},
+                header={"height": 60, "collapsed": True},
                 padding="md",
             ),
             dcc.Store(id="collection-store", storage_type="local", data=[]),
-            dcc.Store(id="active-user-store", storage_type="local"),
+            dcc.Store(
+                id="active-user-store",
+                storage_type="local",
+                data=get_active_username(),
+            ),
             dcc.Store(
                 id="theme-store",
                 storage_type="local",
@@ -187,6 +260,12 @@ def generate_app() -> Dash:
                 storage_type="local",
                 data=get_setting("primary_color", "blue"),
             ),
+            dcc.Store(
+                id="managed-users-store",
+                storage_type="local",
+                data=get_all_usernames(),
+            ),
+            dcc.Store(id="sync-trigger-store", data=0),
         ],
     )
 
@@ -195,17 +274,54 @@ def generate_app() -> Dash:
 
 @callback(
     Output("app-shell", "navbar"),
+    Output("app-shell", "header"),
+    Output("burger-button", "style"),
     Input("url", "pathname"),
+    Input("active-user-store", "data"),
     State("app-shell", "navbar"),
+    State("app-shell", "header"),
 )
-def toggle_navbar(
-    pathname: str, current_navbar: dict[str, Any]
-) -> dict[str, Any]:
-    """Hide the navbar when on the settings page."""
+def toggle_ui_elements(
+    pathname: str,
+    active_user: str | None,
+    current_navbar: dict[str, Any],
+    current_header: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    """Hide UI elements during onboarding or on the settings page."""
     new_navbar = current_navbar or {}
-    is_settings = pathname == "/settings"
-    new_navbar["collapsed"] = {"mobile": True, "desktop": is_settings}
-    return new_navbar
+    new_header = current_header or {}
+
+    # If no user, hide everything except main content
+    if not active_user:
+        new_navbar["collapsed"] = {"mobile": True, "desktop": True}
+        new_header["collapsed"] = True
+        return new_navbar, new_header, {"display": "none"}
+
+    # Otherwise, show header and handle navbar based on page
+    new_header["collapsed"] = False
+    is_collection = pathname == "/collection"
+
+    # Hide the sidebar filters on all pages except /collection
+    new_navbar["collapsed"] = {"mobile": True, "desktop": not is_collection}
+
+    # Also hide the burger menu toggler icon on non-collection pages
+    burger_style = {} if is_collection else {"display": "none"}
+
+    return new_navbar, new_header, burger_style
+
+
+@callback(
+    Output("url", "pathname"),
+    Input("active-user-store", "data"),
+    State("url", "pathname"),
+)
+def onboarding_redirect(
+    active_user: str | None, pathname: str
+) -> str | NoUpdate:
+    """Redirect to landing page if no user is connected."""
+    if not active_user and pathname != "/":
+        return "/"
+    return no_update
 
 
 @callback(
@@ -226,11 +342,13 @@ def update_global_theme(
 
 @callback(
     Output("header-bgg-profile-link", "href"),
+    Output("mobile-bgg-profile-link", "href"),
     Input("active-user-store", "data"),
 )
-def update_header_bgg_link(username: str | None) -> str:
+def update_header_bgg_link(username: str | None) -> tuple[str, str]:
     """Update the BGG profile link in the header when the active user changes."""
-    return f"https://boardgamegeek.com/collection/user/{username or ''}"
+    url = f"https://boardgamegeek.com/collection/user/{username or ''}"
+    return url, url
 
 
 if __name__ == "__main__":

@@ -157,16 +157,16 @@ def test_collection_gaps(mem_engine):
 
 
 def test_start_sync_logic():
-    res = start_sync(None)
-    assert res[0] is True
-    assert res[1] == {"display": "none"}
+    res = start_sync(None, None)
+    assert res == dash.no_update
 
     with (
-        patch("pages.collection.get_active_username", return_value="test"),
         patch("threading.Thread") as mock_thread,
     ):
-        res = start_sync(1)
+        res = start_sync(1, "test")
         assert res[0] is False
+        assert res[1] == {"display": "block"}
+        assert res[2] is True
         assert mock_thread.called
 
 
@@ -191,7 +191,7 @@ def test_load_collection_store_empty(mem_engine):
         ),
     ):
         mock_get.return_value = None
-        assert load_collection_store(None, 0, "phoenix713") == []
+        assert load_collection_store(0, "phoenix713") == []
 
 
 def test_render_grid_empty():

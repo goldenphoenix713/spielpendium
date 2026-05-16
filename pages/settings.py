@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    from dash import NoUpdate
+from typing import Any
 
 import dash
 import dash_mantine_components as dmc
-from dash import ALL, MATCH, Input, Output, State, callback, dcc, html
+from dash import Input, Output, State, callback, html
 from dash_iconify import DashIconify
 
 from util.settings import (
@@ -77,10 +74,7 @@ def layout() -> dmc.Container:
                                         clearable=True,
                                     ),
                                     dmc.Select(
-                                        id={
-                                            "type": "setting",
-                                            "item": "active_bgg_username",
-                                        },
+                                        id="setting-active_bgg_username",
                                         label="Active Profile",
                                         description="The profile currently used to populate the collection.",
                                         data=[
@@ -119,29 +113,15 @@ def layout() -> dmc.Container:
                                 [
                                     dmc.Group([
                                         dmc.Switch(
-                                            id={
-                                                "type": "hidden_setting",
-                                                "item": "auto_refresh",
-                                            },
+                                            id="setting-auto_refresh",
                                             label="Auto-refresh on load",
                                             description="Automatically check BGG for collection updates when opening the page.",
                                             checked=auto_refresh,
                                         ),
-                                        # Hidden input to act as a proxy for the switch value so we can use ALL pattern matching
-                                        dcc.Input(
-                                            id={
-                                                "type": "setting",
-                                                "item": "auto_refresh",
-                                            },
-                                            value=int(auto_refresh),
-                                            type="hidden",
-                                        ),
+                                        # Proxy input removed, using string IDs directly
                                     ]),
                                     dmc.NumberInput(
-                                        id={
-                                            "type": "setting",
-                                            "item": "page_size",
-                                        },
+                                        id="setting-page_size",
                                         label="Games per page",
                                         description="Number of games to render in the collection grid (10-200).",
                                         min=10,
@@ -181,10 +161,7 @@ def layout() -> dmc.Container:
                                         "Color Scheme", size="sm", fw=500
                                     ),
                                     dmc.SegmentedControl(
-                                        id={
-                                            "type": "setting",
-                                            "item": "theme",
-                                        },
+                                        id="setting-theme",
                                         value=theme,
                                         data=[
                                             {
@@ -217,10 +194,7 @@ def layout() -> dmc.Container:
                                         mt="md",
                                     ),
                                     dmc.Select(
-                                        id={
-                                            "type": "setting",
-                                            "item": "primary_color",
-                                        },
+                                        id="setting-primary_color",
                                         value=primary_color,
                                         data=[
                                             {
@@ -288,7 +262,7 @@ def layout() -> dmc.Container:
 
 
 @callback(
-    Output({"type": "setting", "item": "active_bgg_username"}, "data"),
+    Output("setting-active_bgg_username", "data"),
     Input({"type": "setting", "item": "bgg_usernames"}, "value"),
 )
 def update_active_dropdown_options(
@@ -299,19 +273,19 @@ def update_active_dropdown_options(
 
 
 @callback(
-    Output({"type": "setting", "item": MATCH}, "value"),
-    Input({"type": "hidden_setting", "item": MATCH}, "checked"),
+    Output("setting-auto_refresh", "checked"),
+    Input("setting-auto_refresh", "checked"),
+    prevent_initial_call=True,
 )
-def sync_auto_refresh_value(checked: bool | None) -> int:
-    """Sync the switch state to the hidden input for pattern matching."""
-    if checked is None:
-        return 1
-    return int(checked)
+def sync_auto_refresh_value(checked: bool) -> bool:
+    """Ensure auto-refresh setting in DB is synced when changed."""
+    set_setting("auto_refresh", checked)
+    return checked
 
 
 @callback(
     Output("primary-color-swatch", "style"),
-    Input({"type": "setting", "item": "primary_color"}, "value"),
+    Input("setting-primary_color", "value"),
 )
 def update_swatch_color(color: str) -> dict[str, str]:
     """Update the visual swatch in the dropdown when a new color is selected."""
@@ -326,16 +300,33 @@ def update_swatch_color(color: str) -> dict[str, str]:
     Output("theme-store", "data", allow_duplicate=True),
     Output("primary-color-store", "data", allow_duplicate=True),
     Output("active-user-store", "data", allow_duplicate=True),
+    Output("managed-users-store", "data", allow_duplicate=True),
     Input("settings-save-btn", "n_clicks"),
-    State({"type": "setting", "item": ALL}, "value"),
+    State("setting-active_bgg_username", "value"),
+    State({"type": "setting", "item": "bgg_usernames"}, "value"),
+    State("setting-page_size", "value"),
+    State("setting-theme", "value"),
+    State("setting-primary_color", "value"),
+    State("setting-auto_refresh", "checked"),
     prevent_initial_call=True,
 )
 def save_settings(
     n_clicks: int | None,
-    values: list[Any],
+    username: str,
+    usernames: list[str],
+    page_size: int,
+    theme: str,
+    primary_color: str,
+    auto_refresh: bool,
 ) -> (
-    tuple[dmc.Notification, Any, Any, Any]
-    | tuple[dash.NoUpdate, dash.NoUpdate, dash.NoUpdate, dash.NoUpdate]
+    tuple[dmc.Notification, Any, Any, Any, Any]
+    | tuple[
+        dash.NoUpdate,
+        dash.NoUpdate,
+        dash.NoUpdate,
+        dash.NoUpdate,
+        dash.NoUpdate,
+    ]
 ):
     """Save all settings to the database and show a notification."""
     if not n_clicks:
@@ -344,24 +335,22 @@ def save_settings(
             dash.no_update,
             dash.no_update,
             dash.no_update,
+            dash.no_update,
         )
 
-    settings_map: dict[str, Any] = {}
-
-    for i, state in enumerate(dash.ctx.states_list[0]):
-        item = state["id"]["item"]
-        val = values[i]
-
-        if item == "auto_refresh":
-            val = bool(int(val))
-
-        if val is not None:
-            settings_map[item] = val
-
     try:
-        # Save each setting found in the map
-        for key, val in settings_map.items():
-            set_setting(key, val)
+        # Align active username with the managed usernames list
+        if not usernames:
+            username = ""
+        elif username not in usernames:
+            username = usernames[0]
+
+        set_setting("active_bgg_username", username)
+        set_setting("bgg_usernames", usernames)
+        set_setting("page_size", page_size)
+        set_setting("theme", theme)
+        set_setting("primary_color", primary_color)
+        set_setting("auto_refresh", auto_refresh)
 
         return (
             dmc.Notification(
@@ -371,9 +360,10 @@ def save_settings(
                 icon=DashIconify(icon="tabler:check"),
                 action="show",
             ),
-            settings_map.get("theme", dash.no_update),
-            settings_map.get("primary_color", dash.no_update),
-            settings_map.get("active_bgg_username", dash.no_update),
+            theme,
+            primary_color,
+            username,
+            usernames,
         )
     except Exception as e:
         return (
@@ -387,16 +377,41 @@ def save_settings(
             dash.no_update,
             dash.no_update,
             dash.no_update,
+            dash.no_update,
         )
 
 
 @callback(
-    Output({"type": "setting", "item": "active_bgg_username"}, "value"),
+    Output("setting-active_bgg_username", "value"),
     Input("active-user-store", "data"),
-    prevent_initial_call=True,
 )
-def sync_active_user_from_store(active_user: str | None) -> str | NoUpdate:
+def sync_active_user_from_store(active_user: str | None) -> str | None:
     """Initialize the Active Profile select from local storage."""
-    if not active_user:
-        return dash.no_update
     return active_user
+
+
+@callback(
+    Output("setting-theme", "value"),
+    Input("theme-store", "data"),
+)
+def sync_theme_from_store(theme: str | None) -> str | None:
+    """Initialize the theme select from local storage."""
+    return theme
+
+
+@callback(
+    Output("setting-primary_color", "value"),
+    Input("primary-color-store", "data"),
+)
+def sync_primary_color_from_store(color: str | None) -> str | None:
+    """Initialize the primary color select from local storage."""
+    return color
+
+
+@callback(
+    Output({"type": "setting", "item": "bgg_usernames"}, "value"),
+    Input("managed-users-store", "data"),
+)
+def sync_managed_users_from_store(usernames: list[str] | None) -> list[str]:
+    """Initialize the managed usernames tags input from local storage."""
+    return usernames or []

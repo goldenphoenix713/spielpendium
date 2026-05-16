@@ -65,8 +65,27 @@ def test_render_statistics_content_with_data():
         mock_item.ownership_status = "own"
         mock_item.statuses = ["own"]
 
+        # Create a second mock game with min_players = 0 to verify the KeyError safeguard works
+        mock_game_obj_zero = MagicMock()
+        mock_game_obj_zero.name = "Zero Game"
+        mock_game_obj_zero.complexity = 2.0
+        mock_game_obj_zero.min_players = 0
+        mock_game_obj_zero.max_players = 3
+        mock_game_obj_zero.bgg_rating = 7.0
+        mock_game_obj_zero.release_year = 2019
+        mock_game_obj_zero.min_play_time = 15
+        mock_game_obj_zero.max_play_time = 30
+        mock_game_obj_zero.categories = []
+        mock_game_obj_zero.authors = []
+        mock_game_obj_zero.publishers = []
+
+        mock_item_zero = MagicMock()
+        mock_item_zero.game = mock_game_obj_zero
+        mock_item_zero.ownership_status = "own"
+        mock_item_zero.statuses = ["own"]
+
         mock_coll = MagicMock()
-        mock_coll.items = [mock_item]
+        mock_coll.items = [mock_item, mock_item_zero]
         mock_get_coll.return_value = mock_coll
 
         res = render_statistics_content("testuser")
