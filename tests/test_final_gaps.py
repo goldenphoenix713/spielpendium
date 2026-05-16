@@ -4,6 +4,7 @@ import os
 from unittest.mock import MagicMock, patch
 
 import dash
+import pytest
 
 # Must mock register_page before importing the module
 dash.register_page = MagicMock()  # ty:ignore[invalid-assignment]
@@ -18,8 +19,33 @@ from pages.collection import (  # noqa: E402
     start_sync,
     update_progress,
 )
-from util.models import Collection, Game  # noqa: E402
+
+# Import all models to ensure they are in metadata
+from util.models import (  # noqa: E402
+    Category,  # noqa: F401
+    Collection,
+    CollectionItem,  # noqa: F401
+    Game,
+    GameCategoryLink,  # noqa: F401
+    GameRelationship,  # noqa: F401
+    OwnershipStatus,  # noqa: F401
+    PersonGameLink,  # noqa: F401
+    PersonRole,  # noqa: F401
+    Publisher,  # noqa: F401
+    PublisherGameLink,  # noqa: F401
+    RelatedGame,  # noqa: F401
+    Search,  # noqa: F401
+    UserSettings,  # noqa: F401
+)
 from util.status import get_sync_status, set_sync_status  # noqa: E402
+
+
+@pytest.fixture(name="mem_engine")
+def mem_engine_fixture():
+    """Create a clean in-memory database."""
+    engine = create_engine("sqlite:///:memory:")
+    SQLModel.metadata.create_all(engine)
+    return engine
 
 
 def test_directories_env_override():
@@ -36,11 +62,7 @@ def test_sync_status():
     assert status.message == "Syncing..."
 
 
-def test_collection_gaps():
-    # Use an in-memory database for real model objects
-    engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(engine)
-
+def test_collection_gaps(mem_engine):
     # Test open_modal gaps
     # Line 317: Modal close
     with patch("dash.callback_context") as mock_ctx:
@@ -73,7 +95,7 @@ def test_collection_gaps():
         mock_ctx.triggered_id = "sync-game-btn"
 
         # Create a real game in the DB
-        with Session(engine) as session:
+        with Session(mem_engine) as session:
             game = Game(
                 bgg_id=1,
                 name="Test",
@@ -94,7 +116,8 @@ def test_collection_gaps():
             session.commit()
 
         with (
-            patch("pages.collection.engine", engine),
+            patch("pages.collection.engine", mem_engine),
+            patch("util.settings.engine", mem_engine),
             patch(
                 "pages.collection.get_active_username",
                 return_value="phoenix713",
@@ -133,8 +156,14 @@ def test_update_progress_logic():
     assert res[2] == "Running"
 
 
-def test_load_collection_store_empty():
-    with patch("pages.collection.get_user_game_collection") as mock_get:
+def test_load_collection_store_empty(mem_engine):
+    with (
+        patch("pages.collection.get_user_game_collection") as mock_get,
+        patch("util.settings.engine", mem_engine),
+        patch(
+            "pages.collection.get_active_username", return_value="phoenix713"
+        ),
+    ):
         mock_get.return_value = None
         assert load_collection_store(None, 0) == []
 
