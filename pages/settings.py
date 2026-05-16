@@ -35,7 +35,34 @@ def layout() -> dmc.Container:
         size="md",
         pt="xl",
         children=[
-            dmc.Title("Settings", order=1, mb="xl"),
+            dmc.Group(
+                [
+                    dmc.Title("Settings", order=1),
+                    dmc.Group(
+                        [
+                            dmc.Button(
+                                "Reset to Defaults",
+                                id="settings-reset-btn",
+                                variant="outline",
+                                color="red",
+                                size="sm",
+                            ),
+                            dmc.Button(
+                                "Save Settings",
+                                id="settings-save-btn",
+                                leftSection=DashIconify(
+                                    icon="tabler:device-floppy"
+                                ),
+                                size="sm",
+                            ),
+                        ],
+                        gap="sm",
+                    ),
+                ],
+                justify="space-between",
+                align="center",
+                mb="xl",
+            ),
             dmc.Stack(
                 gap="xl",
                 children=[
@@ -231,28 +258,6 @@ def layout() -> dmc.Container:
                             ),
                         ],
                     ),
-                    # Actions
-                    dmc.Group(
-                        [
-                            dmc.Button(
-                                "Save Settings",
-                                id="settings-save-btn",
-                                leftSection=DashIconify(
-                                    icon="tabler:device-floppy"
-                                ),
-                                size="md",
-                            ),
-                            dmc.Button(
-                                "Reset to Defaults",
-                                id="settings-reset-btn",
-                                variant="outline",
-                                color="red",
-                                size="md",
-                            ),
-                        ],
-                        justify="flex-end",
-                        mt="xl",
-                    ),
                 ],
             ),
             # Feedback notification
@@ -415,3 +420,68 @@ def sync_primary_color_from_store(color: str | None) -> str | None:
 def sync_managed_users_from_store(usernames: list[str] | None) -> list[str]:
     """Initialize the managed usernames tags input from local storage."""
     return usernames or []
+
+
+@callback(
+    Output("setting-active_bgg_username", "value", allow_duplicate=True),
+    Output(
+        {"type": "setting", "item": "bgg_usernames"},
+        "value",
+        allow_duplicate=True,
+    ),
+    Output("setting-page_size", "value", allow_duplicate=True),
+    Output("setting-theme", "value", allow_duplicate=True),
+    Output("setting-primary_color", "value", allow_duplicate=True),
+    Output("setting-auto_refresh", "checked", allow_duplicate=True),
+    Output("theme-store", "data", allow_duplicate=True),
+    Output("primary-color-store", "data", allow_duplicate=True),
+    Output("active-user-store", "data", allow_duplicate=True),
+    Output("managed-users-store", "data", allow_duplicate=True),
+    Output(
+        "settings-notification-container", "children", allow_duplicate=True
+    ),
+    Input("settings-reset-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def reset_to_defaults(n_clicks: int | None) -> tuple[Any, ...]:
+    if not n_clicks:
+        return (dash.no_update,) * 11
+
+    try:
+        set_setting("active_bgg_username", "")
+        set_setting("bgg_usernames", [])
+        set_setting("page_size", 50)
+        set_setting("theme", "dark")
+        set_setting("primary_color", "blue")
+        set_setting("auto_refresh", False)
+
+        notification = dmc.Notification(
+            title="Settings Reset",
+            message="All settings have been reset to default values.",
+            color="orange",
+            icon=DashIconify(icon="tabler:rotate-clockwise"),
+            action="show",
+        )
+
+        return (
+            "",  # active_bgg_username
+            [],  # bgg_usernames
+            50,  # page_size
+            "dark",  # theme
+            "blue",  # primary_color
+            False,  # auto_refresh
+            "dark",  # theme-store
+            "blue",  # primary-color-store
+            "",  # active-user-store
+            [],  # managed-users-store
+            notification,  # notification
+        )
+    except Exception as e:
+        notification = dmc.Notification(
+            title="Error Resetting Settings",
+            message=str(e),
+            color="red",
+            icon=DashIconify(icon="tabler:x"),
+            action="show",
+        )
+        return (dash.no_update,) * 10 + (notification,)

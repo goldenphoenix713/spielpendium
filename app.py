@@ -216,6 +216,7 @@ def generate_app() -> Dash:
         forceColorScheme=get_setting("theme", "dark"),
         theme={"primaryColor": get_setting("primary_color", "blue")},
         children=[
+            dmc.NotificationProvider(position="top-right"),
             mobile_drawer,
             dcc.Location(id="url"),
             dmc.AppShell(

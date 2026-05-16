@@ -8,6 +8,7 @@ with patch("dash.register_page"):
     from pages.home import layout as home_layout
     from pages.settings import layout as settings_layout
 from pages.settings import (
+    reset_to_defaults,
     save_settings,
     sync_auto_refresh_value,
     update_active_dropdown_options,
@@ -103,6 +104,30 @@ def test_save_settings_callback():
         )
         assert res_fallback[3] == "user1"
         assert res_fallback[4] == ["user1", "user2"]
+
+
+def test_reset_settings_callback():
+    # Mock set_setting
+    with patch("pages.settings.set_setting") as mock_set:
+        import dash
+
+        # n_clicks is None
+        assert reset_to_defaults(None) == (dash.no_update,) * 11
+
+        # n_clicks is 1
+        res = reset_to_defaults(1)
+        assert res[0] == ""
+        assert res[1] == []
+        assert res[2] == 50
+        assert res[3] == "dark"
+        assert res[4] == "blue"
+        assert res[5] is False
+        assert res[6] == "dark"
+        assert res[7] == "blue"
+        assert res[8] == ""
+        assert res[9] == []
+        assert isinstance(res[10], dmc.Notification)
+        assert mock_set.call_count == 6
 
 
 def test_handle_onboarding_callback():
