@@ -70,8 +70,15 @@ def test_collection_gaps(mem_engine):
         patch(
             "pages.collection.get_active_username", return_value="phoenix713"
         ),
+        patch("pages.collection.get_game_info") as mock_info,
+        patch("pages.collection.save_game_data_to_db") as _mock_save,
         patch("dash.callback_context") as mock_ctx,
     ):
+        # Mock API return value
+        mock_info.return_value = {
+            "items": {"item": {"name": "Mock", "description": "Mock"}}
+        }
+
         # Line 317: Modal close
         mock_ctx.triggered_id = "game-detail-modal"
         mock_ctx.triggered = [{"value": 0}]
@@ -85,6 +92,7 @@ def test_collection_gaps(mem_engine):
 
         # Back button
         mock_ctx.triggered_id = "modal-back-button"
+        # Even if not in DB, it will now use the mock_info
         res = open_modal(
             [], [], 1, 0, True, 0, {"history": [1, 2], "current_index": 1}
         )
