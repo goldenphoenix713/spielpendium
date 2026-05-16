@@ -742,7 +742,7 @@ def apply_filters_and_sort(
         ]
 
     players: list[int] | None = filters.get("players")
-    if players:
+    if players and players != [1, PLAYERS_MAX]:
         lo, hi = players
         if hi >= PLAYERS_MAX:
             # Right handle at cap — include games with more players too
@@ -756,7 +756,7 @@ def apply_filters_and_sort(
             ]
 
     play_time: list[int] | None = filters.get("play_time")
-    if play_time:
+    if play_time and play_time != [0, PLAY_TIME_MAX]:
         lo, hi = play_time
         if hi >= PLAY_TIME_MAX:
             # Right handle at cap — include games longer than 240 min too
@@ -804,7 +804,7 @@ def apply_filters_and_sort(
         ]
 
     year: list[int] | None = filters.get("year")
-    if year:
+    if year and year != [YEAR_MIN, CURRENT_YEAR]:
         lo, hi = year
         if lo <= YEAR_MIN:
             # Left handle is at the floor — include all games older than YEAR_MIN too
@@ -838,7 +838,7 @@ def apply_filters_and_sort(
         ]
 
     age: list[int] | None = filters.get("age")
-    if age:
+    if age and age != [1, 18]:
         lo, hi = age
         if hi >= 18:
             # Right handle at max — include games for 18+ too
