@@ -715,13 +715,14 @@ def open_modal(
 @callback(
     Output("sync-interval", "disabled"),
     Output("sync-progress-container", "style"),
+    Output("refresh-database-btn", "loading"),
     Input("refresh-database-btn", "n_clicks"),
     prevent_initial_call=True,
 )
-def start_sync(n_clicks: int | None) -> tuple[bool, dict[str, str]]:
+def start_sync(n_clicks: int | None) -> tuple[bool, dict[str, str], bool]:
     """Starts the collection sync in a background thread."""
     if not n_clicks:
-        return True, {"display": "none"}
+        return True, {"display": "none"}, False
 
     username = get_active_username()
 
@@ -738,7 +739,7 @@ def start_sync(n_clicks: int | None) -> tuple[bool, dict[str, str]]:
     thread.daemon = True
     thread.start()
 
-    return False, {"display": "block"}
+    return False, {"display": "block"}, True
 
 
 @callback(
@@ -748,13 +749,14 @@ def start_sync(n_clicks: int | None) -> tuple[bool, dict[str, str]]:
     Output("sync-interval", "disabled", allow_duplicate=True),
     Output("sync-progress-container", "style", allow_duplicate=True),
     Output("sync-trigger-store", "data"),
+    Output("refresh-database-btn", "loading", allow_duplicate=True),
     Input("sync-interval", "n_intervals"),
     State("sync-trigger-store", "data"),
     prevent_initial_call=True,
 )
 def update_progress(
     _: int, trigger_count: int
-) -> tuple[int, str, str, bool, dict[str, str], int]:
+) -> tuple[int, str, str, bool, dict[str, str], int, bool]:
     """Polls the sync status and updates the progress bar."""
     status = get_sync_status()
 
@@ -766,6 +768,7 @@ def update_progress(
             True,
             {"display": "none"},
             trigger_count + 1,
+            False,
         )
 
     progress = (status.current / status.total * 100) if status.total > 0 else 0
@@ -776,6 +779,7 @@ def update_progress(
         False,
         {"display": "block"},
         trigger_count,
+        True,
     )
 
 
@@ -783,9 +787,6 @@ def update_progress(
     Output("collection-store", "data"),
     Input("collection-data-store", "data"),
     Input("sync-trigger-store", "data"),
-    running=[
-        (Output("refresh-database-btn", "loading"), True, False),
-    ],
 )
 def load_collection_store(_: Any, sync_trigger: int) -> list[dict[str, Any]]:
     """Load the user's collection into the shared dcc.Store."""
