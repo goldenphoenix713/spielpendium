@@ -29,9 +29,6 @@ def test_create_game_card_basic() -> None:
 
     # Verify it is a Div component wrapping a Card
     assert isinstance(card_div, html.Div)
-    assert card_div.id == {"type": "game-card", "index": 1}  # ty: ignore[unresolved-attribute]
-    # Use to_plotly_json() to verify props in tests
-    assert card_div.to_plotly_json()["props"]["n_clicks"] == 0
 
     card = card_div.children
     assert isinstance(card, dmc.Card)
@@ -50,8 +47,12 @@ def test_create_game_card_basic() -> None:
     assert "3-4 Players" in stats_text.children
     assert "60-120 Min" in stats_text.children
 
-    button = card.children[3]
+    group_btns = card.children[3]
+    assert isinstance(group_btns, dmc.Group)
+    button = group_btns.children[0]
     assert isinstance(button, dmc.Button)
+    assert getattr(button, "id", None) == {"type": "game-card", "index": 1}  # ty: ignore[unresolved-attribute]
+    assert button.to_plotly_json()["props"]["n_clicks"] == 0
 
 
 def test_create_game_card_no_rating_or_image() -> None:
