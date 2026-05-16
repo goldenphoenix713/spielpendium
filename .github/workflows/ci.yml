@@ -88,6 +88,7 @@ jobs:
           --cov=util
           --cov-report=xml
           --cov-report=term
+          --cov-fail-under=0
           --junitxml=pytest-${{ matrix.group }}.xml
 
       - name: Upload coverage
@@ -122,6 +123,7 @@ jobs:
         run: |
           pipx run coverage combine coverage-*/.coverage
           pipx run coverage xml -o combined-coverage.xml
+          pipx run coverage report --fail-under=90
 
       - name: Pytest coverage comment
         if: github.event_name == 'pull_request'
