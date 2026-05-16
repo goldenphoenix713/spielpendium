@@ -637,8 +637,17 @@ def toggle_ownership_warning(
     Output(
         {"location": ALL, "control": "year"}, "value", allow_duplicate=True
     ),
+    Output({"location": ALL, "control": "age"}, "value", allow_duplicate=True),
     Output(
         {"location": ALL, "control": "categories"},
+        "value",
+        allow_duplicate=True,
+    ),
+    Output(
+        {"location": ALL, "control": "authors"}, "value", allow_duplicate=True
+    ),
+    Output(
+        {"location": ALL, "control": "publishers"},
         "value",
         allow_duplicate=True,
     ),
@@ -680,6 +689,9 @@ def clear_filters(
         both(FILTER_DEFAULTS["bgg_rating"]),
         both(None),
         both([ym, CURRENT_YEAR]),
+        both(FILTER_DEFAULTS["age"]),
+        both([]),
+        both([]),
         both([]),
         both(FILTER_DEFAULTS["ownership"]),
     )
