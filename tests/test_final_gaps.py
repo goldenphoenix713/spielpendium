@@ -4,12 +4,12 @@ import os
 from unittest.mock import MagicMock, patch
 
 import dash
-import pytest
 
 # Must mock register_page before importing the module
 dash.register_page = MagicMock()  # ty:ignore[invalid-assignment]
 
 import dash_mantine_components as dmc  # noqa: E402
+import pytest  # noqa: E402
 from sqlmodel import Session, SQLModel, create_engine  # noqa: E402
 
 from pages.collection import (  # noqa: E402
@@ -63,9 +63,16 @@ def test_sync_status():
 
 
 def test_collection_gaps(mem_engine):
-    # Test open_modal gaps
-    # Line 317: Modal close
-    with patch("dash.callback_context") as mock_ctx:
+    # Patch everything globally for this test
+    with (
+        patch("pages.collection.engine", mem_engine),
+        patch("util.settings.engine", mem_engine),
+        patch(
+            "pages.collection.get_active_username", return_value="phoenix713"
+        ),
+        patch("dash.callback_context") as mock_ctx,
+    ):
+        # Line 317: Modal close
         mock_ctx.triggered_id = "game-detail-modal"
         mock_ctx.triggered = [{"value": 0}]
         res = open_modal(
@@ -73,8 +80,7 @@ def test_collection_gaps(mem_engine):
         )
         assert res[0] is False
 
-    # Line 346-360: Back/Forward/Sync
-    with patch("dash.callback_context") as mock_ctx:
+        # Line 346-360: Back/Forward/Sync
         mock_ctx.triggered = [{"value": 1, "prop_id": "..."}]
 
         # Back button
@@ -115,19 +121,12 @@ def test_collection_gaps(mem_engine):
             session.add(col)
             session.commit()
 
-        with (
-            patch("pages.collection.engine", mem_engine),
-            patch("util.settings.engine", mem_engine),
-            patch(
-                "pages.collection.get_active_username",
-                return_value="phoenix713",
-            ),
-        ):
-            res = open_modal(
-                [], [], 0, 0, True, 1, {"history": [1], "current_index": 0}
-            )
-            assert res is not dash.no_update
-            assert res[1] == "Test"
+        # Call open_modal which will now find the game in our mem_engine
+        res = open_modal(
+            [], [], 0, 0, True, 1, {"history": [1], "current_index": 0}
+        )
+        assert res is not dash.no_update
+        assert res[1] == "Test"
 
 
 def test_start_sync_logic():
