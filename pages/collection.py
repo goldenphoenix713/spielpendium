@@ -90,19 +90,18 @@ def create_game_card(
                         fit="contain",
                     ),
                 ),
+                dmc.Box(
+                    dmc.Text(
+                        game.name,
+                        fw=700,
+                        size="lg",
+                        className="marquee-title",
+                    ),
+                    className="marquee-container",
+                    mt="md",
+                ),
                 dmc.Group(
                     [
-                        dmc.Text(
-                            game.name,
-                            fw=700,
-                            size="lg",
-                            style={
-                                "flex": 1,
-                                "overflow": "hidden",
-                                "textOverflow": "ellipsis",
-                                "whiteSpace": "nowrap",
-                            },
-                        ),
                         dmc.Group(
                             create_status_badges(
                                 getattr(game, "temp_statuses", [])
@@ -118,7 +117,7 @@ def create_game_card(
                         ),
                     ],
                     justify="space-between",
-                    mt="md",
+                    mt="xs",
                     mb="xs",
                     wrap="nowrap",
                 ),
@@ -873,19 +872,18 @@ def render_grid(
                             fit="contain",
                         ),
                     ),
+                    dmc.Box(
+                        dmc.Text(
+                            g["name"],
+                            fw=700,
+                            size="lg",
+                            className="marquee-title",
+                        ),
+                        className="marquee-container",
+                        mt="md",
+                    ),
                     dmc.Group(
                         [
-                            dmc.Text(
-                                g["name"],
-                                fw=700,
-                                size="lg",
-                                style={
-                                    "flex": 1,
-                                    "overflow": "hidden",
-                                    "textOverflow": "ellipsis",
-                                    "whiteSpace": "nowrap",
-                                },
-                            ),
                             dmc.Group(
                                 create_status_badges(g.get("statuses", [])),
                                 gap=5,
@@ -899,7 +897,7 @@ def render_grid(
                             ),
                         ],
                         justify="space-between",
-                        mt="md",
+                        mt="xs",
                         mb="xs",
                         wrap="nowrap",
                     ),

@@ -37,20 +37,20 @@ def test_create_game_card_basic() -> None:
     assert isinstance(card, dmc.Card)
     assert isinstance(card.children, list)
 
-    group_component = card.children[1]
+    box_component = card.children[1]
+    name_text = box_component.children
+    group_component = card.children[2]
     assert isinstance(group_component.children, list)
-    name_text = group_component.children[0]
-    group_component.children[1]
-    rating_badge = group_component.children[2]
+    rating_badge = group_component.children[1]
 
     assert name_text.children == "Settlers of Catan"
     assert rating_badge.children == "8.5"
 
-    stats_text = card.children[2]
+    stats_text = card.children[3]
     assert "3-4 Players" in stats_text.children
     assert "60-120 Min" in stats_text.children
 
-    button = card.children[3]
+    button = card.children[4]
     assert isinstance(button, dmc.Button)
 
 
@@ -64,9 +64,9 @@ def test_create_game_card_no_rating_or_image() -> None:
     assert isinstance(card.children, list)  # ty: ignore[unresolved-attribute]
 
     # Check rating fallback
-    group_component = card.children[1]  # ty: ignore[unresolved-attribute]
+    group_component = card.children[2]  # ty: ignore[unresolved-attribute]
     assert isinstance(group_component.children, list)
-    rating_badge = group_component.children[2]
+    rating_badge = group_component.children[1]
     assert rating_badge.children == "N/A"
 
     # Check image fallback

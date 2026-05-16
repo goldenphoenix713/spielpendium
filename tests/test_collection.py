@@ -187,7 +187,7 @@ class TestGridCallbacks:
         grid, _, _ = render_grid(filtered, 1)
 
         names = [
-            card.children.children[1].children[0].children
+            card.children.children[1].children.children
             for card in grid.children
         ]
         assert names == ["Azul", "Monopoly", "Zombicide"]

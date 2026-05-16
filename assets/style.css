@@ -7,3 +7,29 @@
     transform: translateY(-5px);
     box-shadow: var(--mantine-shadow-md);
 }
+
+.marquee-container {
+    container-type: inline-size;
+    width: 100%;
+    overflow: hidden;
+}
+
+.marquee-title {
+    display: inline-block;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.game-card-hover:hover .marquee-title {
+    overflow: visible;
+    max-width: none;
+    /* Animate text back and forth to show the whole title */
+    animation: marquee-slide 4s ease-in-out alternate infinite;
+    animation-delay: 0.5s;
+}
+
+@keyframes marquee-slide {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(min(0px, calc(100cqw - 100%))); }
+}
