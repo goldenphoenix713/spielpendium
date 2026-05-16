@@ -3,6 +3,7 @@ from datetime import datetime  # noqa: TC003
 from typing import Any, cast
 from uuid import uuid4  # noqa: TC003
 
+from sqlalchemy import JSON
 from sqlalchemy.types import BINARY
 from sqlmodel import (
     Field,
@@ -110,6 +111,9 @@ class CollectionItem(SQLModel, table=True):
     ownership_status_id: bytes = BinaryUUIDField(
         foreign_key="ownershipstatus.id", repr=False
     )
+    # BGG Status Flags (stored as a list of strings)
+    statuses: list[str] = Field(default_factory=list, sa_type=JSON)
+
     collection: "Collection" = Relationship(back_populates="items")  # noqa:UP037
     game: "Game" = Relationship(back_populates="collection_items")  # noqa:UP037
     ownership_status: "OwnershipStatus" = Relationship(  # noqa:UP037

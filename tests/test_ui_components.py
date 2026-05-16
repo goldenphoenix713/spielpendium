@@ -40,10 +40,11 @@ def test_create_game_card_basic() -> None:
     group_component = card.children[1]
     assert isinstance(group_component.children, list)
     name_text = group_component.children[0]
-    badge = group_component.children[1]
+    group_component.children[1]
+    rating_badge = group_component.children[2]
 
     assert name_text.children == "Settlers of Catan"
-    assert badge.children == "8.5"
+    assert rating_badge.children == "8.5"
 
     stats_text = card.children[2]
     assert "3-4 Players" in stats_text.children
@@ -65,8 +66,8 @@ def test_create_game_card_no_rating_or_image() -> None:
     # Check rating fallback
     group_component = card.children[1]  # ty: ignore[unresolved-attribute]
     assert isinstance(group_component.children, list)
-    badge = group_component.children[1]
-    assert badge.children == "N/A"
+    rating_badge = group_component.children[2]
+    assert rating_badge.children == "N/A"
 
     # Check image fallback
     image_section = card.children[0]  # ty: ignore[unresolved-attribute]

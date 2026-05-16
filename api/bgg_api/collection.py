@@ -201,13 +201,15 @@ def save_collection_data_to_db(
                 )
                 continue
 
-            # Find or create OwnershipStatus (e.g., "owned", "want", "prevowned")
+            # Find or create OwnershipStatus (primary indicator)
             status_name = "owned"
-            if item_data.get("status", {}).get("@want") == "1":
+            status_node = item_data.get("status", {})
+            if status_node.get("@want") == "1":
                 status_name = "want"
-            elif item_data.get("status", {}).get("@prevowned") == "1":
+            elif status_node.get("@prevowned") == "1":
                 status_name = "prevowned"
-            # Add more status checks here if needed based on `item_data['status']`
+            elif status_node.get("@wishlist") == "1":
+                status_name = "wishlist"
 
             status_statement = select(OwnershipStatus).where(
                 OwnershipStatus.name == status_name
@@ -227,16 +229,35 @@ def save_collection_data_to_db(
             )
             collection_item = session.exec(item_statement).first()
 
+            # Prepare list of active statuses
+            status_mapping = {
+                "own": "own",
+                "prevowned": "prevowned",
+                "fortrade": "fortrade",
+                "want": "want",
+                "wanttobuy": "wanttobuy",
+                "wanttoplay": "wanttoplay",
+                "wishlist": "wishlist",
+                "preordered": "preordered",
+            }
+            active_statuses = [
+                val
+                for attr, val in status_mapping.items()
+                if status_node.get(f"@{attr}") == "1"
+            ]
+
             if not collection_item:
                 collection_item = CollectionItem(
                     collection_id=collection.id,
                     game_id=game.id,
                     ownership_status_id=ownership_status.id,
+                    statuses=active_statuses,
                 )
                 session.add(collection_item)
             else:
-                # Update existing item if needed (e.g., status changed)
+                # Update existing item
                 collection_item.ownership_status_id = ownership_status.id
+                collection_item.statuses = active_statuses
 
         session.commit()
         set_sync_status(False, len(game_ids), len(game_ids), "Sync complete!")

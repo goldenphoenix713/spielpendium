@@ -44,6 +44,34 @@ dash.register_page(__name__, path="/collection")  # type: ignore[no-untyped-call
 
 PAGE_SIZE = 50
 
+STATUS_BADGE_CONFIG = {
+    "own": {"label": "Owned", "color": "green"},
+    "prevowned": {"label": "Prev. Owned", "color": "gray"},
+    "fortrade": {"label": "For Trade", "color": "blue"},
+    "want": {"label": "Want", "color": "yellow"},
+    "wanttobuy": {"label": "Want to Buy", "color": "orange"},
+    "wanttoplay": {"label": "Want to Play", "color": "violet"},
+    "wishlist": {"label": "Wishlist", "color": "pink"},
+    "preordered": {"label": "Preordered", "color": "cyan"},
+}
+
+
+def create_status_badges(statuses: list[str]) -> list[dmc.Badge]:
+    """Create a list of dmc.Badge components for the given statuses."""
+    badges = []
+    for s in statuses:
+        config = STATUS_BADGE_CONFIG.get(s)
+        if config:
+            badges.append(
+                dmc.Badge(
+                    config["label"],
+                    color=config["color"],
+                    variant="light",
+                    size="sm",
+                )
+            )
+    return badges
+
 
 def create_game_card(
     game: Game, ownership_status: OwnershipStatus | None
@@ -64,7 +92,21 @@ def create_game_card(
                 dmc.Group(
                     [
                         dmc.Text(
-                            game.name, fw=500, lineClamp=1, style={"flex": 1}
+                            game.name,
+                            fw=700,
+                            size="lg",
+                            style={
+                                "flex": 1,
+                                "overflow": "hidden",
+                                "textOverflow": "ellipsis",
+                                "whiteSpace": "nowrap",
+                            },
+                        ),
+                        dmc.Group(
+                            create_status_badges(
+                                getattr(game, "temp_statuses", [])
+                            ),
+                            gap=5,
                         ),
                         dmc.Badge(
                             f"{game.bgg_rating:.1f}"
@@ -406,6 +448,16 @@ def open_modal(
             )
         ).first()
         user_col_id = user_collection.id if user_collection else None
+        # Get statuses for the main game
+        main_item = None
+        if user_col_id:
+            main_item = session.exec(
+                select(CollectionItem).where(
+                    CollectionItem.collection_id == user_col_id,
+                    CollectionItem.game_id == game.id,
+                )
+            ).first()
+        main_statuses = main_item.statuses if main_item else []
 
         # Prepare description
         raw_description = game.description or ""
@@ -429,7 +481,7 @@ def open_modal(
         related_games_accordion = None
         if related_links:
             # Group by relationship type
-            by_type: dict[str, list[tuple[Game, str | None]]] = {}
+            by_type: dict[str, list[tuple[Game, list[str]]]] = {}
             for link in related_links:
                 rel_type = link.relationship_type.type
                 if rel_type not in by_type:
@@ -437,26 +489,18 @@ def open_modal(
 
                 target_game = session.get(Game, link.target_game_id)
                 if target_game:
-                    owned_status: str | None = None
+                    owned_statuses: list[str] = []
                     if user_col_id:
                         owned_item = session.exec(
-                            select(CollectionItem)
-                            .where(
+                            select(CollectionItem).where(
                                 CollectionItem.collection_id == user_col_id,
                                 CollectionItem.game_id == target_game.id,
                             )
-                            .options(
-                                selectinload(
-                                    cast(
-                                        "Any", CollectionItem.ownership_status
-                                    )
-                                )
-                            )
                         ).first()
-                        if owned_item and owned_item.ownership_status:
-                            owned_status = owned_item.ownership_status.name
+                        if owned_item:
+                            owned_statuses = owned_item.statuses
 
-                    by_type[rel_type].append((target_game, owned_status))
+                    by_type[rel_type].append((target_game, owned_statuses))
 
             # Map technical BGG types to readable names
             rel_name_map = {
@@ -490,27 +534,13 @@ def open_modal(
                                         "color": "var(--mantine-color-blue-filled)",
                                     },
                                 ),
-                                dmc.Badge(
-                                    "Owned",
-                                    color="green",
-                                    size="xs",
-                                    variant="light",
-                                )
-                                if status == "owned"
-                                else (
-                                    dmc.Badge(
-                                        "Prev. Owned",
-                                        color="gray",
-                                        size="xs",
-                                        variant="light",
-                                    )
-                                    if status == "prevowned"
-                                    else None
-                                ),
+                                *create_status_badges(statuses),
                             ],
                             gap=5,
                         )
-                        for g, status in sorted(games, key=lambda x: x[0].name)
+                        for g, statuses in sorted(
+                            games, key=lambda x: x[0].name
+                        )
                     ],
                     gap="xs",
                 )
@@ -527,18 +557,12 @@ def open_modal(
                     )
                 )
 
-            related_games_accordion = dmc.Stack(
-                [
-                    dmc.Divider(label="Related Games", labelPosition="center"),
-                    dmc.Accordion(
-                        children=accordion_items,
-                        variant="separated",
-                        radius="md",
-                    ),
-                ],
-                mt="xl",
-            )
+            related_games_accordion = dmc.Stack([
+                dmc.Divider(label="Related Games", labelPosition="center"),
+                dmc.Accordion(children=accordion_items, variant="separated"),
+            ])
 
+        # Re-fetch for modal rendering
         content = html.Div([
             dmc.Grid([
                 dmc.GridCol(
@@ -554,6 +578,8 @@ def open_modal(
                 ),
                 dmc.GridCol(
                     dmc.Stack([
+                        dmc.Title(game.name, order=2),
+                        dmc.Group(create_status_badges(main_statuses)),
                         dmc.Group(
                             [
                                 dmc.Group(
@@ -849,7 +875,21 @@ def render_grid(
                     ),
                     dmc.Group(
                         [
-                            dmc.Text(g["name"], fw=500, lineClamp=1),
+                            dmc.Text(
+                                g["name"],
+                                fw=700,
+                                size="lg",
+                                style={
+                                    "flex": 1,
+                                    "overflow": "hidden",
+                                    "textOverflow": "ellipsis",
+                                    "whiteSpace": "nowrap",
+                                },
+                            ),
+                            dmc.Group(
+                                create_status_badges(g.get("statuses", [])),
+                                gap=5,
+                            ),
                             dmc.Badge(
                                 f"{g['bgg_rating']:.1f}"
                                 if g.get("bgg_rating")
@@ -861,6 +901,7 @@ def render_grid(
                         justify="space-between",
                         mt="md",
                         mb="xs",
+                        wrap="nowrap",
                     ),
                     dmc.Text(
                         (

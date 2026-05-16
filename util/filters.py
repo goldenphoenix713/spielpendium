@@ -847,8 +847,19 @@ def apply_filters_and_sort(
     return sorted(result, key=sort_key, reverse=reverse)
 
 
-def game_to_dict(game: Any, ownership_status: Any | None) -> dict[str, Any]:
+def game_to_dict(game: Any, collection_item: Any | None) -> dict[str, Any]:
     """Serialize a Game SQLModel instance to a plain dict for dcc.Store."""
+    status_name = (
+        collection_item.ownership_status.name
+        if collection_item and hasattr(collection_item, "ownership_status")
+        else None
+    )
+
+    # Extract status list
+    statuses = (
+        getattr(collection_item, "statuses", []) if collection_item else []
+    )
+
     return {
         "bgg_id": game.bgg_id,
         "name": game.name,
@@ -865,9 +876,8 @@ def game_to_dict(game: Any, ownership_status: Any | None) -> dict[str, Any]:
         "categories": [c.name for c in (game.categories or [])],
         "authors": [a.name for a in (game.authors or [])],
         "publishers": [p.name for p in (game.publishers or [])],
-        "ownership_status": ownership_status.name
-        if ownership_status
-        else None,
+        "ownership_status": status_name,
+        "statuses": statuses,
     }
 
 

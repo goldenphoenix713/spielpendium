@@ -18,7 +18,14 @@ from util.filters import (
     toggle_mobile_drawer,
     toggle_ownership_warning,
 )
-from util.models import Category, Game, OwnershipStatus, Person, Publisher
+from util.models import (
+    Category,
+    CollectionItem,
+    Game,
+    OwnershipStatus,
+    Person,
+    Publisher,
+)
 
 
 def get_mock_game(name: str, **kwargs: Any) -> dict[str, Any]:
@@ -300,10 +307,18 @@ def test_game_to_dict():
     game.publishers = [Publisher(id=b"3", name="Pub1")]
 
     status = OwnershipStatus(id=b"4", name="owned")
+    item = CollectionItem(
+        collection_id=b"1",
+        game_id=b"1",
+        ownership_status_id=b"4",
+        ownership_status=status,
+        statuses=["own", "wanttoplay"],
+    )
 
-    d = game_to_dict(game, status)
+    d = game_to_dict(game, item)
     assert d["name"] == "Test"
     assert d["categories"] == ["Cat1"]
     assert d["authors"] == ["Auth1"]
     assert d["publishers"] == ["Pub1"]
     assert d["ownership_status"] == "owned"
+    assert d["statuses"] == ["own", "wanttoplay"]

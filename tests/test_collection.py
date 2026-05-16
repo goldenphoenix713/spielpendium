@@ -516,6 +516,7 @@ class TestOpenModal:
             collection_id=collection.id,
             game_id=expansion.id,
             ownership_status_id=status.id,
+            statuses=["own"],
         )
         session.add(owned_item)
         session.commit()
@@ -579,6 +580,7 @@ class TestOpenModal:
                 collection_id=collection.id,
                 game_id=expansion.id,
                 ownership_status_id=status.id,
+                statuses=["prevowned"],
             )
         )
         session.commit()
@@ -642,6 +644,7 @@ class TestOpenModal:
                 collection_id=collection.id,
                 game_id=expansion.id,
                 ownership_status_id=status.id,
+                statuses=["want"],
             )
         )
         session.commit()
