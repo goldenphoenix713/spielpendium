@@ -2,10 +2,10 @@
 
 ## Overview
 
-Spielpendium is a single-user, local-first Dash web application. It syncs a
-user's BoardGameGeek (BGG) collection once (or on demand), stores everything
-in a local SQLite database, and serves a card-based UI for browsing games and
-their details.
+Spielpendium is a local-first Dash web application designed for high-performance board game collection management.
+It syncs a user's BoardGameGeek (BGG) collection, stores metadata in a local SQLite database, and serves a
+premium, dark-mode-optimized UI. It uses browser-local storage to support individual user sessions even when
+sharing a single database instance.
 
 ---
 
@@ -37,9 +37,10 @@ their details.
 ┌──────────────────────────────────────────────┐
 │          Dash Application (app.py)           │
 │                                              │
-│  pages/home.py        — welcome/landing      │
-│  pages/collection.py  — game grid + modal   │
-│  callbacks/           — shared callbacks     │
+│  pages/home.py        — onboarding + dashboard │
+│  pages/collection.py  — game grid + modal      │
+│  pages/statistics.py  — interactive charts     │
+│  callbacks/           — shared callbacks        │
 └──────────────────────────────────────┬───────┘
                                        │  HTTP (browser)
                                        ▼
@@ -95,8 +96,18 @@ module-level `engine` connected to `config.DB_FILE`.
 
 ### `pages/collection.py`
 
-The main page. Renders the game card grid and the game detail modal.
-Callbacks in this file query the DB directly via `Session(engine)`.
+The main page. Renders the game card grid and the game detail modal. Callbacks in this file query the DB directly via
+`Session(engine)` and react to the `active-user-store`.
+
+### `pages/statistics.py`
+
+The analytics dashboard. Uses `pandas` and `plotly` to generate interactive visualizations (Complexity, Player Count,
+Category distribution, etc.) based on the user's collection data.
+
+### `pages/home.py`
+
+Handles the initial onboarding flow. Detects if a user has connected a BGG account in their current browser using the
+`active-user-store` and provides a guided setup experience if not.
 
 ### `api/bgg_api/images.py`
 
@@ -170,7 +181,9 @@ Browser (page load)
 | :--- | :--- |
 | Language | Python 3.11, strict mypy |
 | Web framework | Dash 4.x (multi-page) |
+| State Management | `dcc.Store` (Local Storage) for active user & theme persistence |
 | UI components | dash-mantine-components 2.x (dark-mode-first) |
+| Visualizations | Plotly + Pandas for statistics |
 | Database | SQLite via SQLModel + SQLAlchemy 2 |
 | BGG client | HTTP + `xmltodict` (raw XML parsing) |
 | Images | Downloaded and cached to the local filesystem (`assets/images`) |
@@ -179,4 +192,4 @@ Browser (page load)
 | Package manager | `uv` |
 | Linting/formatting | `ruff` |
 | Type checking | `mypy --strict` + `ty` |
-| Testing | `pytest` (in-memory SQLite fixtures) |
+| Testing | `pytest` (in-memory SQLite fixtures + Dash callback mocking) |

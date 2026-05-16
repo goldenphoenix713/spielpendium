@@ -12,6 +12,10 @@ sphere) and "compendium".
 
 ## Features
 
+- **Deep Collection Insights**: Visualize your library through interactive charts. Analyze complexity distributions,
+  player count support, and category breakdowns.
+- **Guided Onboarding**: Seamless first-visit experience that helps new users connect their BGG account and
+  initialize their local dashboard.
 - **Import from BGG**: Seamlessly import your existing BoardGameGeek collection.
 - **Detailed Game Information**: View comprehensive details including high-resolution images, descriptions,
   complexities, player counts, designers, and publishers.

@@ -7,6 +7,34 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-05-16 — Statistics, Onboarding & Multi-User Architecture
+
+### Added
+
+- **Statistics Dashboard** (`pages/statistics.py`): Comprehensive analytics for collection complexity, player counts,
+  categories, and ownership breakdown using interactive Plotly charts.
+- **Onboarding Flow** (`pages/home.py`): Premium first-visit experience that guides new users to connect their
+  BoardGameGeek account.
+- **Multi-User Local Architecture**: Migrated active user tracking to `dcc.Store` with `local` storage. This allows
+  multiple users on the same app instance to maintain private sessions and avoids leaking database-level active
+  profiles to new visitors.
+- **Unit Tests**: Added `tests/test_statistics.py` and significantly updated `tests/test_pages.py` to cover the new
+  dynamic layout logic.
+
+### Fixed
+
+- **CI Test Stability**: Resolved `OperationalError` and `PageError` during test collection by mocking database
+  settings and Dash page registration.
+- **Game Card Titles**: Implemented a CSS-based marquee effect for long game titles, ensuring readability without
+  sacrificing layout integrity.
+- **Badge Positioning**: Moved ownership and rating badges to a separate line to prevent title overflow on cards.
+
+### Changed
+
+- **Home Page**: Transformed from a static placeholder to a dynamic dashboard that adapts based on the user's local
+  connection status.
+- **Collection Rendering**: Improved empty-state guidance with specific alerts for uninitialized users.
+
 ## [0.8.0] — 2026-03-08 — CI Fixes & Test Enhancements
 
 ### Added

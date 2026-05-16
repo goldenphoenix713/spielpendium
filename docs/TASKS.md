@@ -261,7 +261,41 @@ user's collection.
       integrated it into `pre-commit` as a local system hook for reliability.
   - **Action:** Cleaned up all documentation in `docs/` and root to pass the new strict linting rules.
 
-## Known Bugs
+- **Task 10.2: Initialization & Onboarding Flow**
+  - **Status:** **COMPLETED**
+  - **Description:** Implemented a premium onboarding experience on the Home page for new users to connect their BGG
+      account.
 
-- Game title should not have a line clamp, but maybe can scroll like a marquee with a slight pause when the start
-  of the title.
+---
+
+## Phase 11: Collection Insights (Statistics)
+
+### Goal: Provide visual analytics and data distribution for the board game collection
+
+- **Task 11.1: Statistics Dashboard Implementation**
+  - **Status:** **COMPLETED**
+  - **Description:** Developed a comprehensive Statistics page with 6 interactive Plotly charts (Complexity, Player
+      Count, Status, etc.) and summary cards.
+- **Task 11.2: Dynamic Chart Styling**
+  - **Status:** **COMPLETED**
+  - **Description:** Integrated Plotly with the Mantine dark theme, ensuring charts have transparent backgrounds and
+      consistent typography.
+
+---
+
+## Phase 12: Multi-User Local Architecture
+
+### Goal: Support individual browser sessions and private onboarding
+
+- **Task 12.1: Local Store Integration**
+  - **Status:** **COMPLETED**
+  - **Description:** Migrated active user tracking to `dcc.Store` with `storage_type="local"`, allowing different
+      users on the same app instance to have separate active profiles.
+
+---
+
+## Known Bugs & Improvements
+
+- **Completed:** Improved game card title visibility using a marquee effect and better badge positioning.
+- **Completed:** Stabilized CI tests by mocking database-dependent settings calls.
+- **Pending:** Sync progress bar (Task 7.3) still needs integration with background thread state.
