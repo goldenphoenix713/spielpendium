@@ -800,9 +800,7 @@ def load_collection_store(_: Any, sync_trigger: int) -> list[dict[str, Any]]:
     if not collection or not collection.items:
         return []
     return [
-        game_to_dict(item.game, item.ownership_status)
-        for item in collection.items
-        if item.game
+        game_to_dict(item.game, item) for item in collection.items if item.game
     ]
 
 

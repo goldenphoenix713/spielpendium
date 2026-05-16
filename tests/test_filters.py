@@ -130,8 +130,8 @@ def test_apply_filters_name():
 
 def test_apply_filters_ownership():
     games = [
-        get_mock_game("G1", ownership_status="owned"),
-        get_mock_game("G2", ownership_status="want"),
+        get_mock_game("G1", statuses=["own"]),
+        get_mock_game("G2", statuses=["want"]),
     ]
     filters = {**FILTER_DEFAULTS, "ownership": ["want"]}
     result = apply_filters_and_sort(games, filters)

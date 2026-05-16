@@ -729,7 +729,10 @@ def apply_filters_and_sort(
 
     ownership: list[str] = filters.get("ownership") or []
     if ownership:
-        result = [g for g in result if g.get("ownership_status") in ownership]
+        mapped_ownership = {"own" if o == "owned" else o for o in ownership}
+        result = [
+            g for g in result if mapped_ownership & set(g.get("statuses", []))
+        ]
 
     players: list[int] | None = filters.get("players")
     if players:

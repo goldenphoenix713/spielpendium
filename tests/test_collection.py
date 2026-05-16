@@ -132,10 +132,13 @@ class TestGridCallbacks:
             "min_play_time": kwargs.get("min_play_time", 60),
             "max_play_time": kwargs.get("max_play_time", 120),
             "complexity": kwargs.get("complexity", 2.5),
-            "release_year": kwargs.get("release_year", 2020),
+            "release_year": kwargs.get("release_year", 2010),
             "min_age": kwargs.get("min_age", 10),
             "categories": kwargs.get("categories", []),
+            "authors": kwargs.get("authors", []),
+            "publishers": kwargs.get("publishers", []),
             "ownership_status": kwargs.get("ownership_status", "owned"),
+            "statuses": kwargs.get("statuses", []),
         }
 
     def test_returns_grid_on_success(self) -> None:
@@ -217,9 +220,9 @@ class TestGridCallbacks:
     def test_ownership_filter(self) -> None:
         """update_grid filters games by ownership status."""
         games = [
-            self._make_game_dict(1, "Pandemic", ownership_status="owned"),
-            self._make_game_dict(2, "Catan", ownership_status="prevowned"),
-            self._make_game_dict(3, "Azul", ownership_status="want"),
+            self._make_game_dict(1, "Pandemic", statuses=["own"]),
+            self._make_game_dict(2, "Catan", statuses=["prevowned"]),
+            self._make_game_dict(3, "Azul", statuses=["want"]),
         ]
         filters = {**_DEFAULT_FILTERS, "ownership": ["owned"]}
         filtered, count, _, _ = filter_collection(games, filters)
