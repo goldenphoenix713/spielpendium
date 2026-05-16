@@ -222,8 +222,10 @@ user's collection.
 - **Task 8.2: Theme Customization (Dark/Light Mode)**
   - **Status:** **COMPLETED**
   - **Description:** Implemented global theme and accent color customization in the Settings page with local storage persistence.
-
-- **Task 8.3: BGG User Profile Link**
+- **Task 8.3: Header Layout Refinement**
+  - **Status:** **COMPLETED**
+  - **Description:** Improved header spacing and added visual dividers to fill empty space.
+- **Task 8.4: BGG User Profile Link**
   - **Status:** **PENDING**
   - **Description:** Link to the user's full collection on BGG.
   - **Action:** Add a link in the header or sidebar: "View Collection on BoardGameGeek".
@@ -262,13 +264,5 @@ user's collection.
 
 ## Known Bugs
 
-- Number of players repeated when min and max is the same.
-- Time to play also has the same issue as above.
 - Game title should not have a line clamp, but maybe can scroll like a marquee with a slight pause when the start
   of the title.
-- Some of the ratings badges on the game cards are on the next line after the game name. They should always be on the
-  same line. Alternatiely, place it in a different position.
-- Think about adding something to the header to fill in the empty space between the page name (Spielpendium) and the
-  Github logo link on the right-hand side.
-- The "Powered by BGG" image is too small and has too much padding or margin around it. It can be a big larger to fill
-  in the space for the navbar.

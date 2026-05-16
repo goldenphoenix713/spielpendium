@@ -361,11 +361,12 @@ def _build_filter_components(location: str) -> list[Any]:
             dmc.Image(
                 id={"location": location, "control": "bgg_logo"},
                 src="/assets/powered-by-bgg-reversed-rgb.svg",
-                h=30,
+                h=40,
                 fit="contain",
+                style={"opacity": 0.8},
             ),
             justify="center",
-            mt="md",
+            mt="xl",
             mb="md",
         ),
     ]

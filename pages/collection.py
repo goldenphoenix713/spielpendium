@@ -63,7 +63,9 @@ def create_game_card(
                 ),
                 dmc.Group(
                     [
-                        dmc.Text(game.name, fw=500, lineClamp=1),
+                        dmc.Text(
+                            game.name, fw=500, lineClamp=1, style={"flex": 1}
+                        ),
                         dmc.Badge(
                             f"{game.bgg_rating:.1f}"
                             if game.bgg_rating
@@ -75,13 +77,12 @@ def create_game_card(
                     justify="space-between",
                     mt="md",
                     mb="xs",
+                    wrap="nowrap",
                 ),
                 dmc.Text(
                     (
-                        # TODO: Change the number of players to only one value if min and max are the same
-                        # Also do the same for the time.
-                        f"{game.min_players}-{game.max_players} Players •"
-                        f" {game.min_play_time}-{game.max_play_time} Min"
+                        f"{game.min_players}{f'-{game.max_players}' if game.min_players != game.max_players else ''} Players • "
+                        f"{game.min_play_time}{f'-{game.max_play_time}' if game.min_play_time != game.max_play_time else ''} Min"
                     ),
                     size="sm",
                     c="dimmed",
@@ -574,7 +575,20 @@ def open_modal(
                                             color="gray",
                                         ),
                                         dmc.Text(
-                                            f"{game.min_players}-{game.max_players}"
+                                            f"{game.min_players}{f'-{game.max_players}' if game.min_players != game.max_players else ''}"
+                                        ),
+                                    ],
+                                    gap=5,
+                                ),
+                                dmc.Group(
+                                    [
+                                        DashIconify(
+                                            icon="tabler:clock",
+                                            width=18,
+                                            color="gray",
+                                        ),
+                                        dmc.Text(
+                                            f"{game.min_play_time}{f'-{game.max_play_time}' if game.min_play_time != game.max_play_time else ''} min"
                                         ),
                                     ],
                                     gap=5,
@@ -849,8 +863,22 @@ def render_grid(
                         mb="xs",
                     ),
                     dmc.Text(
-                        f"{g['min_players']}-{g['max_players']} Players "
-                        f"• {g['min_play_time']}-{g['max_play_time']} Min",
+                        (
+                            f"{g['min_players']}"
+                            + (
+                                f"-{g['max_players']}"
+                                if g["min_players"] != g["max_players"]
+                                else ""
+                            )
+                            + " Players • "
+                            + f"{g['min_play_time']}"
+                            + (
+                                f"-{g['max_play_time']}"
+                                if g["min_play_time"] != g["max_play_time"]
+                                else ""
+                            )
+                            + " Min"
+                        ),
                         size="sm",
                         c="dimmed",
                     ),

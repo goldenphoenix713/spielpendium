@@ -47,7 +47,8 @@ def generate_app() -> Dash:
                     hiddenFrom="sm",
                 ),
                 DashIconify(icon="game-icons:meeple", width=30),
-                dmc.Title("Spielpendium", order=3),
+                dmc.Title("Spielpendium", order=3, mr="xl"),
+                dmc.Divider(orientation="vertical", h=25, visibleFrom="sm"),
                 dmc.Group(
                     gap="xs",
                     p="md",
