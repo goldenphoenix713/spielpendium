@@ -95,7 +95,7 @@ def generate_app() -> Dash:
         title="Filters & Sort",
         opened=False,
         position="left",
-        size=300,
+        size="300px",
         padding="md",
         children=dmc.ScrollArea(
             h="100%",

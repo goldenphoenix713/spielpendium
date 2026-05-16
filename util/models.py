@@ -1,6 +1,6 @@
 import os  # Added import for os
 from datetime import datetime  # noqa: TC003
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4  # noqa: TC003
 
 from sqlalchemy.types import BINARY
@@ -40,7 +40,7 @@ __all__ = [
 # Define a custom Field for UUIDs to simplify
 # We create a function to generate a Field with BLOB(16)
 def BinaryUUIDField(**kwargs: Any) -> Any:  # noqa: N802
-    return Field(  # type: ignore
+    return cast("Any", Field)(
         default_factory=lambda: uuid4().bytes,
         sa_type=BINARY(16),
         **kwargs,

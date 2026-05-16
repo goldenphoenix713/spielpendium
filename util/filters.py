@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 import dash_mantine_components as dmc
 from dash import ALL, Input, Output, State, callback, ctx, dcc, no_update
@@ -119,7 +119,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 max=PLAYERS_MAX,
                 step=1,
                 value=FILTER_DEFAULTS["players"],
-                label={"function": "playersFormatter"},
+                label={"function": "playersFormatter"},  # ty: ignore[invalid-argument-type]
                 marks=[
                     {
                         "value": i,
@@ -144,7 +144,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 max=PLAY_TIME_MAX,
                 step=15,
                 value=FILTER_DEFAULTS["play_time"],
-                label={"function": "playTimeFormatter"},
+                label={"function": "playTimeFormatter"},  # ty: ignore[invalid-argument-type]
                 marks=[
                     {
                         "value": v,
@@ -210,7 +210,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 max=CURRENT_YEAR,
                 step=1,
                 value=FILTER_DEFAULTS["year"],
-                label={"function": "yearFormatter"},
+                label={"function": "yearFormatter"},  # ty: ignore[invalid-argument-type]
                 marks=[
                     {
                         "value": v,
@@ -233,7 +233,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 max=18,
                 step=1,
                 value=FILTER_DEFAULTS["age"],
-                label={"function": "ageFormatter"},
+                label={"function": "ageFormatter"},  # ty: ignore[invalid-argument-type]
                 marks=[
                     {"value": v, "label": ("18+" if v == 18 else str(v))}
                     for v in [1, 5, 10, 14, 18]
@@ -551,7 +551,7 @@ def save_filter_state(
 
     # Skip the Clear All button — it's not a value-bearing filter
     if control == "clear_btn" or control == "ownership_warning":
-        return no_update  # type: ignore[return-value]
+        return cast("dict[str, Any]", no_update)
 
     # Find the value from the triggered component
     inputs_list = ctx.inputs_list[0]
@@ -653,7 +653,7 @@ def clear_filters(
 ) -> tuple[Any, ...]:
     """Reset all filters to defaults."""
     if not any(_n_clicks):
-        return no_update  # type: ignore[return-value]
+        return cast("tuple[Any, ...]", no_update)
 
     pm = players_max[0] if players_max else 10
     tm = time_max[0] if time_max else 300

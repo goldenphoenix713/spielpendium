@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from html import unescape as html_unescape
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import dash
 import dash_mantine_components as dmc
@@ -369,7 +369,7 @@ def open_modal(
         related_links = session.exec(
             select(RelatedGame)
             .where(RelatedGame.source_game_id == game.id)
-            .options(selectinload(RelatedGame.relationship_type))  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]  # noqa: E501
+            .options(selectinload(cast("Any", RelatedGame.relationship_type)))
         ).all()
         related_games_accordion = None
         if related_links:
@@ -391,7 +391,11 @@ def open_modal(
                                 CollectionItem.game_id == target_game.id,
                             )
                             .options(
-                                selectinload(CollectionItem.ownership_status)  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+                                selectinload(
+                                    cast(
+                                        "Any", CollectionItem.ownership_status
+                                    )
+                                )
                             )
                         ).first()
                         if owned_item and owned_item.ownership_status:

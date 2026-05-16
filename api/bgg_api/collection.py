@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 from loguru import logger as log
@@ -244,29 +244,17 @@ def get_user_collection_from_db(username: str) -> Collection | None:
             select(Collection)
             .where(Collection.username == username)
             .options(
-                selectinload(Collection.items)  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
-                .selectinload(  # type: ignore[arg-type]
-                    CollectionItem.game  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
-                )
-                .selectinload(  # type: ignore[arg-type]
-                    Game.categories  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
-                ),
-                selectinload(Collection.items)  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
-                .selectinload(  # type: ignore[arg-type]
-                    CollectionItem.game  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
-                )
-                .selectinload(  # type: ignore[arg-type]
-                    Game.authors  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
-                ),
-                selectinload(Collection.items)  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
-                .selectinload(  # type: ignore[arg-type]
-                    CollectionItem.game  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
-                )
-                .selectinload(  # type: ignore[arg-type]
-                    Game.publishers  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
-                ),
-                selectinload(Collection.items).selectinload(  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
-                    CollectionItem.ownership_status  # type: ignore[arg-type]  # ty: ignore[invalid-argument-type]
+                selectinload(cast("Any", Collection.items))
+                .selectinload(cast("Any", CollectionItem.game))
+                .selectinload(cast("Any", Game.categories)),
+                selectinload(cast("Any", Collection.items))
+                .selectinload(cast("Any", CollectionItem.game))
+                .selectinload(cast("Any", Game.authors)),
+                selectinload(cast("Any", Collection.items))
+                .selectinload(cast("Any", CollectionItem.game))
+                .selectinload(cast("Any", Game.publishers)),
+                selectinload(cast("Any", Collection.items)).selectinload(
+                    cast("Any", CollectionItem.ownership_status)
                 ),
             )
         )
