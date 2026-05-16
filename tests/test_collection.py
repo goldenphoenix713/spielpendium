@@ -513,7 +513,9 @@ class TestOpenModal:
         with (
             patch("pages.collection.dash.callback_context", ctx),
             patch("pages.collection.engine", mem_engine),
-            patch("pages.collection.TEST_USER", "testuser"),
+            patch(
+                "pages.collection.get_active_username", return_value="testuser"
+            ),
         ):
             result = open_modal(
                 [1],
@@ -574,7 +576,10 @@ class TestOpenModal:
         with (
             patch("pages.collection.dash.callback_context", ctx),
             patch("pages.collection.engine", mem_engine),
-            patch("pages.collection.TEST_USER", "testuser2"),
+            patch(
+                "pages.collection.get_active_username",
+                return_value="testuser2",
+            ),
         ):
             result = open_modal(
                 [1],
@@ -634,7 +639,10 @@ class TestOpenModal:
         with (
             patch("pages.collection.dash.callback_context", ctx),
             patch("pages.collection.engine", mem_engine),
-            patch("pages.collection.TEST_USER", "testuser3"),
+            patch(
+                "pages.collection.get_active_username",
+                return_value="testuser3",
+            ),
         ):
             result = open_modal(
                 [1],
