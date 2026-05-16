@@ -7,6 +7,8 @@ import dash_mantine_components as dmc
 from dash import ALL, Input, Output, State, callback, ctx, dcc, no_update
 from dash_iconify import DashIconify
 
+from util.settings import get_active_username
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -355,6 +357,21 @@ def _build_filter_components(location: str) -> list[Any]:
                     ],
                 ),
                 dmc.Space(h="xl"),
+                dmc.Anchor(
+                    dmc.Button(
+                        "View on BoardGameGeek",
+                        variant="light",
+                        color="orange",
+                        fullWidth=True,
+                        leftSection=DashIconify(
+                            icon="si:boardgamegeek", width=16
+                        ),
+                    ),
+                    href=f"https://boardgamegeek.com/collection/user/{get_active_username()}",
+                    target="_blank",
+                    underline="never",
+                    mb="md",
+                ),
             ],
         ),
         dmc.Group(

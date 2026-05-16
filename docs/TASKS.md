@@ -226,9 +226,8 @@ user's collection.
   - **Status:** **COMPLETED**
   - **Description:** Improved header spacing and added visual dividers to fill empty space.
 - **Task 8.4: BGG User Profile Link**
-  - **Status:** **PENDING**
-  - **Description:** Link to the user's full collection on BGG.
-  - **Action:** Add a link in the header or sidebar: "View Collection on BoardGameGeek".
+  - **Status:** **COMPLETED**
+  - **Description:** Added a direct link to the user's full collection on BoardGameGeek in both the header and sidebar.
 
 ---
 

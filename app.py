@@ -20,7 +20,7 @@ from dash_iconify import DashIconify
 import util.filters  # noqa: F401 — registers filter callbacks
 from util.filters import generate_drawer_content, generate_sidebar
 from util.models import create_db_and_tables
-from util.settings import get_setting
+from util.settings import get_active_username, get_setting
 
 # noinspection PyProtectedMember
 _dash_renderer._set_react_version("18.2.0")  # type: ignore  # ty: ignore[unused-type-ignore-comment, unused-ignore-comment]
@@ -82,6 +82,19 @@ def generate_app() -> Dash:
                                 variant="subtle",
                             ),
                             href="/settings",
+                            underline="never",
+                        ),
+                        dmc.Anchor(
+                            dmc.Button(
+                                "BGG Profile",
+                                leftSection=DashIconify(
+                                    icon="si:boardgamegeek", width=16
+                                ),
+                                variant="subtle",
+                                color="orange",
+                            ),
+                            href=f"https://boardgamegeek.com/collection/user/{get_active_username()}",
+                            target="_blank",
                             underline="never",
                         ),
                     ],
