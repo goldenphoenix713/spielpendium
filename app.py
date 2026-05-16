@@ -1,12 +1,26 @@
+from __future__ import annotations
+
+from typing import Any
+
 import dash_mantine_components as dmc
 
 # noinspection PyProtectedMember
-from dash import Dash, _dash_renderer, dcc, page_container
+from dash import (
+    Dash,
+    Input,
+    Output,
+    State,
+    _dash_renderer,
+    callback,
+    dcc,
+    page_container,
+)
 from dash_iconify import DashIconify
 
 import util.filters  # noqa: F401 — registers filter callbacks
 from util.filters import generate_drawer_content, generate_sidebar
 from util.models import create_db_and_tables
+from util.settings import get_setting
 
 # noinspection PyProtectedMember
 _dash_renderer._set_react_version("18.2.0")  # type: ignore  # ty: ignore[unused-type-ignore-comment, unused-ignore-comment]
@@ -58,13 +72,16 @@ def generate_app() -> Dash:
                             variant="subtle",
                             disabled=True,
                         ),
-                        dmc.Button(
-                            "Settings",
-                            leftSection=DashIconify(
-                                icon="game-icons:gears", width=16
+                        dmc.Anchor(
+                            dmc.Button(
+                                "Settings",
+                                leftSection=DashIconify(
+                                    icon="game-icons:gears", width=16
+                                ),
+                                variant="subtle",
                             ),
-                            variant="subtle",
-                            disabled=True,
+                            href="/settings",
+                            underline="never",
                         ),
                     ],
                 ),
@@ -108,30 +125,84 @@ def generate_app() -> Dash:
     )
 
     app.layout = dmc.MantineProvider(
-        forceColorScheme="dark",
+        id="mantine-provider",
+        forceColorScheme=get_setting("theme", "dark"),
+        theme={"primaryColor": get_setting("primary_color", "blue")},
         children=[
             mobile_drawer,
+            dcc.Location(id="url"),
             dmc.AppShell(
-                [
-                    dmc.AppShellHeader(header_content, px="md"),
-                    dmc.AppShellNavbar(navbar_content),
-                    dmc.AppShellMain(children=page_container),
-                    dcc.Store(
-                        id="collection-store", storage_type="local", data=[]
+                id="app-shell",
+                children=[
+                    dmc.AppShellHeader(
+                        header_content,
+                        px="md",
+                        style={
+                            "backgroundColor": "color-mix(in srgb, var(--mantine-primary-color-filled), var(--mantine-color-body) 90%)",
+                        },
                     ),
+                    dmc.AppShellNavbar(
+                        navbar_content,
+                        style={
+                            "backgroundColor": "color-mix(in srgb, var(--mantine-primary-color-filled), transparent 95%)",
+                        },
+                    ),
+                    dmc.AppShellMain(children=page_container),
                 ],
-                header={"height": 60},
                 navbar={
                     "width": 300,
                     "breakpoint": "sm",
                     "collapsed": {"mobile": True},
                 },
+                header={"height": 60},
                 padding="md",
+            ),
+            dcc.Store(id="collection-store", storage_type="local", data=[]),
+            dcc.Store(
+                id="theme-store",
+                storage_type="local",
+                data=get_setting("theme", "dark"),
+            ),
+            dcc.Store(
+                id="primary-color-store",
+                storage_type="local",
+                data=get_setting("primary_color", "blue"),
             ),
         ],
     )
 
     return app
+
+
+@callback(
+    Output("app-shell", "navbar"),
+    Input("url", "pathname"),
+    State("app-shell", "navbar"),
+)
+def toggle_navbar(
+    pathname: str, current_navbar: dict[str, Any]
+) -> dict[str, Any]:
+    """Hide the navbar when on the settings page."""
+    new_navbar = current_navbar or {}
+    is_settings = pathname == "/settings"
+    new_navbar["collapsed"] = {"mobile": True, "desktop": is_settings}
+    return new_navbar
+
+
+@callback(
+    Output("mantine-provider", "forceColorScheme"),
+    Output("mantine-provider", "theme"),
+    Input("theme-store", "data"),
+    Input("primary-color-store", "data"),
+    State("mantine-provider", "theme"),
+)
+def update_global_theme(
+    theme_val: str | None, color: str | None, current_theme: dict[str, Any]
+) -> tuple[str, dict[str, Any]]:
+    """Update the Mantine theme and primary color globally."""
+    new_theme = current_theme or {}
+    new_theme["primaryColor"] = color or "blue"
+    return theme_val or "dark", new_theme
 
 
 if __name__ == "__main__":

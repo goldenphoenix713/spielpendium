@@ -23,7 +23,6 @@ from sqlmodel import Session, select
 
 from api import get_game_info, get_user_game_collection
 from api.bgg_api.game_details import save_game_data_to_db
-from config import TEST_USER
 from util.filters import apply_filters_and_sort, game_to_dict
 from util.models import (
     Collection,
@@ -32,6 +31,7 @@ from util.models import (
     RelatedGame,
     engine,
 )
+from util.settings import get_active_username
 
 if TYPE_CHECKING:
     from dash import NoUpdate
@@ -348,7 +348,9 @@ def open_modal(
 
         # Get User's Collection ID
         user_collection = session.exec(
-            select(Collection).where(Collection.username == TEST_USER)
+            select(Collection).where(
+                Collection.username == get_active_username()
+            )
         ).first()
         user_col_id = user_collection.id if user_collection else None
 
@@ -634,7 +636,7 @@ def load_collection_store(
     )
 
     collection = get_user_game_collection(
-        TEST_USER,
+        get_active_username(),
         filters={},  # Pass empty dict to load all ownership statuses (bypasses own=1 default)
         force_update=force_update,
     )

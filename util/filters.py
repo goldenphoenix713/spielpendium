@@ -359,6 +359,7 @@ def _build_filter_components(location: str) -> list[Any]:
         ),
         dmc.Group(
             dmc.Image(
+                id={"location": location, "control": "bgg_logo"},
                 src="/assets/powered-by-bgg-reversed-rgb.svg",
                 h=30,
                 fit="contain",
@@ -850,3 +851,18 @@ def game_to_dict(game: Any, ownership_status: Any | None) -> dict[str, Any]:
         if ownership_status
         else None,
     }
+
+
+@callback(
+    Output({"location": ALL, "control": "bgg_logo"}, "src"),
+    Input("theme-store", "data"),
+)
+def update_bgg_logo_theme(theme: str | None) -> list[str]:
+    """Switch the BGG logo asset based on the current theme."""
+    asset = (
+        "/assets/powered-by-bgg-rgb.svg"
+        if theme == "light"
+        else "/assets/powered-by-bgg-reversed-rgb.svg"
+    )
+    # Return same asset for both sidebar and drawer logos
+    return [asset] * len(ctx.outputs_list)
