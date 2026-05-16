@@ -22,22 +22,38 @@ from pages.collection import (  # noqa: E402
 
 # Import all models to ensure they are in metadata
 from util.models import (  # noqa: E402
-    Category,  # noqa: F401
+    Category,
     Collection,
-    CollectionItem,  # noqa: F401
+    CollectionItem,
     Game,
-    GameCategoryLink,  # noqa: F401
-    GameRelationship,  # noqa: F401
-    OwnershipStatus,  # noqa: F401
-    PersonGameLink,  # noqa: F401
-    PersonRole,  # noqa: F401
-    Publisher,  # noqa: F401
-    PublisherGameLink,  # noqa: F401
-    RelatedGame,  # noqa: F401
-    Search,  # noqa: F401
-    UserSettings,  # noqa: F401
+    GameCategoryLink,
+    GameRelationship,
+    OwnershipStatus,
+    PersonGameLink,
+    PersonRole,
+    Publisher,
+    PublisherGameLink,
+    RelatedGame,
+    Search,
+    UserSettings,
 )
 from util.status import get_sync_status, set_sync_status  # noqa: E402
+
+# Explicitly reference unused models to satisfy all linters and ensure they stay in metadata
+_unused_models = [
+    Category,
+    CollectionItem,
+    GameCategoryLink,
+    GameRelationship,
+    OwnershipStatus,
+    PersonGameLink,
+    PersonRole,
+    Publisher,
+    PublisherGameLink,
+    RelatedGame,
+    Search,
+    UserSettings,
+]
 
 
 @pytest.fixture(name="mem_engine")
@@ -71,7 +87,7 @@ def test_collection_gaps(mem_engine):
             "pages.collection.get_active_username", return_value="phoenix713"
         ),
         patch("pages.collection.get_game_info") as mock_info,
-        patch("pages.collection.save_game_data_to_db") as _mock_save,
+        patch("pages.collection.save_game_data_to_db"),
         patch("dash.callback_context") as mock_ctx,
     ):
         # Mock API return value
@@ -122,7 +138,10 @@ def test_collection_gaps(mem_engine):
                 max_play_time=60,
                 version=1.0,
                 min_age=10,
-            )  # ty:ignore[missing-argument]
+                recommended_players=None,
+                bgg_rating=None,
+                bgg_rank=None,
+            )
             session.add(game)
             # Add collection for current user
             col = Collection(name="Main", username="phoenix713")
