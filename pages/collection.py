@@ -20,7 +20,6 @@ from dash import (
     no_update,
 )
 from dash_iconify import DashIconify
-from loguru import logger
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
 
@@ -131,38 +130,23 @@ def create_game_card(
                     size="sm",
                     c="dimmed",
                 ),
-                dmc.Group(
-                    [
-                        dmc.Button(
-                            "Details",
-                            id={"type": "game-card", "index": game.bgg_id},
-                            n_clicks=0,
-                            variant="light",
-                            color="blue",
-                            style={"flex": 1},
-                            radius="md",
-                        ),
-                        dmc.ActionIcon(
-                            DashIconify(icon="tabler:refresh", width=20),
-                            id={"type": "sync-card-btn", "index": game.bgg_id},
-                            size="lg",
-                            variant="light",
-                            color="gray",
-                            radius="md",
-                        ),
-                    ],
+                dmc.Button(
+                    "Details",
+                    variant="light",
+                    color="blue",
+                    fullWidth=True,
                     mt="md",
-                    wrap="nowrap",
-                    gap="xs",
-                    style={"width": "100%"},
+                    radius="md",
                 ),
             ],
             withBorder=True,
             shadow="sm",
             radius="md",
             w="100%",
-            className="game-card-hover",
         ),
+        id={"type": "game-card", "index": game.bgg_id},
+        n_clicks=0,
+        className="game-card-hover",
     )
 
 
@@ -940,41 +924,23 @@ def render_grid(
                         size="sm",
                         c="dimmed",
                     ),
-                    dmc.Group(
-                        [
-                            dmc.Button(
-                                "Details",
-                                id={"type": "game-card", "index": g["bgg_id"]},
-                                n_clicks=0,
-                                variant="light",
-                                color="blue",
-                                style={"flex": 1},
-                                radius="md",
-                            ),
-                            dmc.ActionIcon(
-                                DashIconify(icon="tabler:refresh", width=20),
-                                id={
-                                    "type": "sync-card-btn",
-                                    "index": g["bgg_id"],
-                                },
-                                size="lg",
-                                variant="light",
-                                color="gray",
-                                radius="md",
-                            ),
-                        ],
+                    dmc.Button(
+                        "Details",
+                        variant="light",
+                        color="blue",
+                        fullWidth=True,
                         mt="md",
-                        wrap="nowrap",
-                        gap="xs",
-                        style={"width": "100%"},
+                        radius="md",
                     ),
                 ],
                 withBorder=True,
                 shadow="sm",
                 radius="md",
                 w="100%",
-                className="game-card-hover",
             ),
+            id={"type": "game-card", "index": g["bgg_id"]},
+            n_clicks=0,
+            className="game-card-hover",
         )
         for g in page_games
     ]
@@ -992,47 +958,3 @@ def render_grid(
         False,
         pagination_style,
     )
-
-
-@callback(
-    Output("sync-trigger-store", "data", allow_duplicate=True),
-    Input({"type": "sync-card-btn", "index": ALL}, "n_clicks"),
-    State("sync-trigger-store", "data"),
-    prevent_initial_call=True,
-)
-def sync_single_game(
-    n_clicks: list[int | None], current_trigger: int
-) -> int | NoUpdate:
-    """Sync a single game's details and collection status from BGG."""
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        return no_update
-
-    trigger = ctx.triggered[0]
-    if not trigger["value"]:
-        return no_update
-
-    triggered_id = ctx.triggered_id
-    if isinstance(triggered_id, dict):
-        bgg_id = triggered_id.get("index")
-        if bgg_id:
-            username = get_active_username()
-            try:
-                # Sync deeper game details
-                game_data = get_game_info(bgg_id)
-                if game_data and game_data.get("items", {}).get("item"):
-                    save_game_data_to_db(game_data["items"]["item"])
-
-                # Sync user's collection status for this specific game
-                get_user_game_collection(
-                    username,
-                    filters={"id": bgg_id, "brief": 0},
-                    force_update=True,
-                )
-            except Exception as e:
-                logger.error(f"Failed to sync single game {bgg_id}: {e}")
-
-            # Trigger a reload of the collection store
-            return current_trigger + 1
-
-    return no_update
