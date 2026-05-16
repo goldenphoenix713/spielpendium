@@ -18,6 +18,7 @@ from util.models import (
     OwnershipStatus,
     engine,
 )
+from util.status import set_sync_status
 
 from .client import get_xml_info
 from .game_details import _process_and_save_game_details, get_game_info
@@ -110,16 +111,26 @@ def save_collection_data_to_db(
 
         if not game_ids:
             log.warning(f"No games found in collection for user {username}")
+            set_sync_status(False)
             return
 
         # Fetch detailed data for all games in the collection at once in batches of 20
         # (BGG limit is generally ~20 per "thing" request)
+        set_sync_status(
+            True, 0, len(game_ids), "Starting game details sync..."
+        )
         batch_size = 20
         for i in range(0, len(game_ids), batch_size):
             batch_ids = game_ids[i : i + batch_size]
             log.info(
                 f"Fetching detailed data for batch of games ({i + 1} to "
                 f"{min(i + batch_size, len(game_ids))} / {len(game_ids)})..."
+            )
+            set_sync_status(
+                True,
+                i,
+                len(game_ids),
+                f"Fetching games {i + 1} to {min(i + batch_size, len(game_ids))}...",
             )
 
             # Retrieve details (stats, videos, relations, images, etc.)
@@ -228,6 +239,7 @@ def save_collection_data_to_db(
                 collection_item.ownership_status_id = ownership_status.id
 
         session.commit()
+        set_sync_status(False, len(game_ids), len(game_ids), "Sync complete!")
         log.info(f"Collection for user {username} saved/updated in DB.")
 
 

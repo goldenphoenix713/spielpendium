@@ -169,3 +169,15 @@ python-version = "3.11"
 pythonpath = ["."]
 testpaths = ["tests"]
 norecursedirs = ["old", ".venv", ".git"]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "tests/*",
+    "old/*",
+    ".venv/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 90

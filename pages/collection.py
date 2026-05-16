@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import threading
 from html import unescape as html_unescape
 from typing import TYPE_CHECKING, Any, cast
 
@@ -32,6 +33,7 @@ from util.models import (
     engine,
 )
 from util.settings import get_active_username
+from util.status import get_sync_status, set_sync_status
 
 if TYPE_CHECKING:
     from dash import NoUpdate
@@ -122,6 +124,27 @@ layout = dmc.Container(
                 dmc.Text("", id="result-count", size="sm", c="dimmed"),
             ],
         ),
+        dmc.Stack(
+            id="sync-progress-container",
+            children=[
+                dmc.Progress(
+                    id="sync-progress-bar",
+                    value=0,
+                    striped=True,
+                    animated=True,
+                    mb="xs",
+                ),
+                dmc.Text(
+                    "",
+                    id="sync-progress-text",
+                    size="xs",
+                    c="dimmed",
+                    ta="center",
+                ),
+            ],
+            style={"display": "none"},
+            mb="lg",
+        ),
         html.Div(
             style={"position": "relative", "minHeight": "200px"},
             children=[
@@ -140,6 +163,8 @@ layout = dmc.Container(
             justify="center",
         ),
         dcc.Store(id="filtered-collection-store", data=[]),
+        dcc.Interval(id="sync-interval", interval=1000, disabled=True),
+        dcc.Store(id="sync-trigger-store", data=0),
         dmc.Modal(
             title=dmc.Group(
                 [
@@ -172,18 +197,33 @@ layout = dmc.Container(
                         ],
                         gap="sm",
                     ),
-                    dmc.Anchor(
-                        dmc.Button(
-                            "View on BGG",
-                            variant="outline",
-                            size="xs",
-                            rightSection=DashIconify(
-                                icon="tabler:external-link", width=14
+                    dmc.Group(
+                        [
+                            dmc.Button(
+                                "Sync Game",
+                                id="sync-game-btn",
+                                variant="subtle",
+                                color="blue",
+                                size="xs",
+                                leftSection=DashIconify(
+                                    icon="tabler:refresh", width=14
+                                ),
                             ),
-                        ),
-                        id="modal-bgg-link",
-                        href="#",
-                        target="_blank",
+                            dmc.Anchor(
+                                dmc.Button(
+                                    "View on BGG",
+                                    variant="outline",
+                                    size="xs",
+                                    rightSection=DashIconify(
+                                        icon="tabler:external-link", width=14
+                                    ),
+                                ),
+                                id="modal-bgg-link",
+                                href="#",
+                                target="_blank",
+                            ),
+                        ],
+                        gap="xs",
                     ),
                 ],
                 justify="space-between",
@@ -243,7 +283,12 @@ clientside_callback(
     Input("modal-back-button", "n_clicks"),
     Input("modal-forward-button", "n_clicks"),
     Input("game-detail-modal", "opened"),
+    Input("sync-game-btn", "n_clicks"),
     State("modal-history-store", "data"),
+    running=[
+        (Output("loading-modal", "visible"), True, False),
+        (Output("sync-game-btn", "loading"), True, False),
+    ],
     prevent_initial_call=True,
 )
 def open_modal(
@@ -252,9 +297,12 @@ def open_modal(
     back_clicks: int | None,
     forward_clicks: int | None,
     modal_opened: bool,
+    sync_clicks: int | None,
     history_data: dict[str, Any],
 ) -> (
-    tuple[bool, str, str, Any, str, bool, dict[str, Any], bool, bool]
+    tuple[
+        bool, str, str, Any, str, bool | NoUpdate, dict[str, Any], bool, bool
+    ]
     | NoUpdate
 ):
     ctx = dash.callback_context
@@ -303,6 +351,9 @@ def open_modal(
         if current_index < len(history) - 1:
             current_index += 1
             bgg_id = history[current_index]
+    elif triggered_id == "sync-game-btn":
+        if current_index >= 0:
+            bgg_id = history[current_index]
     elif triggered_id == "game-detail-modal" and modal_opened:
         # This can happen if the modal opens but nothing triggered it?
         # Should be handled by card_clicks check below.
@@ -322,10 +373,11 @@ def open_modal(
     # but the bgg_id is the index in both cases.
 
     # Fetch game details from DB
+    force_sync = triggered_id == "sync-game-btn"
     with Session(engine) as session:
         game = session.exec(select(Game).where(Game.bgg_id == bgg_id)).first()
 
-        if not game or not game.description:
+        if not game or not game.description or force_sync:
             game_data = get_game_info(bgg_id)
             save_game_data_to_db(game_data["items"]["item"])
             session.commit()
@@ -339,7 +391,7 @@ def open_modal(
                     "",
                     "Game was unable to be added to the database.",
                     "#",
-                    False,
+                    no_update,
                     updated_history_data,
                     back_disabled,
                     forward_disabled,
@@ -612,7 +664,7 @@ def open_modal(
             f"Rating: {game.bgg_rating:.1f}" if game.bgg_rating else "N/A",
             content,
             f"https://boardgamegeek.com/boardgame/{game.bgg_id}",
-            False,
+            no_update,  # loading-modal visibility handled by 'running'
             updated_history_data,
             back_disabled,
             forward_disabled,
@@ -620,25 +672,88 @@ def open_modal(
 
 
 @callback(
+    Output("sync-interval", "disabled"),
+    Output("sync-progress-container", "style"),
+    Input("refresh-database-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def start_sync(n_clicks: int | None) -> tuple[bool, dict[str, str]]:
+    """Starts the collection sync in a background thread."""
+    if not n_clicks:
+        return True, {"display": "none"}
+
+    username = get_active_username()
+
+    def run_sync():
+        try:
+            get_user_game_collection(username, filters={}, force_update=True)
+        except Exception as e:
+            from loguru import logger
+
+            logger.error(f"Sync failed: {e}")
+            set_sync_status(False, message=f"Error: {e}")
+
+    thread = threading.Thread(target=run_sync)
+    thread.daemon = True
+    thread.start()
+
+    return False, {"display": "block"}
+
+
+@callback(
+    Output("sync-progress-bar", "value"),
+    Output("sync-progress-bar", "label"),
+    Output("sync-progress-text", "children"),
+    Output("sync-interval", "disabled", allow_duplicate=True),
+    Output("sync-progress-container", "style", allow_duplicate=True),
+    Output("sync-trigger-store", "data"),
+    Input("sync-interval", "n_intervals"),
+    State("sync-trigger-store", "data"),
+    prevent_initial_call=True,
+)
+def update_progress(
+    _: int, trigger_count: int
+) -> tuple[int, str, str, bool, dict[str, str], int]:
+    """Polls the sync status and updates the progress bar."""
+    status = get_sync_status()
+
+    if not status.active:
+        return (
+            100,
+            "100%",
+            status.message or "Sync complete!",
+            True,
+            {"display": "none"},
+            trigger_count + 1,
+        )
+
+    progress = (status.current / status.total * 100) if status.total > 0 else 0
+    return (
+        int(progress),
+        f"{int(progress)}%",
+        status.message,
+        False,
+        {"display": "block"},
+        trigger_count,
+    )
+
+
+@callback(
     Output("collection-store", "data"),
     Input("collection-data-store", "data"),
-    Input("refresh-database-btn", "n_clicks"),
+    Input("sync-trigger-store", "data"),
     running=[
         (Output("refresh-database-btn", "loading"), True, False),
     ],
 )
-def load_collection_store(
-    _: Any, _n_clicks: int | None
-) -> list[dict[str, Any]]:
+def load_collection_store(_: Any, sync_trigger: int) -> list[dict[str, Any]]:
     """Load the user's collection into the shared dcc.Store."""
-    force_update = dash.ctx.triggered_id == "refresh-database-btn" and bool(
-        _n_clicks
-    )
-
+    # This callback now triggers when sync is done (via sync-trigger-store)
+    # or when the data store itself changes.
     collection = get_user_game_collection(
         get_active_username(),
-        filters={},  # Pass empty dict to load all ownership statuses (bypasses own=1 default)
-        force_update=force_update,
+        filters={},
+        force_update=False,  # Already updated by the background thread
     )
     if not collection or not collection.items:
         return []

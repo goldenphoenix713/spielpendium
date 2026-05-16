@@ -75,7 +75,7 @@ user's collection.
 - **Task 4.1: Implement Click Callback for Game Cards**
   - **Status:** **COMPLETED**
   - **Description:** Implemented `open_modal` callback triggered by
-      `game-card` indices.
+      `game-card` indices. The entire card is clickable for a seamless UX.
 - **Task 4.2: Fetch and Display Detailed Game Information**
   - **Status:** **COMPLETED**
   - **Description:** Modal renders full high-res image, description, stats,
@@ -191,14 +191,13 @@ user's collection.
 ### Goal: Provide better feedback and control over BGG data synchronization
 
 - **Task 7.1: Collection-Level Refresh Button**
-  - **Status:** **PENDING**
-  - **Description:** Add a button to the main collection view to manually trigger a full BGG sync.
-  - **Action:** Add a "Refresh Collection" button to the header/sidebar that triggers the
-      `save_collection_data_to_db` background process.
+  - **Status:** **COMPLETED**
+  - **Description:** Added a button to the main collection view to manually trigger a full BGG sync.
+  - **Action:** Implemented in the collection header to trigger `save_collection_data_to_db`.
 - **Task 7.2: Game-Level Refresh Button**
-  - **Status:** **PENDING**
+  - **Status:** **COMPLETED**
   - **Description:** Add a button in the detail modal to refresh data for a specific game.
-  - **Action:** Add a "Sync with BGG" button in the modal that triggers `save_game_details_to_db` for the current `bgg_id`.
+  - **Action:** Implemented a "Sync Game" button in the modal title that forces a BGG re-fetch and updates the DB.
 - **Task 7.3: Visual Progress Tracking for Sync**
   - **Status:** **PENDING**
   - **Description:** Replace the generic loading overlay with a detailed progress bar during sync.
@@ -267,7 +266,6 @@ user's collection.
 - Time to play also has the same issue as above.
 - Game title should not have a line clamp, but maybe can scroll like a marquee with a slight pause when the start
   of the title.
-- The entire card should be clickable, not just the details button. Maybe just remove the details button entirely.
 - Some of the ratings badges on the game cards are on the next line after the game name. They should always be on the
   same line. Alternatiely, place it in a different position.
 - Think about adding something to the header to fill in the empty space between the page name (Spielpendium) and the

@@ -248,6 +248,7 @@ class TestOpenModal:
                 None,
                 None,
                 False,
+                None,
                 {"history": [], "current_index": -1},
             )
 
@@ -265,6 +266,7 @@ class TestOpenModal:
                 None,
                 None,
                 False,
+                None,
                 {"history": [], "current_index": -1},
             )
 
@@ -288,6 +290,7 @@ class TestOpenModal:
                 None,
                 None,
                 False,
+                None,
                 {"history": [], "current_index": -1},
             )
 
@@ -304,7 +307,7 @@ class TestOpenModal:
         ) = result
         assert opened is True
         assert title == "Error"
-        assert loading is False
+        assert loading == dash.no_update
 
     def test_game_found_opens_modal(
         self, session: Session, mem_engine: Engine
@@ -327,6 +330,7 @@ class TestOpenModal:
                 None,
                 None,
                 False,
+                None,
                 {"history": [], "current_index": -1},
             )
 
@@ -344,7 +348,7 @@ class TestOpenModal:
         assert opened is True
         assert title == "Terra Mystica"
         assert "7.5" in rating  # from create_mock_game default bgg_rating
-        assert loading is False
+        assert loading == dash.no_update
 
     def test_game_with_no_rating_shows_na(
         self, session: Session, mem_engine: Engine
@@ -368,6 +372,7 @@ class TestOpenModal:
                 None,
                 None,
                 False,
+                None,
                 {"history": [], "current_index": -1},
             )
 
@@ -407,6 +412,7 @@ class TestOpenModal:
                 None,
                 None,
                 False,
+                None,
                 {"history": [], "current_index": -1},
             )
 
@@ -468,13 +474,14 @@ class TestOpenModal:
                 None,
                 None,
                 False,
+                None,
                 {"history": [], "current_index": -1},
             )
 
         opened, title, _, content, _, loading, _, _, _ = result
         assert opened is True
         assert title == "Base Game"
-        assert loading is False
+        assert loading == dash.no_update
         # Content is a Div wrapping a Grid; verify it was built without errors
         assert isinstance(content, html.Div)
 
@@ -527,6 +534,7 @@ class TestOpenModal:
                 None,
                 None,
                 False,
+                None,
                 {"history": [], "current_index": -1},
             )
 
@@ -590,6 +598,7 @@ class TestOpenModal:
                 None,
                 None,
                 False,
+                None,
                 {"history": [], "current_index": -1},
             )
 
@@ -652,6 +661,7 @@ class TestOpenModal:
                 None,
                 None,
                 False,
+                None,
                 {"history": [], "current_index": -1},
             )
 
