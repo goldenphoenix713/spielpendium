@@ -11,7 +11,7 @@ their details.
 
 ## High-Level Data Flow
 
-```
+```text
 ┌──────────────────────────────────────────────┐
 │              BoardGameGeek API               │
 │   (XML via HTTPS, xmlapi2/ — token required) │
@@ -51,23 +51,25 @@ their details.
 ## Module Responsibilities
 
 ### `app.py`
+
 Entry point. Calls `create_db_and_tables()` on startup, then builds and
 returns the `Dash` app with the `MantineProvider` + `AppShell` layout.
 
 ### `api/`
+
 This directory contains API-related modules.
 
-*   **`api/bgg_api/`**: All BGG communication, split into a package for maintainability. Key modules:
-    *   **`client.py`**: Base XML fetching and error handling.
-    *   **`game_details.py`**: Parsing game-specific info (stats, related games).
-    *   **`images.py`**: Managing image storage on the filesystem.
-    *   **`collection.py`**: Ingesting user collection status.
-*   **`api/connection_check.py`**: Connectivity helpers.
+- **`api/bgg_api/`**: All BGG communication, split into a package for maintainability. Key modules:
+  - **`client.py`**: Base XML fetching and error handling.
+  - **`game_details.py`**: Parsing game-specific info (stats, related games).
+  - **`images.py`**: Managing image storage on the filesystem.
+  - **`collection.py`**: Ingesting user collection status.
+- **`api/connection_check.py`**: Connectivity helpers.
 
 Public interface handles:
 
 | Function | Purpose |
-|---|---|
+| :--- | :--- |
 | `get_user_game_collection()` | Top-level: check DB first, fetch from BGG if absent |
 | `save_collection_data_to_db()` | Batch-fetch game details, persist Collection + items |
 | `get_game_info()` | Fetch game details XML for one or more `bgg_id`s |
@@ -82,21 +84,27 @@ omit this header as they hit a different domain. Retry logic handles BGG's
 See `docs/BGG_API.md` for full API documentation, including how to obtain a token.
 
 ### `util/models.py`
+
 SQLModel ORM definitions. All database schema lives here. Also exports the
 module-level `engine` connected to `config.DB_FILE`.
 
 ### `config/settings.py`
+
 `pydantic-settings` model. Reads from `.env`. Exports named constants
 (`BGG_API_TOKEN`, `DB_FILE`, `RESET_DB`, etc.) for import throughout the app.
 
 ### `pages/collection.py`
+
 The main page. Renders the game card grid and the game detail modal.
 Callbacks in this file query the DB directly via `Session(engine)`.
 
 ### `api/bgg_api/images.py`
-Helper module that downloads and saves raw image bytes from BGG to the local `assets/images` directory, returning the final filesystem path for the DB to reference.
+
+Helper module that downloads and saves raw image bytes from BGG to the local `assets/images` directory, returning the
+final filesystem path for the DB to reference.
 
 ### `util/log.py`
+
 Configures `loguru` with console + file sinks based on `config.DEBUG` and
 `config.LOG_FILE`.
 
@@ -107,7 +115,7 @@ Configures `loguru` with console + file sinks based on `config.DEBUG` and
 All primary keys are 16-byte binary UUIDs (`BinaryUUIDField`).
 Look up games by `bgg_id` (int, unique), not by internal UUID.
 
-```
+```text
 Game ──< RelatedGame >── Game          self-referential via GameRelationship.type
 Game ──< PersonGameLink >── Person     role discriminated by PersonRole (author/artist)
 Game ──< PublisherGameLink >── Publisher
@@ -126,7 +134,7 @@ CollectionItem ── OwnershipStatus      (owned / want / prevowned)
 
 ## Request Lifecycle (Collection Load)
 
-```
+```text
 Browser (page load)
   └─► Dash callback: update_grid(username)
         ├─ get_user_game_collection(username)
@@ -145,7 +153,7 @@ Browser (page load)
 
 ## Configuration Flow
 
-```
+```text
 .env file
   └─► pydantic-settings (config/settings.py)
         └─► module-level constants (DB_FILE, DEBUG, etc.)
@@ -159,7 +167,7 @@ Browser (page load)
 ## Tech Stack Summary
 
 | Layer | Technology |
-|---|---|
+| :--- | :--- |
 | Language | Python 3.11, strict mypy |
 | Web framework | Dash 4.x (multi-page) |
 | UI components | dash-mantine-components 2.x (dark-mode-first) |

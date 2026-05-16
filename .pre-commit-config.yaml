@@ -16,8 +16,16 @@ repos:
     rev: v0.15.2
     hooks:
       - id: ruff-check
-        args: [ --fix ]
+        args: [ "--fix", "--unsafe-fixes" ]
       - id: ruff-format
+  - repo: local
+    hooks:
+      - id: markdownlint
+        name: markdownlint
+        entry: markdownlint
+        language: system
+        types: [markdown]
+        args: [ --config, .markdownlint.json, --fix ]
   - repo: local
     hooks:
       - id: mypy

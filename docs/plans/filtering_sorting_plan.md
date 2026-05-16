@@ -1,7 +1,7 @@
 # Plan: Collection Filtering & Sorting System
 
-**Status:** Approved — Ready for Implementation  
-**Created:** 2026-05-13  
+**Status:** Approved — Ready for Implementation
+**Created:** 2026-05-13
 **Author:** Antigravity + Eduardo Ruiz
 
 ---
@@ -24,9 +24,11 @@
 
 The `app.py` `AppShell` will be restructured:
 
-- **Header:** Add nav links (Collection, Statistics, Settings) alongside the existing Spielpendium title. The nav moves here from the navbar.
+- **Header:** Add nav links (Collection, Statistics, Settings) alongside the existing Spielpendium title.
+  The nav moves here from the navbar.
 - **Navbar (left sidebar):** Repurposed entirely for filters and the sort selector.
-- **Main area:** Game grid with result count in the top-right. On mobile, a hamburger button opens the filter sidebar as a `dmc.Drawer`.
+- **Main area:** Game grid with result count in the top-right. On mobile, a hamburger button opens the filter
+  sidebar as a `dmc.Drawer`.
 
 ### Data Flow
 
@@ -45,7 +47,8 @@ Filter/Sort Change
         └─> Returns updated grid + "Showing X of Y games" count
 ```
 
-> **Note:** `dcc.Store` data will be a list of plain dicts (not SQLModel objects, which aren't JSON-serializable). A helper function `game_to_dict()` will serialize the relevant fields.
+> **Note:** `dcc.Store` data will be a list of plain dicts (not SQLModel objects, which aren't JSON-serializable).
+> A helper function `game_to_dict()` will serialize the relevant fields.
 
 ---
 
@@ -62,7 +65,8 @@ A `dmc.Select` at the **top of the sidebar**, followed by a `dmc.SegmentedContro
 | **Complexity** | `game.complexity` | Asc | ⭐⭐ |
 | **Play Time** | `game.min_play_time` | Asc | ⭐⭐ |
 
-**Implementation note:** Fields that are nullable (`bgg_rank`, `bgg_rating`, `complexity`) must always sort `None` values to the end regardless of direction, using a key like `(value is None, value)`.
+**Implementation note:** Fields that are nullable (`bgg_rank`, `bgg_rating`, `complexity`) must always sort `None`
+values to the end regardless of direction, using a key like `(value is None, value)`.
 
 ---
 
@@ -92,7 +96,8 @@ All filters are `AND`-ed together. Within a multi-select filter (categories, etc
 
 - **Data Fields:** `min_play_time`, `max_play_time`
 - **Filter Type:** Range (integer, in minutes)
-- **Component:** `dmc.RangeSlider` — min=0, max=240+ (cap at 240, meaning "240+"), step=15. Add a `dmc.ChipGroup` for quick-filters: "< 30 min", "30–60 min", "60–120 min", "120+ min".
+- **Component:** `dmc.RangeSlider` — min=0, max=240+ (cap at 240, meaning "240+"), step=15. Add a `dmc.ChipGroup` for
+  quick-filters: "< 30 min", "30–60 min", "60–120 min", "120+ min".
 - **Logic:** Show games where `min_play_time ≤ selected_max AND max_play_time ≥ selected_min`
 - **Priority:** ⭐⭐⭐
 
@@ -131,7 +136,8 @@ All filters are `AND`-ed together. Within a multi-select filter (categories, etc
 - **Filter Type:** Categorical, multi-select toggle
 - **Component:** `dmc.ChipGroup` (multi=True) with chips: "Owned", "Prev. Owned", "Want to Buy"
 - **Default:** Owned only.
-- **Warning:** Display a `dmc.Alert` when user selects "All" without other active filters, noting it may load a large number of games.
+- **Warning:** Display a `dmc.Alert` when user selects "All" without other active filters, noting it may load a
+  large number of games.
 - **Priority:** ⭐⭐
 - **Note:** Requires changing the initial data load to fetch all statuses, not just `own=True`.
 

@@ -22,7 +22,7 @@ valid token, requests will be rejected.
 
 Send the token as a `Bearer` token in the `Authorization` request header:
 
-```
+```text
 Authorization: Bearer <your-token>
 ```
 
@@ -36,7 +36,7 @@ BGG_API_TOKEN=your_token_here
 > **Important:** Always request from `boardgamegeek.com`, **not**
 > `www.boardgamegeek.com`. The `www` subdomain can interfere with
 > Authorization headers.
-
+>
 > **Note:** Image assets are served from BGG's CDN (e.g.,
 > `cf.geekdo-images.com`), which is a different domain than the API itself.
 > The `get_single_image()` function intentionally omits the `Authorization`
@@ -65,7 +65,7 @@ The full terms are at
 Key points:
 
 | Requirement | Detail |
-|---|---|
+| :--- | :--- |
 | **Attribution** | Must credit BoardGameGeek by name and display the "Powered by BGG" logo in any public-facing application |
 | **Non-commercial** | API use is for non-commercial purposes only unless BGG grants explicit permission |
 | **No AI/LLM training** | Using BGG data to train AI or LLM systems is strictly prohibited |
@@ -76,7 +76,7 @@ Key points:
 ## Key Endpoints Used
 
 | Endpoint | Purpose |
-|---|---|
+| :--- | :--- |
 | `/xmlapi2/collection?username=…&stats=1` | Fetch a user's game collection with ownership status |
 | `/xmlapi2/thing?id=…&stats=1` | Fetch detailed info for one or more games (up to 20 per request) |
 | `/xmlapi2/search?query=…` | Search BGG by game title |

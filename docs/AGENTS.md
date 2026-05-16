@@ -16,7 +16,7 @@ list of related games (expansions, reimplementations) with ownership badges.
 **Stack:**
 
 | Layer | Technology |
-|---|---|
+| :--- | :--- |
 | Language | Python 3.11 (strict type checking) |
 | Web framework | [Dash](https://dash.plotly.com/) 4.x with multi-page routing |
 | UI components | `dash-mantine-components` (DMC) 2.x — dark-mode-first |
@@ -30,7 +30,7 @@ list of related games (expansions, reimplementations) with ownership badges.
 
 ## Repository Layout
 
-```
+```text
 spielpendium/
 ├── api/
 │   ├── bgg_api/               # BGG data ingestion package
@@ -61,7 +61,7 @@ spielpendium/
 ```
 
 > **`old/`** — legacy scripts, do not touch or import from them.
-
+>
 > **Before refactoring** any core design (PKs, image storage, UI framework,
 > etc.), read `docs/DECISIONS.md` first. Many choices that look "improvable" are
 > deliberate — the rationale is documented there.
@@ -73,7 +73,7 @@ spielpendium/
 All models live in `util/models.py`. Primary keys are 16-byte binary UUIDs
 (`BinaryUUIDField`). The central model is `Game`.
 
-```
+```text
 Game ──< RelatedGame >── Game          (self-referential: expansions, etc.)
 Game ──< PersonGameLink >── Person     (authors / artists via PersonRole)
 Game ──< PublisherGameLink >── Publisher
@@ -83,6 +83,7 @@ CollectionItem ── OwnershipStatus
 ```
 
 Key points:
+
 - `Game.bgg_id` (int, unique, indexed) is the BGG canonical identifier.
   **Always look up games by `bgg_id`**, not the internal UUID.
 - `RelatedGame.source_game_id` → the game that *is* the expansion/variant;
@@ -98,7 +99,7 @@ Settings are loaded via `config/settings.py` (`pydantic-settings`). Values are
 read from a `.env` file at the project root. Key variables:
 
 | Variable | Purpose |
-|---|---|
+| :--- | :--- |
 | `BGG_API_TOKEN` | **Required.** Bearer token for the BGG XML API. Get one at [boardgamegeek.com/applications](https://boardgamegeek.com/applications). See `docs/BGG_API.md`. |
 | `TEST_USER` | BGG account to sync collection for |
 | `DB_FILE` | Path to the SQLite database file |
@@ -112,6 +113,7 @@ Import config constants directly: `from config import DB_FILE, RESET_DB`.
 ## Code Conventions
 
 ### Type Hints (strict)
+
 - Every function must have fully annotated parameters and return types.
 - Use `from __future__ import annotations` at the top of every file.
 - Runtime-only imports go in the top-level block; type-only imports go inside
@@ -120,17 +122,20 @@ Import config constants directly: `from config import DB_FILE, RESET_DB`.
   comment why.
 
 ### Formatting & Linting (ruff)
+
 - Line length: **79 characters**.
 - Quote style: **double quotes**.
 - Import order: stdlib → third-party → local, sorted by ruff/isort.
 - Run `uv run ruff check --fix .` and `uv run ruff format .` before committing.
 
 ### Naming
+
 - Classes: `PascalCase`. Functions/variables: `snake_case`.
 - Dash callback output variables: descriptive, e.g. `grid`, `loading`, `opened`.
 - Pytest fixtures: use `name=` kwarg (e.g. `@pytest.fixture(name="session")`).
 
 ### Dash Callbacks
+
 - Always check `dash.callback_context.triggered` before reading trigger data.
 - Return early with a sensible default (closed modal, alert, `False` loading)
   when there is nothing to do.
@@ -141,7 +146,7 @@ Import config constants directly: `from config import DB_FILE, RESET_DB`.
 
 ## Testing
 
-```
+```text
 tests/
 ├── test_models.py              # Core model creation helpers (create_mock_game)
 ├── test_models_extra.py        # Additional model edge-case coverage
@@ -153,6 +158,7 @@ tests/
 ```
 
 **Running tests:**
+
 ```bash
 uv run pytest                   # all tests
 uv run pytest tests/test_collection.py -v   # single file
@@ -160,12 +166,14 @@ uv run pytest --cov=. --cov-report=term-missing   # with coverage
 ```
 
 **Writing new tests:**
+
 - Use `create_mock_game(bgg_id, name)` from `tests/test_models.py` for `Game`
   fixtures.
 - For DB-dependent tests, use `mem_engine` + `session` fixtures (in-memory
   SQLite) — never touch the real database file.
 - Patch `pages.collection.engine` when testing callbacks that open DB sessions.
 - Patch `dash.register_page` before importing any `pages/` module:
+
   ```python
   import dash
   dash.register_page = MagicMock()

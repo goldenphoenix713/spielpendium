@@ -1,0 +1,11 @@
+node_modules/
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.test_durations
+.coverage
+*.db
+log/
+old/
+*.lock

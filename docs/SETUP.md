@@ -116,7 +116,7 @@ Hooks run in this order: yaml/toml/json checks → `ruff` lint → `ruff` format
 ## Common Issues
 
 | Problem | Fix |
-|---|---|
+| :--- | :--- |
 | `uv` not found | Install uv: `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
 | BGG API returns 403 / no data | `BGG_API_TOKEN` is missing or invalid — see `docs/BGG_API.md` |
 | BGG API returns 202 repeatedly | BGG is generating data — wait and retry |

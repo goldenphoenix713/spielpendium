@@ -12,12 +12,14 @@ read the relevant entry here first.
 stored as `BINARY(16)` blobs via the custom `BinaryUUIDField` helper.
 
 **Why:**
+
 - SQLite lacks a native UUID type; `BINARY(16)` is compact (vs. 36-char text).
 - UUIDs allow records to be created client-side without a round-trip to the DB
   to retrieve an auto-increment ID.
 - Consistent with potential future migration to a UUID-native database.
 
 **Trade-offs:**
+
 - Binary PKs are opaque in SQL queries / DB browser tools. Use `bgg_id` (int)
   as the human-readable game identifier in application logic.
 - All FK references must also use `BinaryUUIDField`; do not mix with integers.
@@ -34,9 +36,10 @@ application to look up games — e.g., in Dash callbacks, modal triggers, and
 API calls. The internal binary UUID `id` is only used for FK joins.
 
 **Why:**
+
 - BGG IDs are stable, well-known, and map 1-to-1 with BGG's own API.
 - Avoids exposing opaque binary blobs in Dash component IDs (`pattern-matching
-  callbacks use `{"index": bgg_id, "type": "game-card"}`).
+  callbacks use`{"index": bgg_id, "type": "game-card"}`).
 - Simplifies debugging — you can look up any game on BGG directly by its ID.
 
 **Do not change to:** using the UUID `id` in callback pattern-matching or UI
@@ -50,11 +53,13 @@ state without a strong reason.
 (SQLAlchemy 2 ORM). File path is configured via `DB_FILE` in `.env`.
 
 **Why:**
+
 - Single-user, local-first application — no need for a server-based DB.
 - SQLModel gives type-safe model definitions that double as Pydantic models.
 - SQLite requires zero infrastructure; easy to reset (`RESET_DB=true`).
 
 **Trade-offs:**
+
 - No concurrent writes; not suitable for multi-user deployment without
   switching engines (SQLModel/SQLAlchemy make this relatively easy).
 - Binary BLOB storage (images) inflates the DB file; this is acceptable for
@@ -69,6 +74,7 @@ as files directly in the local `assets/images` directory, and the DB only stores
 the relative filename string (`Game.image_path`).
 
 **Why:**
+
 - Avoids inflating the SQLite database to massive unmanageable sizes when syncing
   large collections or high-res images.
 - Images can be served natively by Dash's static asset router (`/assets/images/...`)
@@ -76,6 +82,7 @@ the relative filename string (`Game.image_path`).
 - Still enables fully offline browsing of the collection once data is synced.
 
 **Trade-offs:**
+
 - Deleting the `db/` folder doesn't clean up disk space; the `assets/images` folder
   must be managed separately if wiping state.
 
@@ -91,11 +98,13 @@ hotlinking limits and this application is intended to work offline.
 (`dash.register_page`).
 
 **Why:**
+
 - Dash allows a pure-Python application with no JavaScript build step.
 - DMC provides a rich, dark-mode-first Mantine component library.
 - Multi-page routing via `dash.register_page` avoids a custom router.
 
 **Trade-offs:**
+
 - Dash's callback model is less flexible than React for complex interactions;
   some patterns (e.g., clicking related games to navigate) require careful
   use of `dcc.Store` or URL state.
@@ -113,6 +122,7 @@ module in tests (see `AGENTS.md` → Testing).
 Imports used only for type hints are placed inside `if TYPE_CHECKING:` blocks.
 
 **Why:**
+
 - Required by ruff rule **TC001** to avoid circular imports at runtime.
 - Enables forward references (e.g., `"Game"` in Relationship definitions)
   without string quoting.
@@ -129,6 +139,7 @@ fail the pre-commit hook.
 (`uv run pytest`, `uv run mypy .`, `uv run pre-commit`, etc.).
 
 **Why:**
+
 - Fast installs and lockfile management.
 - `uv run` ensures tools execute inside the project's virtual environment
   without activating it manually.

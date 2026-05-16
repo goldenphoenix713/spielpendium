@@ -1,15 +1,20 @@
 # Spielpendium - The Board Game Compendium
 
-Spielpendium allows users to create a compendium of their board games. A user can create their list by searching through BoardGameGeek's online catalog and adding games. Additionally, if a user has a collection on BoardGameGeek, they can import that list.
+Spielpendium allows users to create a compendium of their board games. A user can create their list by searching
+through BoardGameGeek's online catalog and adding games. Additionally, if a user has a collection on BoardGameGeek,
+they can import that list.
 
-The name is a portmanteau of "spiel" (German for "game", a reference to Germany's centrality in the board game sphere) and "compendium".
+The name is a portmanteau of "spiel" (German for "game", a reference to Germany's centrality in the board game
+sphere) and "compendium".
 
 ## Features
 
 - **Import from BGG**: Seamlessly import your existing BoardGameGeek collection.
-- **Detailed Game Information**: View comprehensive details including high-resolution images, descriptions, complexities, player counts, designers, and publishers.
+- **Detailed Game Information**: View comprehensive details including high-resolution images, descriptions,
+  complexities, player counts, designers, and publishers.
 - **Collection Management**: Organize and visualize your board games in a beautiful, interactive card grid.
-- **Associated Games Tracking**: Track expansions, accessories, and reimplementations. Easily see what items from a board game family are already in your collection.
+- **Associated Games Tracking**: Track expansions, accessories, and reimplementations. Easily see what items from a
+  board game family are already in your collection.
 
 ## Technology Stack
 
@@ -24,17 +29,22 @@ Spielpendium is built using modern Python web technologies:
 2. Install `uv` if you haven't already: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 3. Clone the repository and navigate into the directory.
 4. Install dependencies:
+
    ```bash
    uv sync
    ```
+
 5. Create a `.env` file at the project root (see `docs/SETUP.md` for all options).
    At minimum you need:
+
    ```ini
    TEST_USER=your_bgg_username
    BGG_API_TOKEN=your_token_here   # Required — see docs/BGG_API.md
    DB_FILE=db/spielpendium.sqlite
    ```
+
 6. Run the application:
+
    ```bash
    uv run python app.py
    ```
@@ -47,7 +57,7 @@ Spielpendium is built using modern Python web technologies:
 ## Documentation
 
 | File | Purpose |
-|---|---|
+| :--- | :--- |
 | [`docs/SETUP.md`](docs/SETUP.md) | Full setup and installation guide |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System architecture and data flow |
 | [`docs/BGG_API.md`](docs/BGG_API.md) | BGG API token, rate limits, and terms of use |
@@ -70,6 +80,7 @@ for all available options, and [`docs/BGG_API.md`](docs/BGG_API.md) for
 instructions on obtaining a BGG API token.
 
 ### Formatting, Linting and Type Checking
+
 ```bash
 uv run ruff check . --fix
 uv run ruff format .
@@ -78,6 +89,7 @@ uv run ty check
 ```
 
 ### Running Tests
+
 ```bash
 uv run pytest
 uv run pytest --cov=. --cov-report=term-missing
