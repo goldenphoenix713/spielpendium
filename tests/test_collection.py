@@ -45,6 +45,16 @@ def mem_engine_fixture() -> Generator[Engine, None, None]:
     yield engine
 
 
+@pytest.fixture(autouse=True)
+def mock_engine(mem_engine: Engine) -> Generator[None, None, None]:
+    """Patch the engine in all relevant modules."""
+    with (
+        patch("pages.collection.engine", mem_engine),
+        patch("util.settings.engine", mem_engine),
+    ):
+        yield
+
+
 @pytest.fixture(name="session")
 def session_fixture(mem_engine: Engine) -> Generator[Session, None, None]:
     with Session(mem_engine) as session:
@@ -266,7 +276,6 @@ class TestOpenModal:
 
         with (
             patch("pages.collection.dash.callback_context", ctx),
-            patch("pages.collection.engine", mem_engine),
             patch(
                 "pages.collection.get_game_info",
                 return_value={"items": {"item": {}}},
@@ -311,7 +320,6 @@ class TestOpenModal:
 
         with (
             patch("pages.collection.dash.callback_context", ctx),
-            patch("pages.collection.engine", mem_engine),
         ):
             result = open_modal(
                 [1],
@@ -353,7 +361,6 @@ class TestOpenModal:
 
         with (
             patch("pages.collection.dash.callback_context", ctx),
-            patch("pages.collection.engine", mem_engine),
         ):
             result = open_modal(
                 [1],
@@ -393,7 +400,6 @@ class TestOpenModal:
 
         with (
             patch("pages.collection.dash.callback_context", ctx),
-            patch("pages.collection.engine", mem_engine),
         ):
             result = open_modal(
                 [1],
@@ -455,7 +461,6 @@ class TestOpenModal:
 
         with (
             patch("pages.collection.dash.callback_context", ctx),
-            patch("pages.collection.engine", mem_engine),
         ):
             result = open_modal(
                 [1],
@@ -512,7 +517,6 @@ class TestOpenModal:
 
         with (
             patch("pages.collection.dash.callback_context", ctx),
-            patch("pages.collection.engine", mem_engine),
             patch(
                 "pages.collection.get_active_username", return_value="testuser"
             ),
@@ -575,7 +579,6 @@ class TestOpenModal:
 
         with (
             patch("pages.collection.dash.callback_context", ctx),
-            patch("pages.collection.engine", mem_engine),
             patch(
                 "pages.collection.get_active_username",
                 return_value="testuser2",
@@ -638,7 +641,6 @@ class TestOpenModal:
 
         with (
             patch("pages.collection.dash.callback_context", ctx),
-            patch("pages.collection.engine", mem_engine),
             patch(
                 "pages.collection.get_active_username",
                 return_value="testuser3",
