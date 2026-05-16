@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   lint:
     name: Lint & Style
@@ -25,7 +28,9 @@ jobs:
           node-version: "20"
 
       - name: Install markdownlint-cli
-        run: npm install -g markdownlint-cli
+        run: |
+          npm install markdownlint-cli
+          echo "$(pwd)/node_modules/.bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: uv sync
