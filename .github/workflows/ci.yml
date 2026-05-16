@@ -5,8 +5,40 @@ on:
   pull_request:
 
 jobs:
+  lint:
+    name: Lint & Style
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install markdownlint-cli
+        run: npm install -g markdownlint-cli
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
+        env:
+          DB_FILE: testing.sqlite
+          BGG_USERNAME: dummy_user
+
   test:
     name: Test (Group ${{ matrix.group }}/3)
+    needs: lint
     runs-on: ubuntu-latest
     strategy:
       matrix:
