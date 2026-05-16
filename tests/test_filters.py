@@ -50,7 +50,9 @@ def get_mock_game(name: str, **kwargs: Any) -> dict[str, Any]:
     return base
 
 
-def test_component_builders():
+@patch("util.filters.get_active_username")
+def test_component_builders(mock_get_username: Any):
+    mock_get_username.return_value = "testuser"
     sidebar = generate_sidebar()
     assert sidebar is not None
 
