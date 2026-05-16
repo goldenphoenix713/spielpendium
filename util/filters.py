@@ -563,17 +563,23 @@ def save_filter_state(
 
     store = dict(current_store or FILTER_DEFAULTS)
 
-    if not ctx.triggered:
-        return store
+    for trigger in ctx.triggered:
+        trig_id = trigger.get("id")
+        if not trig_id and "prop_id" in trigger:
+            prop_id = trigger["prop_id"]
+            if ".value" in prop_id:
+                try:
+                    import json
 
-    new_val = ctx.triggered[0]["value"]
+                    trig_id = json.loads(prop_id.split(".value")[0])
+                except Exception:
+                    pass
 
-    if isinstance(triggered, dict):
-        control = triggered.get("control", "")
-        # Skip clear_btn
-        if control in ("clear_btn", "ownership_warning"):
-            return cast("dict[str, Any]", no_update)
-        store[control] = new_val
+        if isinstance(trig_id, dict):
+            control = trig_id.get("control", "")
+            if control in ("clear_btn", "ownership_warning"):
+                continue
+            store[control] = trigger.get("value")
 
     return store
 
