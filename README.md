@@ -50,7 +50,13 @@ Spielpendium is built using modern Python web technologies:
    DB_FILE=db/spielpendium.sqlite
    ```
 
-6. Run the application:
+6. Initialize the database:
+
+   ```bash
+   uv run python scripts/init_db.py
+   ```
+
+7. Run the application:
 
    ```bash
    uv run python app.py
