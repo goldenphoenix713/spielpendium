@@ -4,8 +4,9 @@ from unittest.mock import patch
 
 import dash_mantine_components as dmc
 
-from pages.home import layout as home_layout
-from pages.settings import layout as settings_layout
+with patch("dash.register_page"):
+    from pages.home import layout as home_layout
+    from pages.settings import layout as settings_layout
 from pages.settings import (
     save_settings,
     sync_auto_refresh_value,
@@ -15,10 +16,19 @@ from pages.settings import (
 
 
 def test_home_layout():
-    layout = home_layout
-    assert isinstance(layout, dmc.Container)
-    # Check for welcome text
-    assert "Welcome to Spielpendium" in str(layout)
+    from pages.home import render_home_content
+
+    layout = home_layout()
+    assert getattr(layout, "id", None) == "home-page-container"
+
+    # Test onboarding content
+    content = render_home_content(None)
+    assert "Welcome to Spielpendium" in str(content)
+    assert "Connect Collection" in str(content)
+
+    # Test welcome back content
+    content = render_home_content("testuser")
+    assert "Welcome Back, testuser" in str(content)
 
 
 def test_settings_layout():
@@ -68,6 +78,7 @@ def test_save_settings_callback():
             dash.no_update,
             dash.no_update,
             dash.no_update,
+            dash.no_update,
         )
 
         # n_clicks is 1
@@ -75,4 +86,5 @@ def test_save_settings_callback():
         assert isinstance(res[0], dmc.Notification)
         assert res[1] == "dark"
         assert res[2] == "blue"
+        assert res[3] == dash.no_update
         assert mock_set.call_count == 2

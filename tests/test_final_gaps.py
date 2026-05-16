@@ -191,10 +191,10 @@ def test_load_collection_store_empty(mem_engine):
         ),
     ):
         mock_get.return_value = None
-        assert load_collection_store(None, 0) == []
+        assert load_collection_store(None, 0, "phoenix713") == []
 
 
 def test_render_grid_empty():
-    res = render_grid([], 1)
+    res = render_grid([], 1, "testuser")
     assert isinstance(res[0], dmc.Alert)
     assert res[2] == {"display": "none"}

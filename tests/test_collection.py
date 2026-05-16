@@ -147,7 +147,7 @@ class TestGridCallbacks:
         filtered, count, page, total_pages = filter_collection(
             games, _DEFAULT_FILTERS
         )
-        grid, loading, _ = render_grid(filtered, 1)
+        grid, loading, _ = render_grid(filtered, 1, "testuser")
 
         assert isinstance(grid, dmc.SimpleGrid)
         assert loading is False
@@ -161,7 +161,7 @@ class TestGridCallbacks:
         )
         assert filtered == []
 
-        grid, loading, _ = render_grid(filtered, 1)
+        grid, loading, _ = render_grid(filtered, 1, "testuser")
         assert isinstance(grid, dmc.Alert)
         assert loading is False
 
@@ -172,7 +172,7 @@ class TestGridCallbacks:
         )
         assert filtered == []
 
-        grid, loading, _ = render_grid(filtered, 1)
+        grid, loading, _ = render_grid(filtered, 1, "testuser")
         assert isinstance(grid, dmc.Alert)
         assert loading is False
 
@@ -184,7 +184,7 @@ class TestGridCallbacks:
             self._make_game_dict(3, "Monopoly"),
         ]
         filtered, _, _, _ = filter_collection(games, _DEFAULT_FILTERS)
-        grid, _, _ = render_grid(filtered, 1)
+        grid, _, _ = render_grid(filtered, 1, "testuser")
 
         names = [
             card.children.children[1].children.children
@@ -200,7 +200,7 @@ class TestGridCallbacks:
         ]
         filters = {**_DEFAULT_FILTERS, "name": "catan"}
         filtered, count, _, _ = filter_collection(games, filters)
-        grid, _, _ = render_grid(filtered, 1)
+        grid, _, _ = render_grid(filtered, 1, "testuser")
 
         assert isinstance(grid, dmc.SimpleGrid)
         assert len(grid.children) == 1
@@ -211,7 +211,7 @@ class TestGridCallbacks:
         games = [self._make_game_dict(1, "Pandemic")]
         filters = {**_DEFAULT_FILTERS, "name": "zzznomatch"}
         filtered, count, _, _ = filter_collection(games, filters)
-        alert, _, _ = render_grid(filtered, 1)
+        alert, _, _ = render_grid(filtered, 1, "testuser")
 
         assert isinstance(alert, dmc.Alert)
         assert getattr(alert, "color", None) == "yellow"
@@ -226,7 +226,7 @@ class TestGridCallbacks:
         ]
         filters = {**_DEFAULT_FILTERS, "ownership": ["owned"]}
         filtered, count, _, _ = filter_collection(games, filters)
-        grid, _, _ = render_grid(filtered, 1)
+        grid, _, _ = render_grid(filtered, 1, "testuser")
 
         assert isinstance(grid, dmc.SimpleGrid)
         assert len(grid.children) == 1

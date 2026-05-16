@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from dash import NoUpdate
 
 import dash
 import dash_mantine_components as dmc
@@ -322,6 +325,7 @@ def update_swatch_color(color: str) -> dict[str, str]:
     Output("settings-notification-container", "children"),
     Output("theme-store", "data", allow_duplicate=True),
     Output("primary-color-store", "data", allow_duplicate=True),
+    Output("active-user-store", "data", allow_duplicate=True),
     Input("settings-save-btn", "n_clicks"),
     State({"type": "setting", "item": ALL}, "value"),
     prevent_initial_call=True,
@@ -330,12 +334,17 @@ def save_settings(
     n_clicks: int | None,
     values: list[Any],
 ) -> (
-    tuple[dmc.Notification, Any, Any]
-    | tuple[dash.NoUpdate, dash.NoUpdate, dash.NoUpdate]
+    tuple[dmc.Notification, Any, Any, Any]
+    | tuple[dash.NoUpdate, dash.NoUpdate, dash.NoUpdate, dash.NoUpdate]
 ):
     """Save all settings to the database and show a notification."""
     if not n_clicks:
-        return dash.no_update, dash.no_update, dash.no_update
+        return (
+            dash.no_update,
+            dash.no_update,
+            dash.no_update,
+            dash.no_update,
+        )
 
     settings_map: dict[str, Any] = {}
 
@@ -364,6 +373,7 @@ def save_settings(
             ),
             settings_map.get("theme", dash.no_update),
             settings_map.get("primary_color", dash.no_update),
+            settings_map.get("active_bgg_username", dash.no_update),
         )
     except Exception as e:
         return (
@@ -376,4 +386,17 @@ def save_settings(
             ),
             dash.no_update,
             dash.no_update,
+            dash.no_update,
         )
+
+
+@callback(
+    Output({"type": "setting", "item": "active_bgg_username"}, "value"),
+    Input("active-user-store", "data"),
+    prevent_initial_call=True,
+)
+def sync_active_user_from_store(active_user: str | None) -> str | NoUpdate:
+    """Initialize the Active Profile select from local storage."""
+    if not active_user:
+        return dash.no_update
+    return active_user

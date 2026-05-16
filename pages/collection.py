@@ -786,13 +786,17 @@ def update_progress(
     Output("collection-store", "data"),
     Input("collection-data-store", "data"),
     Input("sync-trigger-store", "data"),
+    Input("active-user-store", "data"),
 )
-def load_collection_store(_: Any, sync_trigger: int) -> list[dict[str, Any]]:
+def load_collection_store(
+    _: Any, sync_trigger: int, active_user: str | None
+) -> list[dict[str, Any]]:
     """Load the user's collection into the shared dcc.Store."""
-    # This callback now triggers when sync is done (via sync-trigger-store)
-    # or when the data store itself changes.
+    if not active_user:
+        return []
+
     collection = get_user_game_collection(
-        get_active_username(),
+        active_user,
         filters={},
         force_update=False,  # Already updated by the background thread
     )
@@ -836,18 +840,35 @@ def filter_collection(
     Output("collection-pagination", "style"),
     Input("filtered-collection-store", "data"),
     Input("collection-pagination", "value"),
+    Input("active-user-store", "data"),
 )
 def render_grid(
     filtered: list[dict[str, Any]],
     page: int | None,
+    active_user: str | None,
 ) -> tuple[Any, bool, dict[str, str]]:
     """Render the current page of the filtered game grid."""
+    if not active_user:
+        return (
+            dmc.Alert(
+                "Please set a BoardGameGeek username on the Home page to view your collection.",
+                title="No User Connected",
+                color="blue",
+                variant="light",
+                icon=DashIconify(icon="tabler:user-plus"),
+            ),
+            False,
+            {"display": "none"},
+        )
+
     if not filtered:
         return (
             dmc.Alert(
                 "No games match the current filters or failed to load.",
                 title="No Results",
                 color="yellow",
+                variant="light",
+                icon=DashIconify(icon="tabler:search-off"),
             ),
             False,
             {"display": "none"},

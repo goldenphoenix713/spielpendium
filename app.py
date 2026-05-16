@@ -65,13 +65,16 @@ def generate_app() -> Dash:
                             href="/collection",
                             underline="never",
                         ),
-                        dmc.Button(
-                            "Statistics",
-                            leftSection=DashIconify(
-                                icon="game-icons:histogram", width=16
+                        dmc.Anchor(
+                            dmc.Button(
+                                "Statistics",
+                                leftSection=DashIconify(
+                                    icon="game-icons:histogram", width=16
+                                ),
+                                variant="subtle",
                             ),
-                            variant="subtle",
-                            disabled=True,
+                            href="/statistics",
+                            underline="never",
                         ),
                         dmc.Anchor(
                             dmc.Button(
@@ -93,6 +96,7 @@ def generate_app() -> Dash:
                                 variant="subtle",
                                 color="orange",
                             ),
+                            id="header-bgg-profile-link",
                             href=f"https://boardgamegeek.com/collection/user/{get_active_username()}",
                             target="_blank",
                             underline="never",
@@ -172,6 +176,7 @@ def generate_app() -> Dash:
                 padding="md",
             ),
             dcc.Store(id="collection-store", storage_type="local", data=[]),
+            dcc.Store(id="active-user-store", storage_type="local"),
             dcc.Store(
                 id="theme-store",
                 storage_type="local",
@@ -217,6 +222,15 @@ def update_global_theme(
     new_theme = current_theme or {}
     new_theme["primaryColor"] = color or "blue"
     return theme_val or "dark", new_theme
+
+
+@callback(
+    Output("header-bgg-profile-link", "href"),
+    Input("active-user-store", "data"),
+)
+def update_header_bgg_link(username: str | None) -> str:
+    """Update the BGG profile link in the header when the active user changes."""
+    return f"https://boardgamegeek.com/collection/user/{username or ''}"
 
 
 if __name__ == "__main__":
