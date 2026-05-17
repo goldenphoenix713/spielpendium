@@ -164,6 +164,26 @@ def test_start_sync_logic():
         assert mock_thread.called
 
 
+def test_start_sync_auto_refresh():
+    with (
+        patch("pages.collection.get_setting", return_value=True),
+        patch("threading.Thread") as mock_thread,
+    ):
+        res = start_sync(None, "testuser")
+        assert res[0] is False
+        assert res[1] == {"display": "block"}
+        assert res[2] is True
+        assert mock_thread.called
+
+    with (
+        patch("pages.collection.get_setting", return_value=False),
+        patch("threading.Thread") as mock_thread,
+    ):
+        res = start_sync(None, "testuser")
+        assert res == dash.no_update
+        assert not mock_thread.called
+
+
 def test_update_progress_logic():
     set_sync_status(False, message="Done")
     res = update_progress(0, 0)

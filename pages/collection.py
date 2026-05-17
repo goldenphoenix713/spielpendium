@@ -746,13 +746,32 @@ def disable_refresh_btn_if_no_user(active_user: str | None) -> bool:
     Output("refresh-database-btn", "loading"),
     Input("refresh-database-btn", "n_clicks"),
     State("active-user-store", "data"),
-    prevent_initial_call=True,
+    prevent_initial_call=False,
 )
 def start_sync(
     n_clicks: int | None, active_user: str | None
 ) -> tuple[bool, dict[str, str], bool] | NoUpdate:
     """Starts the collection sync in a background thread."""
-    if not n_clicks or not active_user:
+    if not active_user:
+        return no_update
+
+    should_sync = False
+    if n_clicks:  # User clicked the refresh button
+        should_sync = True
+    else:  # Initial load or active user loaded
+        try:
+            auto_refresh = get_setting("auto_refresh", False)
+            if isinstance(auto_refresh, str):
+                auto_refresh = (
+                    auto_refresh == "1" or auto_refresh.lower() == "true"
+                )
+        except Exception:
+            auto_refresh = False
+
+        if auto_refresh:
+            should_sync = True
+
+    if not should_sync:
         return no_update
 
     username = active_user
