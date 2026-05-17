@@ -7,6 +7,23 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.9.1] — 2026-05-17 — Dynamic Settings & Auto-Refresh Integration
+
+### Added
+
+- **Auto-Refresh Setting Implementation**: Fully implemented `auto_refresh` support on collection page load
+  (`pages/collection.py`). If enabled in user settings, the application automatically initiates a BGG
+  collection refresh in a background thread upon entering the page.
+- **Unit Tests**: Added robust test coverage for `auto_refresh` in `tests/test_final_gaps.py`
+  (`test_start_sync_auto_refresh`) and dynamic paging limits in `tests/test_collection.py`
+  (`test_dynamic_page_size`).
+
+### Fixed
+
+- **Hardcoded Page Size**: Replaced the static `PAGE_SIZE = 50` constant in the collection view with a dynamic
+  look-up to the user settings database, ensuring changes in user preferences instantly reflect in the rendered
+  card count and pagination calculations.
+
 ## [0.9.0] — 2026-05-16 — Statistics, Onboarding & Multi-User Architecture
 
 ### Added

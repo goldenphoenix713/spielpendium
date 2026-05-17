@@ -298,4 +298,8 @@ user's collection.
 
 - **Completed:** Improved game card title visibility using a marquee effect and better badge positioning.
 - **Completed:** Stabilized CI tests by mocking database-dependent settings calls.
+- **Completed:** Resolved hardcoded page size limits by dynamically reading the user settings database in the
+  collection view.
+- **Completed:** Implemented automated background sync checking for the `auto_refresh` setting on collection page
+  load.
 - **Pending:** Sync progress bar (Task 7.3) still needs integration with background thread state.
