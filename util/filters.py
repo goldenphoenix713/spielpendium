@@ -112,21 +112,16 @@ def _build_filter_components(location: str) -> list[Any]:
         ],
     )
 
-    expansions = dmc.Stack(
-        gap=4,
-        children=[
-            dmc.Text("Expansions", size="sm", fw=500),
-            dmc.SegmentedControl(
-                id=cid("expansions"),
-                value=FILTER_DEFAULTS["expansions"],
-                data=[
-                    {"label": "Show All", "value": "all"},
-                    {"label": "Hide Expansions", "value": "hide"},
-                    {"label": "Expansions Only", "value": "only"},
-                ],
-                fullWidth=True,
-            ),
+    expansions = dmc.Select(
+        id=cid("expansions"),
+        label="Expansions",
+        value=FILTER_DEFAULTS["expansions"],
+        data=[
+            {"label": "Show All", "value": "all"},
+            {"label": "Hide Expansions", "value": "hide"},
+            {"label": "Expansions Only", "value": "only"},
         ],
+        allowDeselect=False,
     )
 
     players = dmc.Stack(
