@@ -3,11 +3,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock, patch
 
-import pytest
-from sqlmodel import Session, SQLModel, col, create_engine, select
+from sqlmodel import col, select
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
+    from sqlmodel import Session
+
+    pass
 
 from api.bgg_api.collection import save_collection_data_to_db
 from api.bgg_api.game_details import _process_and_save_game_details
@@ -18,13 +19,7 @@ from util.models import (
     RelatedGame,
 )
 
-
-@pytest.fixture(name="session")
-def session_fixture() -> Generator[Session, None, None]:
-    engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
-        yield session
+# Fixtures are now centralized in tests/conftest.py
 
 
 def test_process_and_save_game_details_basic(session: Session) -> None:

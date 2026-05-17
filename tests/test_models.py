@@ -2,13 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pytest
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import SQLModel, select
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
-
     from sqlalchemy.engine import Engine
+    from sqlmodel import Session
 
 from util.models import (
     Collection,
@@ -19,18 +17,7 @@ from util.models import (
     RelatedGame,
 )
 
-
-@pytest.fixture(name="engine")
-def engine_fixture() -> Generator[Engine, None, None]:
-    engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(engine)
-    yield engine
-
-
-@pytest.fixture(name="session")
-def session_fixture(engine: Engine) -> Generator[Session, None, None]:
-    with Session(engine) as session:
-        yield session
+# Fixtures are now centralized in tests/conftest.py
 
 
 def test_create_db_and_tables(engine: Engine) -> None:

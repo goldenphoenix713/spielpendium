@@ -4,13 +4,11 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
-
     from sqlalchemy.engine import Engine
 
 
 import pytest
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, select
 
 from api.bgg_api.collection import (
     get_user_collection_from_db,
@@ -20,18 +18,7 @@ from api.bgg_api.collection import (
 )
 from util.models import Collection, CollectionItem
 
-
-@pytest.fixture(name="mem_engine")
-def mem_engine_fixture() -> Generator[Engine, None, None]:
-    engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(engine)
-    yield engine
-
-
-@pytest.fixture(autouse=True)
-def mock_engine(mem_engine: Engine) -> Generator[None, None, None]:
-    with patch("api.bgg_api.collection.engine", mem_engine):
-        yield
+# Fixtures are now centralized in tests/conftest.py
 
 
 def test_user_exists_in_db(mem_engine: Engine) -> None:

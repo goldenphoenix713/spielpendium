@@ -9,8 +9,7 @@ import dash
 dash.register_page = MagicMock()  # ty:ignore[invalid-assignment]
 
 import dash_mantine_components as dmc  # noqa: E402
-import pytest  # noqa: E402
-from sqlmodel import Session, SQLModel, create_engine  # noqa: E402
+from sqlmodel import Session  # noqa: E402
 
 from pages.collection import (  # noqa: E402
     load_collection_store,
@@ -56,12 +55,7 @@ _unused_models = [
 ]
 
 
-@pytest.fixture(name="mem_engine")
-def mem_engine_fixture():
-    """Create a clean in-memory database."""
-    engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(engine)
-    return engine
+# Fixtures are now centralized in tests/conftest.py
 
 
 def test_directories_env_override():

@@ -5,9 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import dash
 import dash_mantine_components as dmc
-import pytest
 from dash import html
-from sqlmodel import Session, SQLModel, create_engine
 
 # Must mock register_page before importing the module
 dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]  # ty: ignore[invalid-assignment]
@@ -27,38 +25,12 @@ from util.models import (  # noqa: E402
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
-
     from sqlalchemy.engine import Engine
+    from sqlmodel import Session
 
 
 # ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-
-@pytest.fixture(name="mem_engine")
-def mem_engine_fixture() -> Generator[Engine, None, None]:
-    """In-memory SQLite engine with all tables created."""
-    engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(engine)
-    yield engine
-
-
-@pytest.fixture(autouse=True)
-def mock_engine(mem_engine: Engine) -> Generator[None, None, None]:
-    """Patch the engine in all relevant modules."""
-    with (
-        patch("pages.collection.engine", mem_engine),
-        patch("util.settings.engine", mem_engine),
-    ):
-        yield
-
-
-@pytest.fixture(name="session")
-def session_fixture(mem_engine: Engine) -> Generator[Session, None, None]:
-    with Session(mem_engine) as session:
-        yield session
+# Fixtures are now centralized in tests/conftest.py
 
 
 # ---------------------------------------------------------------------------

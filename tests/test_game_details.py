@@ -3,12 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
-import pytest
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
-
     from sqlalchemy.engine import Engine
 
 from api.bgg_api.game_details import (
@@ -18,18 +15,7 @@ from api.bgg_api.game_details import (
 )
 from util.models import Game
 
-
-@pytest.fixture(name="mem_engine")
-def mem_engine_fixture() -> Generator[Engine, None, None]:
-    engine = create_engine("sqlite:///:memory:")
-    SQLModel.metadata.create_all(engine)
-    yield engine
-
-
-@pytest.fixture(autouse=True)
-def mock_engine(mem_engine: Engine) -> Generator[None, None, None]:
-    with patch("api.bgg_api.game_details.engine", mem_engine):
-        yield
+# Fixtures are now centralized in tests/conftest.py
 
 
 def test_process_and_save_item_list_and_empty(mem_engine: Engine) -> None:
