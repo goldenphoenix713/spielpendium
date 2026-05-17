@@ -40,6 +40,7 @@ FILTER_DEFAULTS: dict[str, Any] = {
     "authors": [],
     "publishers": [],
     "ownership": ["owned"],
+    "expansions": "all",
 }
 
 
@@ -106,8 +107,24 @@ def _build_filter_components(location: str) -> list[Any]:
                 id={"location": location, "control": "ownership_warning"},
                 color="yellow",
                 variant="light",
-                p="xs",
                 style={"display": "none"},
+            ),
+        ],
+    )
+
+    expansions = dmc.Stack(
+        gap=4,
+        children=[
+            dmc.Text("Expansions", size="sm", fw=500),
+            dmc.SegmentedControl(
+                id=cid("expansions"),
+                value=FILTER_DEFAULTS["expansions"],
+                data=[
+                    {"label": "Show All", "value": "all"},
+                    {"label": "Hide Expansions", "value": "hide"},
+                    {"label": "Expansions Only", "value": "only"},
+                ],
+                fullWidth=True,
             ),
         ],
     )
@@ -321,7 +338,9 @@ def _build_filter_components(location: str) -> list[Any]:
                     children=[
                         dmc.AccordionControl("Core Info", fw=500),
                         dmc.AccordionPanel(
-                            dmc.Stack([ownership, year, age], gap="md")
+                            dmc.Stack(
+                                [ownership, expansions, year, age], gap="md"
+                            )
                         ),
                     ],
                 ),
@@ -431,6 +450,7 @@ def generate_drawer_content() -> list[Any]:
     Output({"location": ALL, "control": "bgg_rating"}, "value"),
     Output({"location": ALL, "control": "bgg_rank_max"}, "value"),
     Output({"location": ALL, "control": "ownership"}, "value"),
+    Output({"location": ALL, "control": "expansions"}, "value"),
     # year
     Output({"location": ALL, "control": "year"}, "min"),
     Output({"location": ALL, "control": "year"}, "value"),
@@ -471,6 +491,7 @@ def populate_filter_bounds(
             both(FILTER_DEFAULTS["bgg_rating"]),
             both(FILTER_DEFAULTS["bgg_rank_max"]),
             both(FILTER_DEFAULTS["ownership"]),
+            both(FILTER_DEFAULTS["expansions"]),
             both(YEAR_MIN),  # year min
             both(FILTER_DEFAULTS["year"]),  # year value
             both(FILTER_DEFAULTS["categories"]),
@@ -532,6 +553,7 @@ def populate_filter_bounds(
         both(sf.get("bgg_rating", FILTER_DEFAULTS["bgg_rating"])),
         both(sf.get("bgg_rank_max", FILTER_DEFAULTS["bgg_rank_max"])),
         both(sf.get("ownership", FILTER_DEFAULTS["ownership"])),
+        both(sf.get("expansions", FILTER_DEFAULTS["expansions"])),
         both(min_year),
         both(sf.get("year", [min_year, CURRENT_YEAR])),
         both(sf.get("categories", FILTER_DEFAULTS["categories"])),
@@ -662,6 +684,11 @@ def toggle_ownership_warning(
         "value",
         allow_duplicate=True,
     ),
+    Output(
+        {"location": ALL, "control": "expansions"},
+        "value",
+        allow_duplicate=True,
+    ),
     Input({"location": ALL, "control": "clear_btn"}, "n_clicks"),
     State({"location": ALL, "control": "players"}, "max"),
     State({"location": ALL, "control": "play_time"}, "max"),
@@ -700,6 +727,7 @@ def clear_filters(
         both([]),
         both([]),
         both(FILTER_DEFAULTS["ownership"]),
+        both(FILTER_DEFAULTS["expansions"]),
     )
 
 
@@ -741,7 +769,24 @@ def apply_filters_and_sort(
             g for g in result if mapped_ownership & set(g.get("statuses", []))
         ]
 
+    expansions = filters.get("expansions") or "all"
+    if expansions == "hide":
+        result = [
+            g
+            for g in result
+            if "expansion for base-game"
+            not in [c.lower() for c in (g.get("categories") or [])]
+        ]
+    elif expansions == "only":
+        result = [
+            g
+            for g in result
+            if "expansion for base-game"
+            in [c.lower() for c in (g.get("categories") or [])]
+        ]
+
     players: list[int] | None = filters.get("players")
+
     if players and players != [1, PLAYERS_MAX]:
         lo, hi = players
         if hi >= PLAYERS_MAX:

@@ -70,8 +70,9 @@ def test_populate_filter_bounds():
     saved = {"sort_by": "bgg_rating"}
 
     result = populate_filter_bounds(games, saved)
-    # result is a tuple of 20 elements (based on current unified implementation)
-    assert len(result) == 20
+    # result is a tuple of 21 elements (based on current unified implementation)
+    assert len(result) == 21
+
     # Check if sort_by is restored
     assert result[1] == ["bgg_rating", "bgg_rating"]
     # Check if categories data is populated (still using both() helper)
@@ -330,3 +331,30 @@ def test_game_to_dict():
     assert d["publishers"] == ["Pub1"]
     assert d["ownership_status"] == "owned"
     assert d["statuses"] == ["own", "wanttoplay"]
+
+
+def test_apply_filters_expansions():
+    games = [
+        get_mock_game("Base Game", categories=["Adventure"]),
+        get_mock_game(
+            "Expansion DLC",
+            categories=["Adventure", "Expansion for Base-game"],
+        ),
+    ]
+
+    # Show all
+    filters_all = {**FILTER_DEFAULTS, "expansions": "all", "ownership": []}
+    result_all = apply_filters_and_sort(games, filters_all)
+    assert len(result_all) == 2
+
+    # Hide expansions
+    filters_hide = {**FILTER_DEFAULTS, "expansions": "hide", "ownership": []}
+    result_hide = apply_filters_and_sort(games, filters_hide)
+    assert len(result_hide) == 1
+    assert result_hide[0]["name"] == "Base Game"
+
+    # Only expansions
+    filters_only = {**FILTER_DEFAULTS, "expansions": "only", "ownership": []}
+    result_only = apply_filters_and_sort(games, filters_only)
+    assert len(result_only) == 1
+    assert result_only[0]["name"] == "Expansion DLC"
