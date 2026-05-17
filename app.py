@@ -17,6 +17,7 @@ from dash import (
     page_container,
 )
 from dash_iconify import DashIconify
+from loguru import logger as log
 
 import util.filters  # noqa: F401 — registers filter callbacks
 from util.filters import generate_drawer_content, generate_sidebar
@@ -33,9 +34,11 @@ _dash_renderer._set_react_version("18.2.0")  # type: ignore  # ty: ignore[unused
 
 
 def generate_app() -> Dash:
+    log.info("generate_app: Starting Spielpendium application...")
     # Ensure database and tables exist on startup
     create_db_and_tables()
 
+    log.info("generate_app: Initializing Dash application...")
     app = Dash(__name__, use_pages=True, suppress_callback_exceptions=True)
 
     # Header content
@@ -270,6 +273,9 @@ def generate_app() -> Dash:
         ],
     )
 
+    log.info(
+        "generate_app: Application layout and stores successfully initialized."
+    )
     return app
 
 
@@ -289,6 +295,9 @@ def toggle_ui_elements(
     current_header: dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     """Hide UI elements during onboarding or on the settings page."""
+    log.debug(
+        f"toggle_ui_elements: Route changed to '{pathname}' (active_user: '{active_user}')"
+    )
     new_navbar = current_navbar or {}
     new_header = current_header or {}
 
@@ -321,6 +330,9 @@ def onboarding_redirect(
 ) -> str | NoUpdate:
     """Redirect to landing page if no user is connected."""
     if not active_user and pathname != "/":
+        log.warning(
+            f"onboarding_redirect: No active user. Redirecting from '{pathname}' to onboarding page '/'"
+        )
         return "/"
     return no_update
 
@@ -336,6 +348,9 @@ def update_global_theme(
     theme_val: str | None, color: str | None, current_theme: dict[str, Any]
 ) -> tuple[str, dict[str, Any]]:
     """Update the Mantine theme and primary color globally."""
+    log.info(
+        f"update_global_theme: Applying theme '{theme_val}' and primary color '{color}'"
+    )
     new_theme = current_theme or {}
     new_theme["primaryColor"] = color or "blue"
     return theme_val or "dark", new_theme
@@ -348,6 +363,9 @@ def update_global_theme(
 )
 def update_header_bgg_link(username: str | None) -> tuple[str, str]:
     """Update the BGG profile link in the header when the active user changes."""
+    log.info(
+        f"update_header_bgg_link: Updating BGG profile links for user '{username}'"
+    )
     url = f"https://boardgamegeek.com/collection/user/{username or ''}"
     return url, url
 

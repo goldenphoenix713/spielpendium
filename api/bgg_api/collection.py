@@ -81,6 +81,9 @@ def save_collection_data_to_db(
     :type collection_data: dict[str, Any]
     """
     # TODO Add a progress bar instead of the loading overlay
+    log.info(
+        f"save_collection_data_to_db: Started syncing collection for user '{username}' to DB."
+    )
     with SQLModelSession(engine) as session:
         # Find or create the Collection for the user
         collection_statement = select(Collection).where(
@@ -89,11 +92,18 @@ def save_collection_data_to_db(
         collection = session.exec(collection_statement).first()
 
         if not collection:
+            log.info(
+                f"Creating new collection entry for '{username}' in the database."
+            )
             collection = Collection(
                 username=username, name=f"{username}'s Collection"
             )
             session.add(collection)
             session.flush()
+        else:
+            log.debug(
+                f"Found existing collection for user '{username}' (Collection ID: {collection.id})"
+            )
 
         items_data = collection_data.get("items", {})
 
@@ -108,6 +118,10 @@ def save_collection_data_to_db(
             bgg_id_str = item.get("@objectid")
             if bgg_id_str:
                 game_ids.append(int(bgg_id_str))
+
+        log.debug(
+            f"Extracted {len(game_ids)} game IDs from raw BGG collection payload for user '{username}': {game_ids}"
+        )
 
         if not game_ids:
             log.warning(f"No games found in collection for user {username}")
@@ -182,6 +196,9 @@ def save_collection_data_to_db(
                 session.commit()
 
         # Re-iterate items to create CollectionItems
+        log.info(
+            f"Processing and linking {len(bgg_items)} collection items for user '{username}'"
+        )
         for item_data in bgg_items:
             bgg_id_str = item_data.get("@objectid")
             if not bgg_id_str:
@@ -216,6 +233,9 @@ def save_collection_data_to_db(
             )
             ownership_status = session.exec(status_statement).first()
             if not ownership_status:
+                log.debug(
+                    f"Creating new OwnershipStatus record: '{status_name}'"
+                )
                 ownership_status = OwnershipStatus(
                     id=uuid4().bytes, name=status_name
                 )
@@ -247,6 +267,9 @@ def save_collection_data_to_db(
             ]
 
             if not collection_item:
+                log.debug(
+                    f"Creating new CollectionItem linking user '{username}' to game '{game.name}' with status(es) {active_statuses}"
+                )
                 collection_item = CollectionItem(
                     collection_id=collection.id,
                     game_id=game.id,
@@ -256,6 +279,9 @@ def save_collection_data_to_db(
                 session.add(collection_item)
             else:
                 # Update existing item
+                log.debug(
+                    f"Updating existing CollectionItem linking user '{username}' to game '{game.name}' with status(es) {active_statuses}"
+                )
                 collection_item.ownership_status_id = ownership_status.id
                 collection_item.statuses = active_statuses
 
@@ -272,6 +298,9 @@ def get_user_collection_from_db(username: str) -> Collection | None:
     :return: The collection, if it exists in the db, otherwise None
     :rtype: Collection | None
     """
+    log.info(
+        f"Retrieving user collection record from database for username: '{username}'"
+    )
     with SQLModelSession(engine) as session:
         statement = (
             select(Collection)
@@ -292,6 +321,14 @@ def get_user_collection_from_db(username: str) -> Collection | None:
             )
         )
         collect: Collection | None = session.exec(statement).first()
+        if collect:
+            log.debug(
+                f"Successfully retrieved collection for '{username}' containing {len(collect.items)} items."
+            )
+        else:
+            log.debug(
+                f"No collection record found in database for username: '{username}'"
+            )
         return collect
 
 
@@ -300,7 +337,13 @@ def get_user_game_collection(
     filters: dict[str, int | bool] | None = None,
     force_update: bool = False,
 ) -> Collection | None:
+    log.info(
+        f"get_user_game_collection: Requested collection for '{username}' (force_update={force_update})"
+    )
     if not username or str(username).strip().lower() in ("none", "null", ""):
+        log.warning(
+            "get_user_game_collection: Invalid/empty username provided."
+        )
         return None
 
     if filters is not None:
@@ -330,7 +373,9 @@ def get_user_game_collection(
 
     url = f"{BGG_API_URL}collection"
 
-    log.info(f"Fetching collection for user '{username}' from BGG API.")
+    log.info(
+        f"Fetching collection for user '{username}' from BGG API at {url} with filters {string_filters}"
+    )
     data = get_xml_info(url, string_filters)
 
     if not data:

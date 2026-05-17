@@ -76,6 +76,9 @@ def _process_and_save_game_details(
             )
 
         game_name = primary_name_dict.get("@value")
+        log.info(
+            f"Processing BGG game details for '{game_name}' (BGG ID: {bgg_id})"
+        )
         sub_name_list = [
             n.get("@value")
             for n in names_data
@@ -146,6 +149,9 @@ def _process_and_save_game_details(
         existing_game = session.exec(statement).first()
 
         if existing_game:
+            log.debug(
+                f"Game '{game_name}' (BGG ID: {bgg_id}) already exists in database. Updating details."
+            )
             # Update existing game details
             for key, value in game_data.items():
                 # We don't overwrite image_path with None if we already have one
@@ -157,6 +163,9 @@ def _process_and_save_game_details(
                 setattr(existing_game, key, value)
             game_obj: Game = existing_game
         else:
+            log.info(
+                f"Creating new game entry for '{game_name}' (BGG ID: {bgg_id}) in database."
+            )
             if "version" not in game_data:
                 game_data["version"] = 0.0
             if game_data.get("description") is None:
@@ -227,6 +236,9 @@ def _process_and_save_game_details(
                 entity = sess.exec(statement_entity).first()
 
                 if not entity:
+                    log.debug(
+                        f"Creating new {model.__name__} record: '{entity_name}'"
+                    )
                     entity_kwargs = {
                         entity_name_key: entity_name,
                         "id": uuid4().bytes,
@@ -249,6 +261,9 @@ def _process_and_save_game_details(
                 existing_link = sess.exec(statement_link).first()
 
                 if not existing_link:
+                    log.debug(
+                        f"Linking game '{game_name}' with {model.__name__} '{entity_name}'"
+                    )
                     link_kwargs: dict[str, Any] = {
                         link_entity_id_attr: entity.id,
                         link_game_id_attr: game_obj.id,
@@ -317,6 +332,9 @@ def _process_and_save_game_details(
             )
             rel_type = session.exec(statement_rel_type).first()
             if not rel_type:
+                log.debug(
+                    f"Creating new GameRelationship type: '{relationship_type_name}'"
+                )
                 rel_type = GameRelationship(
                     id=uuid4().bytes, type=relationship_type_name
                 )
@@ -327,6 +345,9 @@ def _process_and_save_game_details(
             target_stmt = select(Game).where(Game.bgg_id == related_bgg_id)
             target_game = session.exec(target_stmt).first()
             if not target_game:
+                log.debug(
+                    f"Creating stub game entry for related game '{related_game_name}' (BGG ID: {related_bgg_id})"
+                )
                 target_game = Game(
                     id=uuid4().bytes,
                     bgg_id=related_bgg_id,
@@ -357,6 +378,9 @@ def _process_and_save_game_details(
             existing_rg = session.exec(statement_rg).first()
 
             if not existing_rg:
+                log.debug(
+                    f"Creating relation '{relationship_type_name}' from source game '{game_obj.name}' to target game '{target_game.name}'"
+                )
                 rg_obj = RelatedGame(
                     source_game_id=game_obj.id,
                     target_game_id=target_game.id,
@@ -416,6 +440,10 @@ def get_game_info(
     if isinstance(game_ids, int):
         game_ids = [game_ids]
 
+    log.info(
+        f"Requesting XML game info from BGG API for {len(game_ids)} game ID(s): {game_ids}"
+    )
+
     # Generate the url (BGG API v2 'thing' endpoint for game details)
     url = f"{BGG_API_URL}thing"  # Base URL for thing (game/expansion)
     query = {
@@ -446,6 +474,7 @@ def save_game_data_to_db(
     """Saves game data to the database."""
     single_game_data = {"items": {"item": game_data}}
     bgg_id_val = int(game_data.get("@id", 0))
+    log.info(f"Initiating save of game data to DB for BGG ID {bgg_id_val}")
     if session is None:
         session = SQLModelSession(engine)
 
@@ -455,11 +484,16 @@ def save_game_data_to_db(
         )
 
         if g_img_url:
-            log.info(f"Downloading image for game {bgg_id_val}...")
+            log.info(
+                f"Downloading image for BGG ID {bgg_id_val} from URL: {g_img_url}"
+            )
             saved_images_dict = get_images([(bgg_id_val, g_img_url)])
             # Update the games with the new image paths
             for bgg_id_val, image_path in saved_images_dict.items():
                 if image_path:
+                    log.info(
+                        f"Updating image path for BGG ID {bgg_id_val} to: {image_path}"
+                    )
                     game_statement = select(Game).where(
                         Game.bgg_id == bgg_id_val
                     )
@@ -467,3 +501,6 @@ def save_game_data_to_db(
                     if g_obj:
                         g_obj.image_path = image_path
         session.commit()
+        log.info(
+            f"Successfully saved and committed game data for BGG ID {bgg_id_val}"
+        )

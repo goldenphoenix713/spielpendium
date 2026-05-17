@@ -3,6 +3,7 @@ from datetime import datetime  # noqa: TC003
 from typing import Any, cast
 from uuid import uuid4  # noqa: TC003
 
+from loguru import logger as log
 from sqlalchemy import JSON
 from sqlalchemy.types import BINARY
 from sqlmodel import (
@@ -305,12 +306,26 @@ engine = create_engine(f"sqlite:///{DB_FILE}", echo=False)
 
 def create_db_and_tables() -> None:
     """Creates database tables if they don't exist."""
+    log.info("Database and table initialization check started.")
     if RESET_DB and os.path.exists(DB_FILE):
+        log.warning(
+            f"RESET_DB is set to True. Wiping existing database file at: {DB_FILE}"
+        )
         # For debugging, start fresh each time.
         os.remove(DB_FILE)
 
         # Create tables after wiping
+        log.info("Re-creating all database tables.")
         SQLModel.metadata.create_all(engine)
+        log.info("Database tables successfully re-created.")
     elif not DB_FILE.exists():
         # Create initial tables
+        log.info(
+            f"Database file not found. Creating a new database and initial tables at: {DB_FILE}"
+        )
         SQLModel.metadata.create_all(engine)
+        log.info("Initial database tables successfully created.")
+    else:
+        log.debug(
+            "Database file already exists and RESET_DB is False. Skipping table creation."
+        )
