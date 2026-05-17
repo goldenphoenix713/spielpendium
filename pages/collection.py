@@ -33,7 +33,7 @@ from util.models import (
     RelatedGame,
     engine,
 )
-from util.settings import get_active_username
+from util.settings import get_active_username, get_setting
 from util.status import get_sync_status, set_sync_status
 
 if TYPE_CHECKING:
@@ -42,8 +42,6 @@ if TYPE_CHECKING:
     from util.models import OwnershipStatus
 
 dash.register_page(__name__, path="/collection")  # type: ignore[no-untyped-call]
-
-PAGE_SIZE = 50
 
 STATUS_BADGE_CONFIG = {
     "own": {"label": "Owned", "color": "green"},
@@ -862,7 +860,12 @@ def filter_collection(
     shown = len(filtered)
     count_text = f"Showing {shown} of {total} games"
 
-    total_pages = max(1, math.ceil(shown / PAGE_SIZE))
+    try:
+        page_size = int(get_setting("page_size", 50))
+    except (ValueError, TypeError):
+        page_size = 50
+
+    total_pages = max(1, math.ceil(shown / page_size))
 
     return filtered, count_text, 1, total_pages
 
@@ -907,9 +910,14 @@ def render_grid(
             {"display": "none"},
         )
 
+    try:
+        page_size = int(get_setting("page_size", 50))
+    except (ValueError, TypeError):
+        page_size = 50
+
     page = page or 1
-    start_idx = (page - 1) * PAGE_SIZE
-    end_idx = start_idx + PAGE_SIZE
+    start_idx = (page - 1) * page_size
+    end_idx = start_idx + page_size
     page_games = filtered[start_idx:end_idx]
 
     # Build cards from the serialized dicts (no DB access needed)
@@ -997,7 +1005,7 @@ def render_grid(
     ]
 
     pagination_style = (
-        {"display": "none"} if len(filtered) <= PAGE_SIZE else {}
+        {"display": "none"} if len(filtered) <= page_size else {}
     )
 
     return (
