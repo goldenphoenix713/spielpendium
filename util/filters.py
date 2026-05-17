@@ -22,7 +22,12 @@ PLAYERS_MAX = 10  # Slider cap — "10+" label
 OWNERSHIP_LABELS: dict[str, str] = {
     "owned": "Owned",
     "prevowned": "Prev. Owned",
-    "want": "Want to Buy",
+    "fortrade": "For Trade",
+    "want": "Want in Trade",
+    "wanttoplay": "Want to Play",
+    "wanttobuy": "Want to Buy",
+    "preordered": "Preordered",
+    "wishlist": "Wishlist",
 }
 
 FILTER_DEFAULTS: dict[str, Any] = {
@@ -39,7 +44,7 @@ FILTER_DEFAULTS: dict[str, Any] = {
     "categories": [],
     "authors": [],
     "publishers": [],
-    "ownership": ["owned"],
+    "ownership": [],
     "expansions": "all",
 }
 
