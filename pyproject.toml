@@ -20,6 +20,7 @@ dependencies = [
     "dash-iconify>=0.1.2",
     "dash-mantine-components>=2.5.1",
     "dotenv>=0.9.9",
+    "gunicorn>=26.0.0",
     "ipykernel>=7.2.0",
     "loguru>=0.7.3",
     "lxml>=6.0.2",
