@@ -30,6 +30,84 @@
 }
 
 @keyframes marquee-slide {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(min(0px, calc(100cqw - 100%))); }
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(min(0px, calc(100cqw - 100%)));
+    }
+}
+
+
+/* Mobile Responsive Modal Sizing & Styling */
+@media (max-width: 768px) {
+
+    /* Make modal widen to 96% on mobile devices */
+    .responsive-detail-modal .mantine-Modal-content,
+    .mantine-Modal-content {
+        width: 96% !important;
+        max-width: 96% !important;
+        min-width: 96% !important;
+        margin: 10px auto !important;
+        padding: 4px !important;
+    }
+
+    /* Stack header elements (Title & Ratings, Buttons) so they don't squeeze */
+    .responsive-detail-modal .mantine-Modal-header,
+    .mantine-Modal-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+
+    .responsive-detail-modal .mantine-Modal-title,
+    .mantine-Modal-title {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-right: 0 !important;
+    }
+
+    /* Stack inner components of header title Group */
+    .responsive-detail-modal .mantine-Modal-title>div {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+        width: 100% !important;
+    }
+
+    /* Make the action buttons (Sync, View on BGG) stack or stretch nicely on mobile */
+    .responsive-detail-modal .mantine-Modal-title>div>div {
+        justify-content: flex-start !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    /* Make detail metadata icons wrap cleanly */
+    .responsive-detail-modal .mantine-Modal-body .mantine-Group-root {
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
+}
+
+/* Mobile Responsive List View Table */
+.responsive-table-card {
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    -webkit-overflow-scrolling: touch;
+    /* Smooth iOS scrolling */
+}
+
+/* Ensure table retains its proper layout shape and scrolls instead of collapsing */
+.responsive-table-card table,
+.responsive-table-card .mantine-Table-table {
+    min-width: 800px !important;
+    width: 100% !important;
+}
+
+/* Prevent text wrapping within cell badges and values to look clean while scrolling */
+.responsive-table-card td,
+.responsive-table-card th {
+    white-space: nowrap !important;
 }

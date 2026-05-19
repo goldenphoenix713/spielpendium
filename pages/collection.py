@@ -316,6 +316,7 @@ def layout() -> dmc.Container:
                 id="game-detail-modal",
                 size="70%",
                 zIndex=10000,
+                className="responsive-detail-modal",
                 children=[
                     dmc.LoadingOverlay(
                         id="loading-modal",
@@ -623,7 +624,7 @@ def open_modal(
                         fit="contain",
                         style={"maxHeight": "400px", "width": "100%"},
                     ),
-                    span=4,
+                    span={"base": 12, "md": 4},
                 ),
                 dmc.GridCol(
                     dmc.Stack([
@@ -721,7 +722,7 @@ def open_modal(
                                     ],
                                     gap=2,
                                 ),
-                                span=6,
+                                span={"base": 12, "xs": 6},
                             ),
                             dmc.GridCol(
                                 dmc.Stack(
@@ -733,7 +734,7 @@ def open_modal(
                                     ],
                                     gap=2,
                                 ),
-                                span=6,
+                                span={"base": 12, "xs": 6},
                             ),
                         ]),
                         dmc.Stack(
@@ -756,7 +757,7 @@ def open_modal(
                             gap="xs",
                         ),
                     ]),
-                    span=8,
+                    span={"base": 12, "md": 8},
                 ),
             ]),
             related_games_accordion,
@@ -1080,6 +1081,7 @@ def render_grid(
             shadow="sm",
             radius="md",
             p=0,
+            className="responsive-table-card",
             children=[
                 dmc.Table(
                     highlightOnHover=True,
