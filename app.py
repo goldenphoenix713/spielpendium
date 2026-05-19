@@ -375,6 +375,8 @@ def update_header_bgg_link(username: str | None) -> tuple[str, str]:
     return url, url
 
 
+dash_app = generate_app()
+server = dash_app.server
+
 if __name__ == "__main__":
-    dash_app = generate_app()
     dash_app.run(debug=True, use_reloader=False)
