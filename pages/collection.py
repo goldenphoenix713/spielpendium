@@ -1037,7 +1037,12 @@ def render_grid(
                 children=[
                     dmc.TableTd(thumbnail, style={"width": 60}),
                     dmc.TableTd(
-                        dmc.Text(g["name"], fw=700, size="sm"),
+                        dmc.Text(
+                            g["name"],
+                            fw=700,
+                            size="sm",
+                            className="list-title-text",
+                        ),
                     ),
                     dmc.TableTd(
                         dmc.Badge(

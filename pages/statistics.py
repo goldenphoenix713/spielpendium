@@ -246,11 +246,20 @@ def render_statistics_content(username: str | None) -> dmc.Container:
 
     # Custom chart styling to match Mantine Dark theme
     def style_fig(fig: go.Figure) -> None:
+        # Check if it's a horizontal bar chart to allocate left margin for text labels
+        is_horizontal = False
+        if fig.data:
+            trace = fig.data[0]
+            if hasattr(trace, "orientation") and trace.orientation == "h":
+                is_horizontal = True
+
+        left_margin = 130 if is_horizontal else 20
+
         fig.update_layout(
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             font_color="#C1C2C5",
-            margin={"l": 10, "r": 10, "t": 50, "b": 10},
+            margin={"l": left_margin, "r": 20, "t": 50, "b": 20},
             title_font_size=16,
             title_x=0.5,
         )
@@ -275,7 +284,7 @@ def render_statistics_content(username: str | None) -> dmc.Container:
         children=[
             dmc.Title("Collection Statistics", order=1, mb="xl"),
             dmc.SimpleGrid(
-                cols=4,
+                cols={"base": 1, "xs": 2, "md": 4},
                 spacing="lg",
                 mb="xl",
                 children=[

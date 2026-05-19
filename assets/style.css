@@ -118,3 +118,19 @@
 .responsive-table-card th {
     white-space: nowrap !important;
 }
+
+/* Table view game title ellipsis truncation */
+.list-title-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    max-width: 150px !important; /* Elegant truncation on mobile */
+    vertical-align: middle;
+}
+
+@media (min-width: 769px) {
+    .list-title-text {
+        max-width: 350px !important; /* Expanded visible width on desktop */
+    }
+}
