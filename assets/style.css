@@ -39,6 +39,13 @@
     }
 }
 
+/* Ensure the Modal Header is always opaque and sits on top of scrolling body content */
+.responsive-detail-modal .mantine-Modal-header,
+.mantine-Modal-header {
+    background-color: inherit !important;
+    z-index: 10 !important;
+    position: relative !important;
+}
 
 /* Mobile Responsive Modal Sizing & Styling */
 @media (max-width: 768px) {
