@@ -1,5 +1,7 @@
 # Spielpendium - Executive Summary
 
+**Official Website**: [www.spielpendium.com](https://www.spielpendium.com)
+
 **Spielpendium** is a board game management tool designed to help enthusiasts organize their collections, explore
 game details via BoardGameGeek integration, and visualize relationships between games.
 

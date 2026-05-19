@@ -7,6 +7,29 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.0.0] — 2026-05-19 — Production Release & Mobile Optimization
+
+### Added
+
+- **Dynamic Image Persistence**: Implemented automated, self-healing symbolic link creation in `config/directories.py`
+to route the `assets/images` folder directly into the persistent Render DB volume, preventing game images from being
+lost across container redeploys.
+- **Mobile Responsive Sizing**: Overrode Mantine modal styling with a custom `.responsive-detail-modal` layout that
+expands to 96% width on screens under 768px and wraps button groups and titles cleanly.
+- **Auto-Stacking Grid layout**: Upgraded the details modal to stack key information and columns vertically on mobile
+  screens while maintaining side-by-side structures on desktop viewports.
+- **Horizontal Table Scrolling**: Integrated smooth swipe-to-scroll features for the collection list-view table using
+  `.responsive-table-card` CSS wrappers, keeping all columns aligned and beautiful without breaking structural unit test
+  assertions.
+- **Responsive Game Title Truncation**: Added native CSS ellipsis truncation (`.list-title-text`) on the list-view to
+  automatically shorten extremely long board game titles on narrow/mobile screens while maintaining the full title for
+  desktops.
+- **Mobile Statistics Optimization**: Made the statistics page dashboard fully responsive by implementing grid span
+  breakpoints (`cols={"base": 1, "xs": 2, "md": 4}`) and dynamic left margins in Plotly figures to automatically
+  make category and designer text highly readable on phones.
+- **WSGI Server Exponentiation**: Hoisted the `dash_app` and `server` variables in `app.py` to global scope, resolving
+Gunicorn binding crashes during Render builds.
+
 ## [0.9.1] — 2026-05-17 — Dynamic Settings & Auto-Refresh Integration
 
 ### Added

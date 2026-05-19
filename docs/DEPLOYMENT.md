@@ -171,3 +171,42 @@ cp db/spielpendium_backup.db db/spielpendium.db
 - The database schema is managed automatically by SQLModel.
 - On startup, the system calls `create_db_and_tables()` to safely add new tables or missing columns without deleting
   existing data.
+
+---
+
+## 4. Production Cloud Deployment (Render)
+
+Spielpendium v1.0.0 is fully optimized for containerless cloud application hosting on platforms like **Render**.
+
+### Render Service Settings
+
+Configure a new **Web Service** on Render with the following configuration:
+
+- **Repository**: Connected to your GitHub repository
+- **Branch**: `main`
+- **Build Command**: `uv sync`
+- **Start Command**: `uv run gunicorn app:server`
+- **Auto-Deploy**: `On` (or manual trigger if webhook authorizations are limited)
+
+### Environment Variables
+
+Add these key environment variables in the Render Dashboard:
+
+- **`BGG_API_TOKEN`**: Your BoardGameGeek XML API developer token (required).
+- **`TEST_USER`**: Default profile user to seed/onboard collections (optional).
+- **`DB_FILE`**: Leave this variable **unset** to allow the application to default database storage into `/opt/render/project/src/db/spielpendium.sqlite`.
+
+### Persistent Volume Attachment (CRITICAL)
+
+SQLite databases and downloaded game images will be lost on container restarts if not saved to persistent storage.
+
+1. In your Render Dashboard, navigate to **Disks** -> **Add Disk**.
+2. Name the disk: `spielpendium-data` (or similar).
+3. Set the **Mount Path** to precisely: `/opt/render/project/src/db`.
+4. Set the **Size** to `1 GiB` (more than enough for tens of thousands of games and high-resolution cached images).
+
+### Image Persistence Mechanism
+
+Upon booting, the application's directory manager (`config/directories.py`) automatically initializes `db/images/`
+inside the attached disk and replaces `assets/images/` with a dynamic OS symbolic link. This ensures all downloaded game
+thumbnail assets persist perfectly across redeploys, scaling changes, and restarts with zero manual configuration.

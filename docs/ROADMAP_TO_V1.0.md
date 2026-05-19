@@ -1,7 +1,7 @@
-# Roadmap to v1.0.0
+# Roadmap to v1.0.0 (COMPLETED)
 
-This document outlines the remaining milestones, feature polish, test coverage, and documentation required to
-transition **Spielpendium** from a development prototype (v0.9.x) to a production-ready **v1.0.0** release.
+This document outlines the milestones, feature polish, test coverage, and documentation that were successfully executed
+to transition **Spielpendium** to a stable, production-ready **v1.0.0** release.
 
 ---
 
