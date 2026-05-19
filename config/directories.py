@@ -1,3 +1,4 @@
+import contextlib
 import os
 import shutil
 from pathlib import Path
@@ -26,8 +27,8 @@ IMAGE_DIR = ROOT_DIR / "assets/images"
 
 # Ensure assets/images is a symlink to the persistent image folder
 try:
-    if IMAGE_DIR.exists():
-        if not IMAGE_DIR.is_symlink():
+    if not IMAGE_DIR.is_symlink():
+        if IMAGE_DIR.exists():
             # If it's a real directory, migrate any existing images to the persistent dir
             for item in IMAGE_DIR.iterdir():
                 dest = PERSISTENT_IMAGE_DIR / item.name
@@ -38,13 +39,18 @@ try:
                         shutil.copy2(item, dest)
             # Remove the local folder so we can replace it with a symlink
             shutil.rmtree(IMAGE_DIR)
-            os.symlink(
-                PERSISTENT_IMAGE_DIR, IMAGE_DIR, target_is_directory=True
-            )
-    else:
-        # Create parent directory assets/ if it doesn't exist
-        IMAGE_DIR.parent.mkdir(parents=True, exist_ok=True)
-        os.symlink(PERSISTENT_IMAGE_DIR, IMAGE_DIR, target_is_directory=True)
+            with contextlib.suppress(FileExistsError):
+                os.symlink(
+                    PERSISTENT_IMAGE_DIR, IMAGE_DIR, target_is_directory=True
+                )
+        else:
+            # Create parent directory assets/ if it doesn't exist
+            IMAGE_DIR.parent.mkdir(parents=True, exist_ok=True)
+            with contextlib.suppress(FileExistsError):
+                os.symlink(
+                    PERSISTENT_IMAGE_DIR, IMAGE_DIR, target_is_directory=True
+                )
 except Exception:
     # Fallback to standard directory if symlink fails (e.g. windows without permissions or CI/test environment)
-    IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+    with contextlib.suppress(FileExistsError):
+        IMAGE_DIR.mkdir(parents=True, exist_ok=True)
