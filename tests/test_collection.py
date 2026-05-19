@@ -548,9 +548,10 @@ class TestOpenModal:
         assert title == "Main Game"
         badges = _find_badges(content)
         assert any(
-            b.children == "Owned" and getattr(b, "color", None) == "green"
+            b.children == "Own"
+            and getattr(b, "color", None) == "hsl(142, 70%, 45%)"
             for b in badges
-        ), "Expected green 'Owned' badge in related game section"
+        ), "Expected green 'Own' badge in related game section"
 
     def test_prevowned_related_game_shows_badge(
         self, session: Session, mem_engine: Engine
@@ -612,9 +613,10 @@ class TestOpenModal:
         assert title == "Main Game 2"
         badges = _find_badges(content)
         assert any(
-            b.children == "Prev. Owned" and getattr(b, "color", None) == "gray"
+            b.children == "Previously Owned"
+            and getattr(b, "color", None) == "hsl(210, 10%, 60%)"
             for b in badges
-        ), "Expected gray 'Prev. Owned' badge in related game section"
+        ), "Expected gray 'Previously Owned' badge in related game section"
 
     def test_want_related_game_shows_no_badge(
         self, session: Session, mem_engine: Engine
@@ -676,7 +678,7 @@ class TestOpenModal:
         assert title == "Main Game 3"
         badges = _find_badges(content)
         owned_or_prev = [
-            b for b in badges if b.children in ("Owned", "Prev. Owned")
+            b for b in badges if b.children in ("Own", "Previously Owned")
         ]
         assert not owned_or_prev, (
             "Expected no ownership badge for 'want' status"

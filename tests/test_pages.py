@@ -82,21 +82,26 @@ def test_save_settings_callback():
             dash.no_update,
             dash.no_update,
             dash.no_update,
+            dash.no_update,
         )
 
         # n_clicks is 1
-        res = save_settings(1, "user", ["user"], 50, "dark", "blue", True)
+        res = save_settings(
+            1, "user", ["user"], 50, "dark", "blue", True, "list"
+        )
         assert isinstance(res[0], dmc.Notification)
         assert res[1] == "dark"
         assert res[2] == "blue"
         assert res[3] == "user"
         assert res[4] == ["user"]
-        assert mock_set.call_count == 6
+        assert res[5] == "list"
+        assert mock_set.call_count == 7
 
         # Test empty usernames list alignment
         res_empty = save_settings(1, "user", [], 50, "dark", "blue", True)
         assert res_empty[3] == ""
         assert res_empty[4] == []
+        assert res_empty[5] == "grid"
 
         # Test active user fallback alignment
         res_fallback = save_settings(
@@ -104,6 +109,7 @@ def test_save_settings_callback():
         )
         assert res_fallback[3] == "user1"
         assert res_fallback[4] == ["user1", "user2"]
+        assert res_fallback[5] == "grid"
 
 
 def test_reset_settings_callback():
@@ -112,7 +118,7 @@ def test_reset_settings_callback():
         import dash
 
         # n_clicks is None
-        assert reset_to_defaults(None) == (dash.no_update,) * 11
+        assert reset_to_defaults(None) == (dash.no_update,) * 13
 
         # n_clicks is 1
         res = reset_to_defaults(1)
@@ -122,12 +128,14 @@ def test_reset_settings_callback():
         assert res[3] == "dark"
         assert res[4] == "blue"
         assert res[5] is False
-        assert res[6] == "dark"
-        assert res[7] == "blue"
-        assert res[8] == ""
-        assert res[9] == []
-        assert isinstance(res[10], dmc.Notification)
-        assert mock_set.call_count == 6
+        assert res[6] == "grid"
+        assert res[7] == "dark"
+        assert res[8] == "blue"
+        assert res[9] == ""
+        assert res[10] == []
+        assert res[11] == "grid"
+        assert isinstance(res[12], dmc.Notification)
+        assert mock_set.call_count == 7
 
 
 def test_handle_onboarding_callback():

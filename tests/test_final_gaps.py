@@ -212,3 +212,25 @@ def test_render_grid_empty():
     res = render_grid([], 1, "testuser")
     assert isinstance(res[0], dmc.Alert)
     assert res[2] == {"display": "none"}
+
+
+def test_render_grid_list_view():
+    game = {
+        "bgg_id": 1,
+        "name": "Catan",
+        "image_path": "catan.jpg",
+        "min_players": 3,
+        "max_players": 4,
+        "min_play_time": 60,
+        "max_play_time": 90,
+        "bgg_rating": 7.2,
+        "statuses": ["owned"],
+    }
+    # Grid View (default)
+    res_grid = render_grid([game], 1, "testuser", "grid")
+    assert isinstance(res_grid[0], dmc.SimpleGrid)
+
+    # List View
+    res_list = render_grid([game], 1, "testuser", "list")
+    assert isinstance(res_list[0], dmc.Card)
+    assert isinstance(res_list[0].children[0], dmc.Table)

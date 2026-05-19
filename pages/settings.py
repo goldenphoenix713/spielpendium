@@ -25,6 +25,7 @@ def layout() -> dmc.Container:
     page_size = get_setting("page_size", 50)
     theme = get_setting("theme", "dark")
     primary_color = get_setting("primary_color", "blue")
+    layout_view = get_setting("layout_view", "grid")
 
     # The data from get_setting can be a string, even though it should be a boolean.
     # This is because the data is stored as a string in the database.
@@ -155,6 +156,22 @@ def layout() -> dmc.Container:
                                         max=200,
                                         step=10,
                                         value=page_size,
+                                    ),
+                                    dmc.Select(
+                                        id="setting-layout_view",
+                                        label="Default Collection View",
+                                        description="Choose whether to show games in a card grid or a compact table by default.",
+                                        data=[
+                                            {
+                                                "label": "Grid View",
+                                                "value": "grid",
+                                            },
+                                            {
+                                                "label": "List View",
+                                                "value": "list",
+                                            },
+                                        ],
+                                        value=layout_view,
                                     ),
                                 ],
                                 gap="md",
@@ -306,6 +323,7 @@ def update_swatch_color(color: str) -> dict[str, str]:
     Output("primary-color-store", "data", allow_duplicate=True),
     Output("active-user-store", "data", allow_duplicate=True),
     Output("managed-users-store", "data", allow_duplicate=True),
+    Output("layout-view-store", "data", allow_duplicate=True),
     Input("settings-save-btn", "n_clicks"),
     State("setting-active_bgg_username", "value"),
     State({"type": "setting", "item": "bgg_usernames"}, "value"),
@@ -313,6 +331,7 @@ def update_swatch_color(color: str) -> dict[str, str]:
     State("setting-theme", "value"),
     State("setting-primary_color", "value"),
     State("setting-auto_refresh", "checked"),
+    State("setting-layout_view", "value"),
     prevent_initial_call=True,
 )
 def save_settings(
@@ -323,9 +342,11 @@ def save_settings(
     theme: str,
     primary_color: str,
     auto_refresh: bool,
+    layout_view: str = "grid",
 ) -> (
-    tuple[dmc.Notification, Any, Any, Any, Any]
+    tuple[dmc.Notification, Any, Any, Any, Any, Any]
     | tuple[
+        dash.NoUpdate,
         dash.NoUpdate,
         dash.NoUpdate,
         dash.NoUpdate,
@@ -336,6 +357,7 @@ def save_settings(
     """Save all settings to the database and show a notification."""
     if not n_clicks:
         return (
+            dash.no_update,
             dash.no_update,
             dash.no_update,
             dash.no_update,
@@ -356,6 +378,7 @@ def save_settings(
         set_setting("theme", theme)
         set_setting("primary_color", primary_color)
         set_setting("auto_refresh", auto_refresh)
+        set_setting("layout_view", layout_view)
 
         return (
             dmc.Notification(
@@ -369,6 +392,7 @@ def save_settings(
             primary_color,
             username,
             usernames,
+            layout_view,
         )
     except Exception as e:
         return (
@@ -379,6 +403,7 @@ def save_settings(
                 icon=DashIconify(icon="tabler:x"),
                 action="show",
             ),
+            dash.no_update,
             dash.no_update,
             dash.no_update,
             dash.no_update,
@@ -414,6 +439,15 @@ def sync_primary_color_from_store(color: str | None) -> str | None:
 
 
 @callback(
+    Output("setting-layout_view", "value"),
+    Input("layout-view-store", "data"),
+)
+def sync_layout_view_from_store(layout_view: str | None) -> str:
+    """Initialize the layout view select from local storage."""
+    return layout_view or "grid"
+
+
+@callback(
     Output({"type": "setting", "item": "bgg_usernames"}, "value"),
     Input("managed-users-store", "data"),
 )
@@ -433,10 +467,12 @@ def sync_managed_users_from_store(usernames: list[str] | None) -> list[str]:
     Output("setting-theme", "value", allow_duplicate=True),
     Output("setting-primary_color", "value", allow_duplicate=True),
     Output("setting-auto_refresh", "checked", allow_duplicate=True),
+    Output("setting-layout_view", "value", allow_duplicate=True),
     Output("theme-store", "data", allow_duplicate=True),
     Output("primary-color-store", "data", allow_duplicate=True),
     Output("active-user-store", "data", allow_duplicate=True),
     Output("managed-users-store", "data", allow_duplicate=True),
+    Output("layout-view-store", "data", allow_duplicate=True),
     Output(
         "settings-notification-container", "children", allow_duplicate=True
     ),
@@ -445,7 +481,7 @@ def sync_managed_users_from_store(usernames: list[str] | None) -> list[str]:
 )
 def reset_to_defaults(n_clicks: int | None) -> tuple[Any, ...]:
     if not n_clicks:
-        return (dash.no_update,) * 11
+        return (dash.no_update,) * 13
 
     try:
         set_setting("active_bgg_username", "")
@@ -454,6 +490,7 @@ def reset_to_defaults(n_clicks: int | None) -> tuple[Any, ...]:
         set_setting("theme", "dark")
         set_setting("primary_color", "blue")
         set_setting("auto_refresh", False)
+        set_setting("layout_view", "grid")
 
         notification = dmc.Notification(
             title="Settings Reset",
@@ -470,10 +507,12 @@ def reset_to_defaults(n_clicks: int | None) -> tuple[Any, ...]:
             "dark",  # theme
             "blue",  # primary_color
             False,  # auto_refresh
+            "grid",  # layout_view
             "dark",  # theme-store
             "blue",  # primary-color-store
             "",  # active-user-store
             [],  # managed-users-store
+            "grid",  # layout-view-store
             notification,  # notification
         )
     except Exception as e:
@@ -484,4 +523,4 @@ def reset_to_defaults(n_clicks: int | None) -> tuple[Any, ...]:
             icon=DashIconify(icon="tabler:x"),
             action="show",
         )
-        return (dash.no_update,) * 10 + (notification,)
+        return (dash.no_update,) * 12 + (notification,)

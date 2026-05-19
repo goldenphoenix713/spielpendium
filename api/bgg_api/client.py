@@ -71,11 +71,12 @@ def get_xml_info(
 
         # Handle 429 Too Many Requests
         if response.status_code == 429:
+            sleep_duration = TIME_BETWEEN_API_CHECKS * (2**ii)
             log.warning(
                 f"Rate limited (429) at {url}. "
-                f"Retrying in {TIME_BETWEEN_API_CHECKS * 2} seconds..."
+                f"Retrying (attempt {ii + 1}/{MAX_API_CHECKS}) in {sleep_duration} seconds..."
             )
-            time.sleep(TIME_BETWEEN_API_CHECKS * 2)
+            time.sleep(sleep_duration)
             continue
 
         # If we reach here, it's not a 202 or 429. If it's not 200 either,

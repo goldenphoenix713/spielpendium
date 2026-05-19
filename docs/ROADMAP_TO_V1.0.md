@@ -119,9 +119,9 @@ graph TD
 
 ### Milestone Checklist
 
-- [ ] Implement live progress updates in the background ingestion thread.
-- [ ] Add distinct colors and configuration badges for all 8 BGG ownership statuses.
-- [ ] Create `docs/USER_GUIDE.md` and `docs/DEPLOYMENT.md` files.
-- [ ] Set up robust exponential backoff on the HTTP client for BGG.
-- [ ] Write E2E integration test covering onboarding, collection loading, and stats navigation.
-- [ ] Ensure 100% compliance with strict pre-commit hooks (formatting, types, markdown linting).
+- [x] Implement live progress updates in the background ingestion thread.
+- [x] Add distinct colors and configuration badges for all 8 BGG ownership statuses.
+- [x] Create `docs/USER_GUIDE.md` and `docs/DEPLOYMENT.md` files.
+- [x] Set up robust exponential backoff on the HTTP client for BGG.
+- [x] Write E2E integration test covering onboarding, collection loading, and stats navigation.
+- [x] Ensure 100% compliance with strict pre-commit hooks (formatting, types, markdown linting).

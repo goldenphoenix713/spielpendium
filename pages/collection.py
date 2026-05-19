@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import math
 import threading
 from html import unescape as html_unescape
@@ -33,7 +34,7 @@ from util.models import (
     RelatedGame,
     engine,
 )
-from util.settings import get_active_username, get_setting
+from util.settings import get_active_username, get_setting, set_setting
 from util.status import get_sync_status, set_sync_status
 
 if TYPE_CHECKING:
@@ -44,14 +45,14 @@ if TYPE_CHECKING:
 dash.register_page(__name__, path="/collection")  # type: ignore[no-untyped-call]
 
 STATUS_BADGE_CONFIG = {
-    "own": {"label": "Owned", "color": "green"},
-    "prevowned": {"label": "Prev. Owned", "color": "gray"},
-    "fortrade": {"label": "For Trade", "color": "blue"},
-    "want": {"label": "Want", "color": "yellow"},
-    "wanttobuy": {"label": "Want to Buy", "color": "orange"},
-    "wanttoplay": {"label": "Want to Play", "color": "violet"},
-    "wishlist": {"label": "Wishlist", "color": "pink"},
-    "preordered": {"label": "Preordered", "color": "cyan"},
+    "own": {"label": "Own", "color": "hsl(142, 70%, 45%)"},
+    "prevowned": {"label": "Previously Owned", "color": "hsl(210, 10%, 60%)"},
+    "fortrade": {"label": "For Trade", "color": "hsl(38, 92%, 50%)"},
+    "want": {"label": "Want in Trade", "color": "hsl(173, 80%, 40%)"},
+    "wanttobuy": {"label": "Want To Buy", "color": "hsl(14, 90%, 55%)"},
+    "wanttoplay": {"label": "Want To Play", "color": "hsl(271, 76%, 53%)"},
+    "preordered": {"label": "Preordered", "color": "hsl(217, 91%, 60%)"},
+    "wishlist": {"label": "Wishlist", "color": "hsl(330, 85%, 60%)"},
 }
 
 
@@ -147,149 +148,192 @@ def create_game_card(
     )
 
 
-layout = dmc.Container(
-    [
-        dmc.Title("My Collection", order=2, mb="lg"),
-        dmc.Group(
-            justify="space-between",
-            mb="xs",
-            children=[
-                dmc.Button(
-                    "Refresh Database",
-                    id="refresh-database-btn",
-                    leftSection=DashIconify(icon="tabler:refresh", width=16),
-                    variant="light",
-                    color="blue",
-                    size="xs",
-                ),
-                dmc.Text("", id="result-count", size="sm", c="dimmed"),
-            ],
-        ),
-        dmc.Stack(
-            id="sync-progress-container",
-            children=[
-                dmc.Progress(
-                    id="sync-progress-bar",
-                    value=0,
-                    striped=True,
-                    animated=True,
-                    mb="xs",
-                ),
-                dmc.Text(
-                    "",
-                    id="sync-progress-text",
-                    size="xs",
-                    c="dimmed",
-                    ta="center",
-                ),
-            ],
-            style={"display": "none"},
-            mb="lg",
-        ),
-        html.Div(
-            style={"position": "relative", "minHeight": "200px"},
-            children=[
-                dmc.LoadingOverlay(
-                    id="loading-collection",
-                    overlayProps={"radius": "sm", "blur": 2},
-                    visible=True,
-                ),
-                html.Div(id="collection-grid"),
-            ],
-        ),
-        dmc.Group(
-            dmc.Pagination(
-                id="collection-pagination", total=1, value=1, mt="xl", mb="xl"
-            ),
-            justify="center",
-        ),
-        dcc.Store(id="filtered-collection-store", data=[]),
-        dcc.Interval(id="sync-interval", interval=1000, disabled=True),
-        dmc.Modal(
-            title=dmc.Group(
-                [
+def layout() -> dmc.Container:
+    layout_view = get_setting("layout_view", "grid")
+    return dmc.Container(
+        [
+            dmc.Title("My Collection", order=2, mb="lg"),
+            dmc.Group(
+                justify="space-between",
+                mb="xs",
+                children=[
                     dmc.Group(
                         [
-                            dmc.ActionIcon(
-                                DashIconify(
-                                    icon="tabler:arrow-left", width=20
+                            dmc.Button(
+                                "Refresh Database",
+                                id="refresh-database-btn",
+                                leftSection=DashIconify(
+                                    icon="tabler:refresh", width=16
                                 ),
-                                id="modal-back-button",
-                                variant="subtle",
-                                color="gray",
-                                disabled=True,
+                                variant="light",
+                                color="blue",
+                                size="xs",
                             ),
-                            dmc.ActionIcon(
-                                DashIconify(
-                                    icon="tabler:arrow-right", width=20
-                                ),
-                                id="modal-forward-button",
-                                variant="subtle",
-                                color="gray",
-                                disabled=True,
-                            ),
-                            dmc.Title(id="modal-game-title", order=2),
-                            dmc.Badge(
-                                id="modal-game-rating",
-                                color="yellow",
-                                size="lg",
+                            dmc.SegmentedControl(
+                                id="collection-view-toggle",
+                                data=[
+                                    {
+                                        "value": "grid",
+                                        "label": dmc.Center([
+                                            DashIconify(
+                                                icon="tabler:layout-grid",
+                                                width=16,
+                                                style={"marginRight": 4},
+                                            ),
+                                            html.Span("Grid"),
+                                        ]),
+                                    },
+                                    {
+                                        "value": "list",
+                                        "label": dmc.Center([
+                                            DashIconify(
+                                                icon="tabler:list-details",
+                                                width=16,
+                                                style={"marginRight": 4},
+                                            ),
+                                            html.Span("List"),
+                                        ]),
+                                    },
+                                ],
+                                size="xs",
+                                value=layout_view,
                             ),
                         ],
                         gap="sm",
                     ),
-                    dmc.Group(
-                        [
-                            dmc.Button(
-                                "Sync Game",
-                                id="sync-game-btn",
-                                variant="subtle",
-                                color="blue",
-                                size="xs",
-                                leftSection=DashIconify(
-                                    icon="tabler:refresh", width=14
-                                ),
-                            ),
-                            dmc.Anchor(
-                                dmc.Button(
-                                    "View on BGG",
-                                    variant="outline",
-                                    size="xs",
-                                    rightSection=DashIconify(
-                                        icon="tabler:external-link", width=14
-                                    ),
-                                ),
-                                id="modal-bgg-link",
-                                href="#",
-                                target="_blank",
-                            ),
-                        ],
-                        gap="xs",
+                    dmc.Text("", id="result-count", size="sm", c="dimmed"),
+                ],
+            ),
+            dmc.Stack(
+                id="sync-progress-container",
+                children=[
+                    dmc.Progress(
+                        id="sync-progress-bar",
+                        value=0,
+                        striped=True,
+                        animated=True,
+                        mb="xs",
+                    ),
+                    dmc.Text(
+                        "",
+                        id="sync-progress-text",
+                        size="xs",
+                        c="dimmed",
+                        ta="center",
                     ),
                 ],
-                justify="space-between",
-                w="100%",
+                style={"display": "none"},
+                mb="lg",
             ),
-            id="game-detail-modal",
-            size="70%",
-            zIndex=10000,
-            children=[
-                dmc.LoadingOverlay(
-                    id="loading-modal",
-                    visible=False,
-                    overlayProps={"radius": "sm", "blur": 2},
+            html.Div(
+                style={"position": "relative", "minHeight": "200px"},
+                children=[
+                    dmc.LoadingOverlay(
+                        id="loading-collection",
+                        overlayProps={"radius": "sm", "blur": 2},
+                        visible=True,
+                    ),
+                    html.Div(id="collection-grid"),
+                ],
+            ),
+            dmc.Group(
+                dmc.Pagination(
+                    id="collection-pagination",
+                    total=1,
+                    value=1,
+                    mt="xl",
+                    mb="xl",
                 ),
-                html.Div(
-                    id="modal-game-content", style={"minHeight": "300px"}
+                justify="center",
+            ),
+            dcc.Store(id="filtered-collection-store", data=[]),
+            dcc.Interval(id="sync-interval", interval=1000, disabled=True),
+            dmc.Modal(
+                title=dmc.Group(
+                    [
+                        dmc.Group(
+                            [
+                                dmc.ActionIcon(
+                                    DashIconify(
+                                        icon="tabler:arrow-left", width=20
+                                    ),
+                                    id="modal-back-button",
+                                    variant="subtle",
+                                    color="gray",
+                                    disabled=True,
+                                ),
+                                dmc.ActionIcon(
+                                    DashIconify(
+                                        icon="tabler:arrow-right", width=20
+                                    ),
+                                    id="modal-forward-button",
+                                    variant="subtle",
+                                    color="gray",
+                                    disabled=True,
+                                ),
+                                dmc.Title(id="modal-game-title", order=2),
+                                dmc.Badge(
+                                    id="modal-game-rating",
+                                    color="yellow",
+                                    size="lg",
+                                ),
+                            ],
+                            gap="sm",
+                        ),
+                        dmc.Group(
+                            [
+                                dmc.Button(
+                                    "Sync Game",
+                                    id="sync-game-btn",
+                                    variant="subtle",
+                                    color="blue",
+                                    size="xs",
+                                    leftSection=DashIconify(
+                                        icon="tabler:refresh", width=14
+                                    ),
+                                ),
+                                dmc.Anchor(
+                                    dmc.Button(
+                                        "View on BGG",
+                                        variant="outline",
+                                        size="xs",
+                                        rightSection=DashIconify(
+                                            icon="tabler:external-link",
+                                            width=14,
+                                        ),
+                                    ),
+                                    id="modal-bgg-link",
+                                    href="#",
+                                    target="_blank",
+                                ),
+                            ],
+                            gap="xs",
+                        ),
+                    ],
+                    justify="space-between",
+                    w="100%",
                 ),
-            ],
-        ),
-        dcc.Store(
-            id="modal-history-store",
-            data={"history": [], "current_index": -1},
-        ),
-    ],
-    fluid=True,
-)
+                id="game-detail-modal",
+                size="70%",
+                zIndex=10000,
+                children=[
+                    dmc.LoadingOverlay(
+                        id="loading-modal",
+                        visible=False,
+                        overlayProps={"radius": "sm", "blur": 2},
+                    ),
+                    html.Div(
+                        id="modal-game-content", style={"minHeight": "300px"}
+                    ),
+                ],
+            ),
+            dcc.Store(
+                id="modal-history-store",
+                data={"history": [], "current_index": -1},
+            ),
+        ],
+        fluid=True,
+    )
 
 
 clientside_callback(
@@ -896,13 +940,15 @@ def filter_collection(
     Input("filtered-collection-store", "data"),
     Input("collection-pagination", "value"),
     Input("active-user-store", "data"),
+    Input("collection-view-toggle", "value"),
 )
 def render_grid(
     filtered: list[dict[str, Any]],
     page: int | None,
     active_user: str | None,
+    view_mode: str | None = None,
 ) -> tuple[Any, bool, dict[str, str]]:
-    """Render the current page of the filtered game grid."""
+    """Render the current page of the filtered game grid or list."""
     if not active_user:
         return (
             dmc.Alert(
@@ -939,100 +985,233 @@ def render_grid(
     end_idx = start_idx + page_size
     page_games = filtered[start_idx:end_idx]
 
-    # Build cards from the serialized dicts (no DB access needed)
-    cards = [
-        html.Div(
-            dmc.Card(
+    view_mode = view_mode or get_setting("layout_view", "grid")
+
+    if view_mode == "list":
+        rows = []
+        for g in page_games:
+            # Thumbnail Image
+            img_src = (
+                f"/assets/images/{g['image_path']}"
+                if g.get("image_path")
+                else "https://placehold.co/200x200?text=No+Image"
+            )
+            thumbnail = dmc.Image(
+                src=img_src,
+                h=40,
+                w=40,
+                fit="contain",
+                radius="sm",
+            )
+
+            # Rating
+            rating_text = (
+                f"{g['bgg_rating']:.1f}" if g.get("bgg_rating") else "N/A"
+            )
+            rating_badge = dmc.Badge(
+                rating_text,
+                color="yellow",
+                variant="light",
+            )
+
+            # Players text
+            players = f"{g['min_players']}" + (
+                f"-{g['max_players']}"
+                if g["min_players"] != g["max_players"]
+                else ""
+            )
+
+            # Time text
+            play_time = f"{g['min_play_time']}" + (
+                f"-{g['max_play_time']}"
+                if g["min_play_time"] != g["max_play_time"]
+                else ""
+            )
+
+            row = html.Tr(
+                id={"type": "game-card", "index": g["bgg_id"]},
+                n_clicks=0,
+                style={"cursor": "pointer"},
+                className="game-row-hover",
                 children=[
-                    dmc.CardSection(
-                        dmc.Image(
-                            src=f"/assets/images/{g['image_path']}"
-                            if g.get("image_path")
-                            else "https://placehold.co/200x200?text=No+Image",
-                            h=200,
-                            fit="contain",
+                    dmc.TableTd(thumbnail, style={"width": 60}),
+                    dmc.TableTd(
+                        dmc.Text(g["name"], fw=700, size="sm"),
+                    ),
+                    dmc.TableTd(
+                        dmc.Badge(
+                            f"{players} Players",
+                            color="indigo",
+                            variant="light",
+                            size="sm",
+                        )
+                    ),
+                    dmc.TableTd(
+                        dmc.Badge(
+                            f"{play_time} Min",
+                            color="cyan",
+                            variant="light",
+                            size="sm",
+                        )
+                    ),
+                    dmc.TableTd(rating_badge),
+                    dmc.TableTd(
+                        dmc.Group(
+                            create_status_badges(g.get("statuses", [])),
+                            gap=5,
+                        )
+                    ),
+                    dmc.TableTd(
+                        dmc.Button(
+                            "Details",
+                            size="xs",
+                            variant="light",
+                            color="blue",
+                            radius="sm",
                         ),
-                    ),
-                    dmc.Box(
-                        dmc.Text(
-                            g["name"],
-                            fw=700,
-                            size="lg",
-                            className="marquee-title",
-                        ),
-                        className="marquee-container",
-                        mt="md",
-                    ),
-                    dmc.Group(
-                        [
-                            dmc.Group(
-                                create_status_badges(g.get("statuses", [])),
-                                gap=5,
-                            ),
-                            dmc.Badge(
-                                f"{g['bgg_rating']:.1f}"
-                                if g.get("bgg_rating")
-                                else "N/A",
-                                color="yellow",
-                                variant="light",
-                            ),
-                        ],
-                        justify="space-between",
-                        mt="xs",
-                        mb="xs",
-                        wrap="nowrap",
-                    ),
-                    dmc.Text(
-                        (
-                            f"{g['min_players']}"
-                            + (
-                                f"-{g['max_players']}"
-                                if g["min_players"] != g["max_players"]
-                                else ""
-                            )
-                            + " Players • "
-                            + f"{g['min_play_time']}"
-                            + (
-                                f"-{g['max_play_time']}"
-                                if g["min_play_time"] != g["max_play_time"]
-                                else ""
-                            )
-                            + " Min"
-                        ),
-                        size="sm",
-                        c="dimmed",
-                    ),
-                    dmc.Button(
-                        "Details",
-                        variant="light",
-                        color="blue",
-                        fullWidth=True,
-                        mt="md",
-                        radius="md",
+                        style={"textAlign": "right", "width": 100},
                     ),
                 ],
-                withBorder=True,
-                shadow="sm",
-                radius="md",
-                w="100%",
-            ),
-            id={"type": "game-card", "index": g["bgg_id"]},
-            n_clicks=0,
-            className="game-card-hover",
+            )
+            rows.append(row)
+
+        content = dmc.Card(
+            withBorder=True,
+            shadow="sm",
+            radius="md",
+            p=0,
+            children=[
+                dmc.Table(
+                    highlightOnHover=True,
+                    withTableBorder=False,
+                    withColumnBorders=False,
+                    children=[
+                        dmc.TableThead(
+                            dmc.TableTr([
+                                dmc.TableTh("Image"),
+                                dmc.TableTh("Title"),
+                                dmc.TableTh("Players"),
+                                dmc.TableTh("Play Time"),
+                                dmc.TableTh("BGG Rating"),
+                                dmc.TableTh("Status"),
+                                dmc.TableTh("", style={"width": 100}),
+                            ])
+                        ),
+                        dmc.TableTbody(rows),
+                    ],
+                )
+            ],
         )
-        for g in page_games
-    ]
+    else:
+        # Build cards from the serialized dicts (no DB access needed)
+        cards = [
+            html.Div(
+                dmc.Card(
+                    children=[
+                        dmc.CardSection(
+                            dmc.Image(
+                                src=f"/assets/images/{g['image_path']}"
+                                if g.get("image_path")
+                                else "https://placehold.co/200x200?text=No+Image",
+                                h=200,
+                                fit="contain",
+                            ),
+                        ),
+                        dmc.Box(
+                            dmc.Text(
+                                g["name"],
+                                fw=700,
+                                size="lg",
+                                className="marquee-title",
+                            ),
+                            className="marquee-container",
+                            mt="md",
+                        ),
+                        dmc.Group(
+                            [
+                                dmc.Group(
+                                    create_status_badges(
+                                        g.get("statuses", [])
+                                    ),
+                                    gap=5,
+                                ),
+                                dmc.Badge(
+                                    f"{g['bgg_rating']:.1f}"
+                                    if g.get("bgg_rating")
+                                    else "N/A",
+                                    color="yellow",
+                                    variant="light",
+                                ),
+                            ],
+                            justify="space-between",
+                            mt="xs",
+                            mb="xs",
+                            wrap="nowrap",
+                        ),
+                        dmc.Text(
+                            (
+                                f"{g['min_players']}"
+                                + (
+                                    f"-{g['max_players']}"
+                                    if g["min_players"] != g["max_players"]
+                                    else ""
+                                )
+                                + " Players • "
+                                + f"{g['min_play_time']}"
+                                + (
+                                    f"-{g['max_play_time']}"
+                                    if g["min_play_time"] != g["max_play_time"]
+                                    else ""
+                                )
+                                + " Min"
+                            ),
+                            size="sm",
+                            c="dimmed",
+                        ),
+                        dmc.Button(
+                            "Details",
+                            variant="light",
+                            color="blue",
+                            fullWidth=True,
+                            mt="md",
+                            radius="md",
+                        ),
+                    ],
+                    withBorder=True,
+                    shadow="sm",
+                    radius="md",
+                    w="100%",
+                ),
+                id={"type": "game-card", "index": g["bgg_id"]},
+                n_clicks=0,
+                className="game-card-hover",
+            )
+            for g in page_games
+        ]
+        content = dmc.SimpleGrid(
+            cols={"base": 1, "sm": 2, "lg": 4, "xl": 5},
+            spacing="lg",
+            children=cards,
+        )
 
     pagination_style = (
         {"display": "none"} if len(filtered) <= page_size else {}
     )
 
     return (
-        dmc.SimpleGrid(
-            cols={"base": 1, "sm": 2, "lg": 4, "xl": 5},
-            spacing="lg",
-            children=cards,
-        ),
+        content,
         False,
         pagination_style,
     )
+
+
+@callback(
+    Output("layout-view-store", "data", allow_duplicate=True),
+    Input("collection-view-toggle", "value"),
+    prevent_initial_call=True,
+)
+def save_toggle_preference(value: str) -> str:
+    """Save the view preference when changed in the header."""
+    with contextlib.suppress(Exception):
+        set_setting("layout_view", value)
+    return value

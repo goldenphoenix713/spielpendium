@@ -195,9 +195,22 @@ def save_collection_data_to_db(
                             g_obj.image_path = image_path
                 session.commit()
 
+            set_sync_status(
+                True,
+                i + len(batch_ids),
+                len(game_ids),
+                f"Fetched and processed {min(i + batch_size, len(game_ids))} of {len(game_ids)} games...",
+            )
+
         # Re-iterate items to create CollectionItems
         log.info(
             f"Processing and linking {len(bgg_items)} collection items for user '{username}'"
+        )
+        set_sync_status(
+            True,
+            len(game_ids),
+            len(game_ids),
+            "Linking collection items to user account...",
         )
         for item_data in bgg_items:
             bgg_id_str = item_data.get("@objectid")

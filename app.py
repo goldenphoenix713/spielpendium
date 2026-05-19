@@ -269,6 +269,11 @@ def generate_app() -> Dash:
                 storage_type="local",
                 data=get_all_usernames(),
             ),
+            dcc.Store(
+                id="layout-view-store",
+                storage_type="local",
+                data=get_setting("layout_view", "grid"),
+            ),
             dcc.Store(id="sync-trigger-store", data=0),
         ],
     )
