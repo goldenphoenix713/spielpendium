@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import dash
 import dash_mantine_components as dmc
 from dash import Input, Output, State, callback
 from dash_iconify import DashIconify
-
-from util.settings import get_setting, set_setting
 
 if TYPE_CHECKING:
     from dash import NoUpdate
@@ -213,10 +211,13 @@ def render_home_content(active_user: str | None) -> dmc.Container:
     Output("managed-users-store", "data", allow_duplicate=True),
     Input("onboarding-submit", "n_clicks"),
     State("onboarding-username", "value"),
+    State("managed-users-store", "data"),
     prevent_initial_call=True,
 )
 def handle_onboarding(
-    n_clicks: int | None, username: str | None
+    n_clicks: int | None,
+    username: str | None,
+    existing_usernames: list[str] | None,
 ) -> tuple[str, str, list[str]] | NoUpdate:
     if not n_clicks or not username:
         return dash.no_update
@@ -226,14 +227,10 @@ def handle_onboarding(
     if not username:
         return dash.no_update
 
-    # Save to database (as a fallback/record)
-    set_setting("active_bgg_username", username)
-
     # Update bgg_usernames list if not already there
-    existing_usernames = cast("list[str]", get_setting("bgg_usernames", []))
-    if username not in existing_usernames:
-        existing_usernames.append(username)
-        set_setting("bgg_usernames", existing_usernames)
+    usernames = list(existing_usernames or [])
+    if username not in usernames:
+        usernames.append(username)
 
     # Redirect to collection and update local store
-    return "/collection", username, existing_usernames
+    return "/collection", username, usernames

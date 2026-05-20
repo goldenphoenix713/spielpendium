@@ -209,29 +209,31 @@ class TestGridCallbacks:
         games = [self._make_game_dict(i, f"Game {i}") for i in range(1, 15)]
 
         # If page_size is 5, we expect 3 pages
-        with patch("pages.collection.get_setting", return_value=5):
-            filtered, count, page, total_pages = filter_collection(
-                games, _DEFAULT_FILTERS
-            )
-            assert total_pages == 3
+        filtered, count, page, total_pages = filter_collection(
+            games, _DEFAULT_FILTERS, page_size=5
+        )
+        assert total_pages == 3
 
-            grid, _, pagination_style = render_grid(filtered, 1, "testuser")
-            assert isinstance(grid, dmc.SimpleGrid)
-            assert len(grid.children) == 5
-            # pagination should be visible because total games > page_size
-            assert pagination_style == {}
+        grid, _, pagination_style = render_grid(
+            filtered, 1, "testuser", page_size=5
+        )
+        assert isinstance(grid, dmc.SimpleGrid)
+        assert len(grid.children) == 5
+        # pagination should be visible because total games > page_size
+        assert pagination_style == {}
 
         # If page_size is 20, we expect 1 page
-        with patch("pages.collection.get_setting", return_value=20):
-            filtered, count, page, total_pages = filter_collection(
-                games, _DEFAULT_FILTERS
-            )
-            assert total_pages == 1
+        filtered, count, page, total_pages = filter_collection(
+            games, _DEFAULT_FILTERS, page_size=20
+        )
+        assert total_pages == 1
 
-            grid, _, pagination_style = render_grid(filtered, 1, "testuser")
-            assert len(grid.children) == 14
-            # pagination should be hidden because total games <= page_size
-            assert pagination_style == {"display": "none"}
+        grid, _, pagination_style = render_grid(
+            filtered, 1, "testuser", page_size=20
+        )
+        assert len(grid.children) == 14
+        # pagination should be hidden because total games <= page_size
+        assert pagination_style == {"display": "none"}
 
 
 # ---------------------------------------------------------------------------

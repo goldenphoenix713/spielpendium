@@ -7,30 +7,18 @@ import dash_mantine_components as dmc
 from dash import Input, Output, State, callback, html
 from dash_iconify import DashIconify
 
-from util.settings import (
-    get_active_username,
-    get_all_usernames,
-    get_setting,
-    set_setting,
-)
-
 dash.register_page(__name__, path="/settings")  # type: ignore[no-untyped-call]
 
 
 def layout() -> dmc.Container:
     # Initial values for the components (will be updated by callback too)
-    all_users = get_all_usernames()
-    active_user = get_active_username()
-    auto_refresh = get_setting("auto_refresh", False)
-    page_size = get_setting("page_size", 50)
-    theme = get_setting("theme", "dark")
-    primary_color = get_setting("primary_color", "blue")
-    layout_view = get_setting("layout_view", "grid")
-
-    # The data from get_setting can be a string, even though it should be a boolean.
-    # This is because the data is stored as a string in the database.
-    if isinstance(auto_refresh, str):
-        auto_refresh = auto_refresh == "1" or auto_refresh.lower() == "true"
+    all_users: list[str] = []
+    active_user: str = ""
+    auto_refresh: bool = False
+    page_size: int = 50
+    theme: str = "dark"
+    primary_color: str = "blue"
+    layout_view: str = "grid"
 
     return dmc.Container(
         size="md",
@@ -295,14 +283,31 @@ def update_active_dropdown_options(
 
 
 @callback(
-    Output("setting-auto_refresh", "checked"),
+    Output("auto-refresh-store", "data", allow_duplicate=True),
     Input("setting-auto_refresh", "checked"),
     prevent_initial_call=True,
 )
 def sync_auto_refresh_value(checked: bool) -> bool:
-    """Ensure auto-refresh setting in DB is synced when changed."""
-    set_setting("auto_refresh", checked)
+    """Ensure auto-refresh setting in store is synced when changed."""
     return checked
+
+
+@callback(
+    Output("setting-auto_refresh", "checked"),
+    Input("auto-refresh-store", "data"),
+)
+def sync_auto_refresh_from_store(auto_refresh: bool | None) -> bool:
+    """Initialize the auto-refresh checkbox from local storage."""
+    return bool(auto_refresh)
+
+
+@callback(
+    Output("setting-page_size", "value"),
+    Input("page-size-store", "data"),
+)
+def sync_page_size_from_store(page_size: int | None) -> int:
+    """Initialize the page size input from local storage."""
+    return page_size or 50
 
 
 @callback(
@@ -324,6 +329,8 @@ def update_swatch_color(color: str) -> dict[str, str]:
     Output("active-user-store", "data", allow_duplicate=True),
     Output("managed-users-store", "data", allow_duplicate=True),
     Output("layout-view-store", "data", allow_duplicate=True),
+    Output("auto-refresh-store", "data", allow_duplicate=True),
+    Output("page-size-store", "data", allow_duplicate=True),
     Input("settings-save-btn", "n_clicks"),
     State("setting-active_bgg_username", "value"),
     State({"type": "setting", "item": "bgg_usernames"}, "value"),
@@ -344,26 +351,12 @@ def save_settings(
     auto_refresh: bool,
     layout_view: str = "grid",
 ) -> (
-    tuple[dmc.Notification, Any, Any, Any, Any, Any]
-    | tuple[
-        dash.NoUpdate,
-        dash.NoUpdate,
-        dash.NoUpdate,
-        dash.NoUpdate,
-        dash.NoUpdate,
-        dash.NoUpdate,
-    ]
+    tuple[dmc.Notification, Any, Any, Any, Any, Any, Any, Any]
+    | tuple[dash.NoUpdate, ...]
 ):
-    """Save all settings to the database and show a notification."""
+    """Save all settings to local stores and show a notification."""
     if not n_clicks:
-        return (
-            dash.no_update,
-            dash.no_update,
-            dash.no_update,
-            dash.no_update,
-            dash.no_update,
-            dash.no_update,
-        )
+        return (dash.no_update,) * 8
 
     try:
         # Align active username with the managed usernames list
@@ -371,14 +364,6 @@ def save_settings(
             username = ""
         elif username not in usernames:
             username = usernames[0]
-
-        set_setting("active_bgg_username", username)
-        set_setting("bgg_usernames", usernames)
-        set_setting("page_size", page_size)
-        set_setting("theme", theme)
-        set_setting("primary_color", primary_color)
-        set_setting("auto_refresh", auto_refresh)
-        set_setting("layout_view", layout_view)
 
         return (
             dmc.Notification(
@@ -393,6 +378,8 @@ def save_settings(
             username,
             usernames,
             layout_view,
+            auto_refresh,
+            page_size,
         )
     except Exception as e:
         return (
@@ -403,6 +390,8 @@ def save_settings(
                 icon=DashIconify(icon="tabler:x"),
                 action="show",
             ),
+            dash.no_update,
+            dash.no_update,
             dash.no_update,
             dash.no_update,
             dash.no_update,
@@ -473,6 +462,8 @@ def sync_managed_users_from_store(usernames: list[str] | None) -> list[str]:
     Output("active-user-store", "data", allow_duplicate=True),
     Output("managed-users-store", "data", allow_duplicate=True),
     Output("layout-view-store", "data", allow_duplicate=True),
+    Output("auto-refresh-store", "data", allow_duplicate=True),
+    Output("page-size-store", "data", allow_duplicate=True),
     Output(
         "settings-notification-container", "children", allow_duplicate=True
     ),
@@ -481,17 +472,9 @@ def sync_managed_users_from_store(usernames: list[str] | None) -> list[str]:
 )
 def reset_to_defaults(n_clicks: int | None) -> tuple[Any, ...]:
     if not n_clicks:
-        return (dash.no_update,) * 13
+        return (dash.no_update,) * 15
 
     try:
-        set_setting("active_bgg_username", "")
-        set_setting("bgg_usernames", [])
-        set_setting("page_size", 50)
-        set_setting("theme", "dark")
-        set_setting("primary_color", "blue")
-        set_setting("auto_refresh", False)
-        set_setting("layout_view", "grid")
-
         notification = dmc.Notification(
             title="Settings Reset",
             message="All settings have been reset to default values.",
@@ -513,6 +496,8 @@ def reset_to_defaults(n_clicks: int | None) -> tuple[Any, ...]:
             "",  # active-user-store
             [],  # managed-users-store
             "grid",  # layout-view-store
+            False,  # auto-refresh-store
+            50,  # page-size-store
             notification,  # notification
         )
     except Exception as e:
@@ -523,4 +508,4 @@ def reset_to_defaults(n_clicks: int | None) -> tuple[Any, ...]:
             icon=DashIconify(icon="tabler:x"),
             action="show",
         )
-        return (dash.no_update,) * 12 + (notification,)
+        return (dash.no_update,) * 14 + (notification,)

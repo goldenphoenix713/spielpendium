@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import dash
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
+
+dash.register_page = MagicMock()  # type: ignore[invalid-assignment]  # ty:ignore[invalid-assignment]
 
 if TYPE_CHECKING:
     from collections.abc import Generator

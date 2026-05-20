@@ -33,7 +33,6 @@ __all__ = [
     "PersonRole",
     "Category",
     "Game",
-    "UserSettings",
     "engine",
     "create_db_and_tables",
 ]
@@ -292,12 +291,6 @@ class Game(SQLModel, table=True):
     collection_items: list[CollectionItem] = Relationship(
         back_populates="game"
     )
-
-
-class UserSettings(SQLModel, table=True):
-    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
-    keyword: str
-    value: str
 
 
 # Module-level engine creation

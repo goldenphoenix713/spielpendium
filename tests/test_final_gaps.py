@@ -34,7 +34,6 @@ from util.models import (  # noqa: E402
     PublisherGameLink,
     RelatedGame,
     Search,
-    UserSettings,
 )
 from util.status import get_sync_status, set_sync_status  # noqa: E402
 
@@ -51,7 +50,6 @@ _unused_models = [
     PublisherGameLink,
     RelatedGame,
     Search,
-    UserSettings,
 ]
 
 
@@ -166,20 +164,18 @@ def test_start_sync_logic():
 
 def test_start_sync_auto_refresh():
     with (
-        patch("pages.collection.get_setting", return_value=True),
         patch("threading.Thread") as mock_thread,
     ):
-        res = start_sync(None, "testuser")
+        res = start_sync(None, "testuser", auto_refresh=True)
         assert res[0] is False
         assert res[1] == {"display": "block"}
         assert res[2] is True
         assert mock_thread.called
 
     with (
-        patch("pages.collection.get_setting", return_value=False),
         patch("threading.Thread") as mock_thread,
     ):
-        res = start_sync(None, "testuser")
+        res = start_sync(None, "testuser", auto_refresh=False)
         assert res == dash.no_update
         assert not mock_thread.called
 

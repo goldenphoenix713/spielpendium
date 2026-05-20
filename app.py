@@ -22,7 +22,6 @@ from loguru import logger as log
 import util.filters  # noqa: F401 — registers filter callbacks
 from util.filters import generate_drawer_content, generate_sidebar
 from util.models import create_db_and_tables
-from util.settings import get_active_username, get_all_usernames, get_setting
 
 if TYPE_CHECKING:
     from dash import (
@@ -106,7 +105,7 @@ def generate_app() -> Dash:
                                 color="orange",
                             ),
                             id="header-bgg-profile-link",
-                            href=f"https://boardgamegeek.com/collection/user/{get_active_username()}",
+                            href="https://boardgamegeek.com/collection/user/",
                             target="_blank",
                             underline="never",
                         ),
@@ -167,7 +166,7 @@ def generate_app() -> Dash:
                                     icon="simple-icons:boardgamegeek", width=16
                                 ),
                                 id="mobile-bgg-profile-link",
-                                href=f"https://boardgamegeek.com/collection/user/{get_active_username()}",
+                                href="https://boardgamegeek.com/collection/user/",
                                 target="_blank",
                             ),
                             dmc.MenuDivider(),
@@ -216,8 +215,8 @@ def generate_app() -> Dash:
 
     app.layout = dmc.MantineProvider(
         id="mantine-provider",
-        forceColorScheme=get_setting("theme", "dark"),
-        theme={"primaryColor": get_setting("primary_color", "blue")},
+        forceColorScheme="dark",
+        theme={"primaryColor": "blue"},
         children=[
             dmc.NotificationProvider(position="top-right"),
             mobile_drawer,
@@ -252,27 +251,37 @@ def generate_app() -> Dash:
             dcc.Store(
                 id="active-user-store",
                 storage_type="local",
-                data=get_active_username(),
+                data="",
             ),
             dcc.Store(
                 id="theme-store",
                 storage_type="local",
-                data=get_setting("theme", "dark"),
+                data="dark",
             ),
             dcc.Store(
                 id="primary-color-store",
                 storage_type="local",
-                data=get_setting("primary_color", "blue"),
+                data="blue",
             ),
             dcc.Store(
                 id="managed-users-store",
                 storage_type="local",
-                data=get_all_usernames(),
+                data=[],
             ),
             dcc.Store(
                 id="layout-view-store",
                 storage_type="local",
-                data=get_setting("layout_view", "grid"),
+                data="grid",
+            ),
+            dcc.Store(
+                id="auto-refresh-store",
+                storage_type="local",
+                data=False,
+            ),
+            dcc.Store(
+                id="page-size-store",
+                storage_type="local",
+                data=50,
             ),
             dcc.Store(id="sync-trigger-store", data=0),
         ],

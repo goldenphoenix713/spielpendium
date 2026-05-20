@@ -29,10 +29,7 @@ def test_e2e_onboarding_flow():
     assert "Connect Collection" in str(onboarding_layout)
 
     # Step 2: Simulate User Connecting BGG Account & Saving Settings
-    with (
-        patch("pages.settings.set_setting") as mock_set,
-        patch("pages.settings.dash.ctx") as mock_ctx,
-    ):
+    with patch("pages.settings.dash.ctx") as mock_ctx:
         mock_ctx.states_list = [
             [{"id": {"item": "theme"}}, {"id": {"item": "primary_color"}}]
         ]
@@ -47,12 +44,13 @@ def test_e2e_onboarding_flow():
             auto_refresh=True,
             layout_view="grid",
         )
-        # Verify notifications and database updates
+        # Verify notifications and local store values returned
         assert isinstance(res[0], dmc.Notification)
         assert res[3] == "phoenix713"
         assert res[4] == ["phoenix713"]
         assert res[5] == "grid"
-        assert mock_set.call_count == 7
+        assert res[6] is True
+        assert res[7] == 20
 
     # Step 3: Simulate Ingested Games Loading into Collection Stores
     mock_collection = MagicMock()
@@ -84,7 +82,7 @@ def test_e2e_onboarding_flow():
         "ownership": ["own"],
     }
     filtered, count_text, active_page, total_pages = filter_collection(
-        games, filters
+        games, filters, page_size=20
     )
     assert len(filtered) == 1
     assert "1 game" in count_text
@@ -96,6 +94,8 @@ def test_e2e_onboarding_flow():
         page=1,
         active_user="phoenix713",
         view_mode="grid",
+        page_size=20,
+        layout_view="grid",
     )
     assert isinstance(grid_view_layout, dmc.SimpleGrid)
     assert loading is False
@@ -106,6 +106,8 @@ def test_e2e_onboarding_flow():
         page=1,
         active_user="phoenix713",
         view_mode="list",
+        page_size=20,
+        layout_view="grid",
     )
     assert isinstance(list_view_layout, dmc.Card)
     # Ensure it contains a Mantine Table structure

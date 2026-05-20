@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import math
 import threading
 from html import unescape as html_unescape
@@ -34,7 +33,7 @@ from util.models import (
     RelatedGame,
     engine,
 )
-from util.settings import get_active_username, get_setting, set_setting
+from util.settings import get_active_username
 from util.status import get_sync_status, set_sync_status
 
 if TYPE_CHECKING:
@@ -149,7 +148,6 @@ def create_game_card(
 
 
 def layout() -> dmc.Container:
-    layout_view = get_setting("layout_view", "grid")
     return dmc.Container(
         [
             dmc.Title("My Collection", order=2, mb="lg"),
@@ -196,7 +194,7 @@ def layout() -> dmc.Container:
                                     },
                                 ],
                                 size="xs",
-                                value=layout_view,
+                                value="grid",
                             ),
                         ],
                         gap="sm",
@@ -378,6 +376,7 @@ def disable_sync_game_btn_if_no_user(active_user: str | None) -> bool:
     Input("game-detail-modal", "opened"),
     Input("sync-game-btn", "n_clicks"),
     State("modal-history-store", "data"),
+    State("active-user-store", "data"),
     running=[
         (Output("loading-modal", "visible"), True, False),
         (Output("sync-game-btn", "loading"), True, False),
@@ -392,6 +391,7 @@ def open_modal(
     modal_opened: bool,
     sync_clicks: int | None,
     history_data: dict[str, Any],
+    active_user: str | None = None,
 ) -> (
     tuple[
         bool, str, str, Any, str, bool | NoUpdate, dict[str, Any], bool, bool
@@ -492,10 +492,9 @@ def open_modal(
             game = test_game
 
         # Get User's Collection ID
+        username = active_user or get_active_username()
         user_collection = session.exec(
-            select(Collection).where(
-                Collection.username == get_active_username()
-            )
+            select(Collection).where(Collection.username == username)
         ).first()
         user_col_id = user_collection.id if user_collection else None
         # Get statuses for the main game
@@ -791,10 +790,13 @@ def disable_refresh_btn_if_no_user(active_user: str | None) -> bool:
     Output("refresh-database-btn", "loading"),
     Input("refresh-database-btn", "n_clicks"),
     State("active-user-store", "data"),
+    State("auto-refresh-store", "data"),
     prevent_initial_call=False,
 )
 def start_sync(
-    n_clicks: int | None, active_user: str | None
+    n_clicks: int | None,
+    active_user: str | None,
+    auto_refresh: bool | None = None,
 ) -> tuple[bool, dict[str, str], bool] | NoUpdate:
     """Starts the collection sync in a background thread."""
     if not active_user:
@@ -804,15 +806,6 @@ def start_sync(
     if n_clicks:  # User clicked the refresh button
         should_sync = True
     else:  # Initial load or active user loaded
-        try:
-            auto_refresh = get_setting("auto_refresh", False)
-            if isinstance(auto_refresh, str):
-                auto_refresh = (
-                    auto_refresh == "1" or auto_refresh.lower() == "true"
-                )
-        except Exception:
-            auto_refresh = False
-
         if auto_refresh:
             should_sync = True
 
@@ -909,10 +902,12 @@ def load_collection_store(
     Output("collection-pagination", "total"),
     Input("collection-store", "data"),
     Input("filters-store", "data"),
+    State("page-size-store", "data"),
 )
 def filter_collection(
     games: list[dict[str, Any]] | None,
     filters: dict[str, Any] | None,
+    page_size: int | None = None,
 ) -> tuple[list[dict[str, Any]], str, int, int]:
     """Filter and sort the collection, then calculate pagination bounds."""
     if not games:
@@ -924,12 +919,8 @@ def filter_collection(
     shown = len(filtered)
     count_text = f"Showing {shown} of {total} games"
 
-    try:
-        page_size = int(get_setting("page_size", 50))
-    except (ValueError, TypeError):
-        page_size = 50
-
-    total_pages = max(1, math.ceil(shown / page_size))
+    p_size = page_size if page_size is not None else 50
+    total_pages = max(1, math.ceil(shown / p_size))
 
     return filtered, count_text, 1, total_pages
 
@@ -942,12 +933,16 @@ def filter_collection(
     Input("collection-pagination", "value"),
     Input("active-user-store", "data"),
     Input("collection-view-toggle", "value"),
+    State("page-size-store", "data"),
+    State("layout-view-store", "data"),
 )
 def render_grid(
     filtered: list[dict[str, Any]],
     page: int | None,
     active_user: str | None,
     view_mode: str | None = None,
+    page_size: int | None = None,
+    layout_view: str | None = None,
 ) -> tuple[Any, bool, dict[str, str]]:
     """Render the current page of the filtered game grid or list."""
     if not active_user:
@@ -976,17 +971,14 @@ def render_grid(
             {"display": "none"},
         )
 
-    try:
-        page_size = int(get_setting("page_size", 50))
-    except (ValueError, TypeError):
-        page_size = 50
+    p_size = page_size if page_size is not None else 50
 
     page = page or 1
-    start_idx = (page - 1) * page_size
-    end_idx = start_idx + page_size
+    start_idx = (page - 1) * p_size
+    end_idx = start_idx + p_size
     page_games = filtered[start_idx:end_idx]
 
-    view_mode = view_mode or get_setting("layout_view", "grid")
+    view_mode = view_mode or layout_view or "grid"
 
     if view_mode == "list":
         rows = []
@@ -1201,9 +1193,7 @@ def render_grid(
             children=cards,
         )
 
-    pagination_style = (
-        {"display": "none"} if len(filtered) <= page_size else {}
-    )
+    pagination_style = {"display": "none"} if len(filtered) <= p_size else {}
 
     return (
         content,
@@ -1219,6 +1209,13 @@ def render_grid(
 )
 def save_toggle_preference(value: str) -> str:
     """Save the view preference when changed in the header."""
-    with contextlib.suppress(Exception):
-        set_setting("layout_view", value)
     return value
+
+
+@callback(
+    Output("collection-view-toggle", "value"),
+    Input("layout-view-store", "data"),
+)
+def sync_toggle_value(layout_view: str | None) -> str:
+    """Initialize/sync the view toggle from local storage."""
+    return layout_view or "grid"

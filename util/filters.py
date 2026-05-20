@@ -7,8 +7,6 @@ import dash_mantine_components as dmc
 from dash import ALL, Input, Output, State, callback, ctx, dcc, no_update
 from dash_iconify import DashIconify
 
-from util.settings import get_active_username
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -140,7 +138,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 step=1,
                 minRange=1,
                 value=FILTER_DEFAULTS["players"],
-                label={"function": "playersFormatter"},  # ty: ignore[invalid-argument-type]
+                label={"function": "playersFormatter"},  # ty:ignore[invalid-argument-type]
                 marks=[
                     {
                         "value": i,
@@ -166,7 +164,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 step=15,
                 minRange=1,
                 value=FILTER_DEFAULTS["play_time"],
-                label={"function": "playTimeFormatter"},  # ty: ignore[invalid-argument-type]
+                label={"function": "playTimeFormatter"},  # ty:ignore[invalid-argument-type]
                 marks=[
                     {
                         "value": v,
@@ -234,7 +232,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 step=1,
                 minRange=1,
                 value=FILTER_DEFAULTS["year"],
-                label={"function": "yearFormatter"},  # ty: ignore[invalid-argument-type]
+                label={"function": "yearFormatter"},  # ty:ignore[invalid-argument-type]
                 marks=[
                     {
                         "value": v,
@@ -258,7 +256,7 @@ def _build_filter_components(location: str) -> list[Any]:
                 step=1,
                 minRange=1,
                 value=FILTER_DEFAULTS["age"],
-                label={"function": "ageFormatter"},  # ty: ignore[invalid-argument-type]
+                label={"function": "ageFormatter"},  # ty:ignore[invalid-argument-type]
                 marks=[
                     {"value": v, "label": ("18+" if v == 18 else str(v))}
                     for v in [1, 5, 10, 14, 18]
@@ -387,7 +385,8 @@ def _build_filter_components(location: str) -> list[Any]:
                     icon="simple-icons:boardgamegeek", width=16
                 ),
             ),
-            href=f"https://boardgamegeek.com/collection/user/{get_active_username()}",
+            id={"location": location, "control": "bgg_user_link"},
+            href="https://boardgamegeek.com/collection/user/",
             target="_blank",
             underline="never",
             mb="md",
@@ -949,3 +948,16 @@ def update_bgg_logo_theme(theme: str | None) -> list[str]:
     )
     # Return same asset for both sidebar and drawer logos
     return [asset] * len(ctx.outputs_list)
+
+
+@callback(
+    Output({"location": ALL, "control": "bgg_user_link"}, "href"),
+    Input("active-user-store", "data"),
+    State({"location": ALL, "control": "bgg_user_link"}, "id"),
+)
+def update_bgg_user_link(
+    active_user: str | None, ids: list[dict[str, str]]
+) -> list[str]:
+    """Dynamically update the BoardGameGeek user collection link."""
+    href = f"https://boardgamegeek.com/collection/user/{active_user or ''}"
+    return [href] * len(ids)

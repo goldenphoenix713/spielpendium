@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
-from util.filters import (
+import dash
+
+dash.register_page = MagicMock()  # type: ignore[invalid-assignment]  # ty:ignore[invalid-assignment]
+
+from util.filters import (  # noqa: E402
     FILTER_DEFAULTS,
     PLAY_TIME_MAX,
     PLAYERS_MAX,
@@ -18,7 +22,7 @@ from util.filters import (
     toggle_mobile_drawer,
     toggle_ownership_warning,
 )
-from util.models import (
+from util.models import (  # noqa: E402
     Category,
     CollectionItem,
     Game,
@@ -50,9 +54,7 @@ def get_mock_game(name: str, **kwargs: Any) -> dict[str, Any]:
     return base
 
 
-@patch("util.filters.get_active_username")
-def test_component_builders(mock_get_username: Any):
-    mock_get_username.return_value = "testuser"
+def test_component_builders():
     sidebar = generate_sidebar()
     assert sidebar is not None
 
