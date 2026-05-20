@@ -172,3 +172,24 @@ social reach of the platform.
 - **Social Messaging (Discord / Telegram Webhooks):**
   - Push automated notifications to the playgroup's chat server for game
     night scheduling, new library additions, or score tracking milestones.
+
+---
+
+## 7. Authentication & Cloud Synchronization
+
+**Concept:** Secure user accounts and cross-device session synchronization
+without the operational risk of managing raw passwords.
+
+- **Social OAuth Integration (Google, GitHub, Discord):**
+  - Delegate user authentication to secure third-party identity providers.
+  - Allows logging in with one click and syncing settings, play logs, and
+    custom shelf layouts across multiple browsers/devices.
+- **Passwordless Magic Links:**
+  - Enter an email to receive a secure, short-lived login link, eliminating
+    password storage requirements and simplifying registration.
+- **Passkey Support (WebAuthn):**
+  - Implement biometric/hardware key logins (Face ID, Touch ID, security keys)
+    for high security and convenient mobile authentication.
+- **Hosted Auth Backend (Supabase / Clerk / Auth0):**
+  - Offload session management, tokens, user databases, and OAuth flows
+    entirely to a managed security provider.

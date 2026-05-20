@@ -11,8 +11,9 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **Feature Brainstorming & Roadmap**: Created
   `docs/plans/feature_brainstorming.md` detailing future features including
-  Progressive Web App (PWA) installation, tabletop tools, and third-party API
-  integrations (Spotify, Steam, YouTube, LLMs, and Discord/Telegram webhooks).
+  Progressive Web App (PWA) installation, tabletop tools, third-party API
+  integrations (Spotify, Steam, YouTube, LLMs, and Discord/Telegram webhooks),
+  and secure passwordless/OAuth user synchronization.
 
 ### Fixed
 
