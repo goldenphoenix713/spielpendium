@@ -42,7 +42,8 @@ spielpendium/
 ├── docs/
 │   ├── plans/
 │   │   ├── feature_brainstorming.md # Future roadmap & feature ideas
-│   │   └── filtering_sorting_plan.md # Query/filter design notes
+│   │   ├── filtering_sorting_plan.md # Query/filter design notes
+│   │   └── roadmap_assessment.md  # Feasibility & risk assessments
 │   ├── AGENTS.md              # (this file) AI coding assistant guide
 │   ├── ARCHITECTURE.md        # System architecture and data flow
 │   ├── BGG_API.md             # BGG API token, rate limits, terms of use

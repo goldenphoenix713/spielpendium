@@ -4,6 +4,9 @@ This document serves as a repository of ideas for future features,
 enhancements, and architectural improvements for **Spielpendium**. These ideas
 are categorized by theme to represent potential additions to the roadmap.
 
+For a detailed feasibility, risk, and timeline assessment of these features,
+see [roadmap_assessment.md](file:///Users/eddie/python_projects/spielpendium/docs/plans/roadmap_assessment.md).
+
 ---
 
 ## 1. Game Night & Tabletop Companion
