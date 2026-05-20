@@ -7,6 +7,19 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Feature Brainstorming & Roadmap**: Created
+  `docs/plans/feature_brainstorming.md` detailing future features including
+  Progressive Web App (PWA) installation, tabletop tools, and third-party API
+  integrations (Spotify, Steam, YouTube, LLMs, and Discord/Telegram webhooks).
+
+### Fixed
+
+- **Documentation Formatting & Linting**: Reformatted all project Markdown
+  files to conform to a strict 80-character line-length constraint configured
+  in `.markdownlint.json`.
+
 ## [1.0.0] — 2026-05-19 — Production Release & Mobile Optimization
 
 ### Added

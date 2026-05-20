@@ -40,6 +40,9 @@ spielpendium/
 │   ├── settings.py            # pydantic-settings Config model
 │   └── directories.py        # Path constants (DB_FILE, etc.)
 ├── docs/
+│   ├── plans/
+│   │   ├── feature_brainstorming.md # Future roadmap & feature ideas
+│   │   └── filtering_sorting_plan.md # Query/filter design notes
 │   ├── AGENTS.md              # (this file) AI coding assistant guide
 │   ├── ARCHITECTURE.md        # System architecture and data flow
 │   ├── BGG_API.md             # BGG API token, rate limits, terms of use
@@ -219,7 +222,10 @@ Before opening a PR or committing:
 
 See `docs/TASKS.md` for the authoritative task list. As of the latest commit:
 
-- **Phase 4 (Game Detail View)** is in progress — Task 4.3 (related games with
-  ownership badges) is the active work item.
-- **Phase 5 (Navigation between related games)** is planned next.
-- **Testing & QA** is ongoing; aim for broad coverage of all callback branches.
+- **v1.0.0 Core Features**: All core phases (1-12) including statistics dashboard,
+  advanced filters, session-aware settings, and onboarding are **completed**.
+- **Future Enhancements**: Selecting and designing features from the future
+  roadmap in `docs/plans/feature_brainstorming.md` (e.g., companion tools,
+  PWA installation, and third-party API integrations).
+- **Testing & QA**: Maintain high coverage across all callback branches and
+  respect the strict 80-character line-length rules for all documentation.
