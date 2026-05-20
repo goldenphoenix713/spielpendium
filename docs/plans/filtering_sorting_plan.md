@@ -24,11 +24,12 @@
 
 The `app.py` `AppShell` will be restructured:
 
-- **Header:** Add nav links (Collection, Statistics, Settings) alongside the existing Spielpendium title.
-  The nav moves here from the navbar.
-- **Navbar (left sidebar):** Repurposed entirely for filters and the sort selector.
-- **Main area:** Game grid with result count in the top-right. On mobile, a hamburger button opens the filter
-  sidebar as a `dmc.Drawer`.
+- **Header:** Add nav links (Collection, Statistics, Settings) alongside the
+  existing Spielpendium title. The nav moves here from the navbar.
+- **Navbar (left sidebar):** Repurposed entirely for filters and the sort
+  selector.
+- **Main area:** Game grid with result count in the top-right. On mobile, a
+  hamburger button opens the filter sidebar as a `dmc.Drawer`.
 
 ### Data Flow
 
@@ -47,14 +48,16 @@ Filter/Sort Change
         └─> Returns updated grid + "Showing X of Y games" count
 ```
 
-> **Note:** `dcc.Store` data will be a list of plain dicts (not SQLModel objects, which aren't JSON-serializable).
-> A helper function `game_to_dict()` will serialize the relevant fields.
+> **Note:** `dcc.Store` data will be a list of plain dicts (not SQLModel
+> objects, which aren't JSON-serializable). A helper function `game_to_dict()`
+> will serialize the relevant fields.
 
 ---
 
 ## Sorting
 
-A `dmc.Select` at the **top of the sidebar**, followed by a `dmc.SegmentedControl` for ascending/descending direction.
+A `dmc.Select` at the **top of the sidebar**, followed by a
+`dmc.SegmentedControl` for ascending/descending direction.
 
 | Sort Field | DB Field | Default Dir | Priority |
 | --- | --- | --- | --- |
@@ -65,14 +68,16 @@ A `dmc.Select` at the **top of the sidebar**, followed by a `dmc.SegmentedContro
 | **Complexity** | `game.complexity` | Asc | ⭐⭐ |
 | **Play Time** | `game.min_play_time` | Asc | ⭐⭐ |
 
-**Implementation note:** Fields that are nullable (`bgg_rank`, `bgg_rating`, `complexity`) must always sort `None`
-values to the end regardless of direction, using a key like `(value is None, value)`.
+**Implementation note:** Fields that are nullable (`bgg_rank`, `bgg_rating`,
+`complexity`) must always sort `None` values to the end regardless of
+direction, using a key like `(value is None, value)`.
 
 ---
 
 ## Filters
 
-All filters are `AND`-ed together. Within a multi-select filter (categories, etc.), logic is `OR`.
+All filters are `AND`-ed together. Within a multi-select filter (categories,
+etc.), logic is `OR`.
 
 ### Tier 1 — Essential (implement first)
 
@@ -81,7 +86,8 @@ All filters are `AND`-ed together. Within a multi-select filter (categories, etc
 - **Data Fields:** `min_players`, `max_players`
 - **Filter Type:** Range (integer)
 - **Component:** `dmc.RangeSlider` — min=1, max=dynamically set from collection
-- **Logic:** Show games where `min_players ≤ selected_max AND max_players ≥ selected_min`
+- **Logic:** Show games where `min_players ≤ selected_max AND max_players ≥
+  selected_min`
 - **Priority:** ⭐⭐⭐
 
 #### 2. Complexity (Weight)
@@ -89,16 +95,19 @@ All filters are `AND`-ed together. Within a multi-select filter (categories, etc
 - **Data Field:** `game.complexity` (1.0–5.0)
 - **Filter Type:** Range (float)
 - **Component:** `dmc.RangeSlider` — min=1.0, max=5.0, step=0.1
-- **Logic:** Show games where `min ≤ complexity ≤ max`. Games with `complexity = None` are hidden when filter is active.
+- **Logic:** Show games where `min ≤ complexity ≤ max`. Games with `complexity
+  = None` are hidden when filter is active.
 - **Priority:** ⭐⭐⭐
 
 #### 3. Play Time
 
 - **Data Fields:** `min_play_time`, `max_play_time`
 - **Filter Type:** Range (integer, in minutes)
-- **Component:** `dmc.RangeSlider` — min=0, max=240+ (cap at 240, meaning "240+"), step=15. Add a `dmc.ChipGroup` for
-  quick-filters: "< 30 min", "30–60 min", "60–120 min", "120+ min".
-- **Logic:** Show games where `min_play_time ≤ selected_max AND max_play_time ≥ selected_min`
+- **Component:** `dmc.RangeSlider` — min=0, max=240+ (cap at 240, meaning
+  "240+"), step=15. Add a `dmc.ChipGroup` for quick-filters: "< 30 min",
+  "30–60 min", "60–120 min", "120+ min".
+- **Logic:** Show games where `min_play_time ≤ selected_max AND max_play_time ≥
+  selected_min`
 - **Priority:** ⭐⭐⭐
 
 #### 4. BGG Rating
@@ -106,17 +115,20 @@ All filters are `AND`-ed together. Within a multi-select filter (categories, etc
 - **Data Field:** `game.bgg_rating` (1.0–10.0)
 - **Filter Type:** Range (float)
 - **Component:** `dmc.RangeSlider` — min=1.0, max=10.0, step=0.1
-- **Logic:** Show games where `min ≤ bgg_rating ≤ max`. Games with `bgg_rating = None` excluded when active.
+- **Logic:** Show games where `min ≤ bgg_rating ≤ max`. Games with `bgg_rating
+  = None` excluded when active.
 - **Priority:** ⭐⭐⭐
 
 #### 5. Category
 
 - **Data Field:** `game.categories` (many-to-many)
 - **Filter Type:** Multi-select categorical (OR within)
-- **Component:** `dmc.MultiSelect` — searchable, dynamically populated from collection
+- **Component:** `dmc.MultiSelect` — searchable, dynamically populated from
+  collection
 - **Logic:** Show games with **at least one** selected category.
 - **Priority:** ⭐⭐⭐
-- **Note:** Limit to categories appearing in at least 2 games in the collection to reduce noise.
+- **Note:** Limit to categories appearing in at least 2 games in the
+  collection to reduce noise.
 
 #### 6. Name Search
 
@@ -134,33 +146,39 @@ All filters are `AND`-ed together. Within a multi-select filter (categories, etc
 
 - **Data Field:** `CollectionItem.ownership_status.name`
 - **Filter Type:** Categorical, multi-select toggle
-- **Component:** `dmc.ChipGroup` (multi=True) with chips: "Owned", "Prev. Owned", "Want to Buy"
+- **Component:** `dmc.ChipGroup` (multi=True) with chips: "Owned", "Prev.
+  Owned", "Want to Buy"
 - **Default:** Owned only.
-- **Warning:** Display a `dmc.Alert` when user selects "All" without other active filters, noting it may load a
-  large number of games.
+- **Warning:** Display a `dmc.Alert` when user selects "All" without other
+  active filters, noting it may load a large number of games.
 - **Priority:** ⭐⭐
-- **Note:** Requires changing the initial data load to fetch all statuses, not just `own=True`.
+- **Note:** Requires changing the initial data load to fetch all statuses,
+  not just `own=True`.
 
 #### 8. Year Released
 
 - **Data Field:** `game.release_year`
 - **Filter Type:** Range (integer)
-- **Component:** `dmc.RangeSlider` — min=dynamically set, max=current year, step=1
+- **Component:** `dmc.RangeSlider` — min=dynamically set, max=current year,
+  step=1
 - **Priority:** ⭐⭐
 
 #### 9. BGG Rank
 
 - **Data Field:** `game.bgg_rank`
 - **Filter Type:** Single upper bound
-- **Component:** `dmc.NumberInput` ("Show only games ranked better than: ___") or `dmc.Slider`
-- **Logic:** Show games where `bgg_rank ≤ threshold`. Games with `bgg_rank = None` excluded when active.
+- **Component:** `dmc.NumberInput` ("Show only games ranked better than: ___")
+  or `dmc.Slider`
+- **Logic:** Show games where `bgg_rank ≤ threshold`. Games with `bgg_rank =
+  None` excluded when active.
 - **Priority:** ⭐⭐
 
 #### 10. Minimum Age
 
 - **Data Field:** `game.min_age`
 - **Filter Type:** Single upper bound (show games suitable *up to* a given age)
-- **Component:** `dmc.Select` with options: "Any", "6+", "8+", "10+", "12+", "14+", "18+"
+- **Component:** `dmc.Select` with options: "Any", "6+", "8+", "10+", "12+",
+  "14+", "18+"
 - **Logic:** Show games where `min_age ≤ selected_max_age`
 - **Priority:** ⭐ (niche but clear use case for families)
 

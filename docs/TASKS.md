@@ -14,7 +14,7 @@ user's collection.
 
 ## Phase 1: Database & Data Ingestion Refinement
 
-### Goal: Ensure the SQLModel schema can store all necessary BGG data and the API client can populate it
+### Goal: Ensure SQLModel schema stores all BGG data and API client populates it
 
 - **Task 1.1: Update `Game` Model for `bgg_id`**
   - **Status:** **COMPLETED**
@@ -115,8 +115,9 @@ user's collection.
 
 - **Testing & Quality Assurance**:
   - **Status:** **COMPLETED**
-  - **Action:** Implemented comprehensive `pytest` suite covering BGG ingestion, local image caching, collection sync,
-      and UI callbacks. Added full type annotations to all test modules.
+  - **Action:** Implemented comprehensive `pytest` suite covering BGG
+      ingestion, local image caching, collection sync, and UI callbacks. Added
+      full type annotations to all test modules.
 - **Error Handling and Loading States**: Throughout the UI, implement
   `dmc.LoadingOverlay` or other indicators for API calls and database fetches.
   Add robust `try-except` blocks for all data operations.
@@ -137,52 +138,65 @@ user's collection.
 
 - **Task 6.1: Reset Modal Scroll on Navigation**
 - - **Status:** **PENDING**
-- - **Description:** Ensure the modal content resets to the top when navigating between associated games.
-  - **Action:** Update the modal rendering logic or use a client-side callback to reset scroll position whenever the
-      `bgg_id` changes.
+- - **Description:** Ensure the modal content resets to the top when navigating
+    between associated games.
+  - **Action:** Update the modal rendering logic or use a client-side callback
+      to reset scroll position whenever the `bgg_id` changes.
 - - **Status:** **COMPLETED**
-  - **Description:** Implemented via a client-side callback in `pages/collection.py` that targets the Mantine
-      Modal body's scroll position.
+  - **Description:** Implemented via a client-side callback in
+      `pages/collection.py` that targets the Mantine Modal body's scroll
+      position.
 
 - **Task 6.2: Implement Navigation History (Back/Forward)**
 - - **Status:** **PENDING**
-- - **Description:** Allow users to navigate through the history of games viewed within the current modal session.
-  - **Action:** Maintain a `dcc.Store` holding a stack of visited `bgg_id`s. Add "Back" and "Forward" buttons to the
-      modal header that update the current `bgg_id` from the stack.
+- - **Description:** Allow users to navigate through the history of games
+    viewed within the current modal session.
+  - **Action:** Maintain a `dcc.Store` holding a stack of visited `bgg_id`s.
+      Add "Back" and "Forward" buttons to the modal header that update the
+      current `bgg_id` from the stack.
 - - **Status:** **COMPLETED**
-  - **Description:** Developed a history tracking system using `modal-history-store` and dedicated navigation buttons
-      in the modal header.
+  - **Description:** Developed a history tracking system using
+      `modal-history-store` and dedicated navigation buttons in the modal
+      header.
 
 - **Task 6.3: Expandable Sections for Associated Games**
   - **Status:** **PENDING**
-  - **Description:** Use accordions or tabs to group associated games by type (Expansions, Reimplementations, etc.).
-  - **Action:** Replace the flat list of associated games with `dmc.Accordion`, allowing users to expand categories and
-      save vertical space.
+  - **Description:** Use accordions or tabs to group associated games by type
+    (Expansions, Reimplementations, etc.).
+  - **Action:** Replace the flat list of associated games with `dmc.Accordion`,
+      allowing users to expand categories and save vertical space.
 - - **Status:** **COMPLETED**
-  - **Description:** Integrated `dmc.Accordion` to group related games by relationship type (Expansion,
-      Reimplementation, etc.) with count indicators.
+  - **Description:** Integrated `dmc.Accordion` to group related games by
+      relationship type (Expansion, Reimplementation, etc.) with count
+      indicators.
 
 - **Task 6.4: Detail Modal Layout Reorganization**
 - - **Status:** **PENDING**
-- - **Description:** Move the "Associated Games" section to the bottom and prioritize core game info.
-  - **Action:** Refactor the modal body to list description and stats first, moving the more voluminous associated
-      games list to a secondary section or the bottom.
+- - **Description:** Move the "Associated Games" section to the bottom and
+    prioritize core game info.
+  - **Action:** Refactor the modal body to list description and stats first,
+      moving the more voluminous associated games list to a secondary section
+      or the bottom.
   - **Status:** **COMPLETED**
-  - **Description:** Modal content restructured to feature high-res image and stats at the top, with voluminous related
-      games moved to the bottom.
+  - **Description:** Modal content restructured to feature high-res image and
+      stats at the top, with voluminous related games moved to the bottom.
 
 - **Task 6.5: External BGG Link**
 - - **Status:** **PENDING**
-- - **Description:** Provide a direct link to the game's page on BoardGameGeek.
-- - **Action:** Add a `dmc.Anchor` or "View on BGG" button in the modal footer or header.
+- - **Description:** Provide a direct link to the game's page on
+    BoardGameGeek.
+- - **Action:** Add a `dmc.Anchor` or "View on BGG" button in the modal footer
+    or header.
 - - **Status:** **COMPLETED**
 - - **Description:** Added a "View on BGG" anchor button in the modal title group.
 
 - **Task 6.6: Animate Collection Cards**
 - - **Status:** **PENDING**
-- - **Description:** Animate card interface when loading/filtering collection interface.
+- - **Description:** Animate card interface when loading/filtering collection
+    interface.
 - - **Status:** **COMPLETED**
-- - **Description:** Added CSS transitions for hover states (lift and shadow) to provide a more tactile and premium feel.
+- - **Description:** Added CSS transitions for hover states (lift and shadow) to
+    provide a more tactile and premium feel.
 
 ---
 
@@ -192,21 +206,29 @@ user's collection.
 
 - **Task 7.1: Collection-Level Refresh Button**
   - **Status:** **COMPLETED**
-  - **Description:** Added a button to the main collection view to manually trigger a full BGG sync.
-  - **Action:** Implemented in the collection header to trigger `save_collection_data_to_db`.
+  - **Description:** Added a button to the main collection view to manually
+      trigger a full BGG sync.
+  - **Action:** Implemented in the collection header to trigger
+      `save_collection_data_to_db`.
 - **Task 7.2: Game-Level Refresh Button**
   - **Status:** **COMPLETED**
-  - **Description:** Add a button in the detail modal to refresh data for a specific game.
-  - **Action:** Implemented a "Sync Game" button in the modal title that forces a BGG re-fetch and updates the DB.
+  - **Description:** Add a button in the detail modal to refresh data for a
+      specific game.
+  - **Action:** Implemented a "Sync Game" button in the modal title that
+      forces a BGG re-fetch and updates the DB.
 - **Task 7.3: Visual Progress Tracking for Sync**
   - **Status:** **PENDING**
-  - **Description:** Replace the generic loading overlay with a detailed progress bar during sync.
-  - **Action:** Implement a background task status tracker (possibly using `dcc.Interval` and a status file/DB
-      table) and display a `dmc.Progress` bar showing "X of Y games synced".
+  - **Description:** Replace the generic loading overlay with a detailed
+      progress bar during sync.
+  - **Action:** Implement a background task status tracker (possibly using
+      `dcc.Interval` and a status file/DB table) and display a `dmc.Progress`
+      bar showing "X of Y games synced".
 - **Task 7.4: Modal Transition Loading States**
   - **Status:** **PENDING**
-  - **Description:** Show a clear loading indicator when fetching data for an associated game within the modal.
-  - **Action:** Ensure `dmc.LoadingOverlay` covers the modal content during `bgg_id` transitions.
+  - **Description:** Show a clear loading indicator when fetching data for an
+      associated game within the modal.
+  - **Action:** Ensure `dmc.LoadingOverlay` covers the modal content during
+      `bgg_id` transitions.
 
 ---
 
@@ -216,18 +238,20 @@ user's collection.
 
 - **Task 8.1: Collection Filtering & Search**
   - **Status:** **COMPLETED**
-  - **Description:** Implemented a sidebar filter system with player count, complexity, play time, rating, and category
-      filters.
-
+  - **Description:** Implemented a sidebar filter system with player count,
+      complexity, play time, rating, and category filters.
 - **Task 8.2: Theme Customization (Dark/Light Mode)**
   - **Status:** **COMPLETED**
-  - **Description:** Implemented global theme and accent color customization in the Settings page with local storage persistence.
+  - **Description:** Implemented global theme and accent color customization in
+      the Settings page with local storage persistence.
 - **Task 8.3: Header Layout Refinement**
   - **Status:** **COMPLETED**
-  - **Description:** Improved header spacing and added visual dividers to fill empty space.
+  - **Description:** Improved header spacing and added visual dividers to fill
+      empty space.
 - **Task 8.4: BGG User Profile Link**
   - **Status:** **COMPLETED**
-  - **Description:** Added a direct link to the user's full collection on BoardGameGeek in both the header and sidebar.
+  - **Description:** Added a direct link to the user's full collection on
+      BoardGameGeek in both the header and sidebar.
 
 ---
 
@@ -237,17 +261,21 @@ user's collection.
 
 - **Task 9.1: Enhanced Ownership Badges**
   - **Status:** **PENDING**
-  - **Description:** Add badges for "Wishlist", "Want to Play", and "Want to Buy" statuses.
-  - **Action:** Map additional BGG collection flags to UI badges. Use distinct colors for each status.
+  - **Description:** Add badges for "Wishlist", "Want to Play", and "Want to
+      Buy" statuses.
+  - **Action:** Map additional BGG collection flags to UI badges. Use distinct
+      colors for each status.
 - **Task 9.2: Badge Layout & Styling Refinement**
   - **Status:** **PENDING**
-  - **Description:** Improve the placement and visibility of badges on game cards and list items.
-  - **Action:** Reposition badges (e.g., to the left of the title or below) to prevent overflow in the associated
-      games list. Explore using font styling (e.g., bolding) as an alternative indicator.
+  - **Description:** Improve the placement and visibility of badges on game
+      cards and list items.
+  - **Action:** Reposition badges (e.g., to the left of the title or below) to
+      prevent overflow in the associated games list. Explore using font styling
+      (e.g., bolding) as an alternative indicator.
 - **Task 9.3: Settings Configuration Page**
   - **Status:** **COMPLETED**
-  - **Description:** Created a dedicated settings page to manage multiple BGG usernames, active profiles, and
-      application preferences.
+  - **Description:** Created a dedicated settings page to manage multiple BGG
+      usernames, active profiles, and application preferences.
 
 ---
 
@@ -257,29 +285,31 @@ user's collection.
 
 - **Task 10.1: Strict Markdown Linting**
   - **Status:** **COMPLETED**
-  - **Description:** Configured `markdownlint` with strict rules (120-char line length, specific header/list styles) and
-      integrated it into `pre-commit` as a local system hook for reliability.
-  - **Action:** Cleaned up all documentation in `docs/` and root to pass the new strict linting rules.
-
+  - **Description:** Configured `markdownlint` with strict rules (120-char line
+      length, specific header/list styles) and integrated it into `pre-commit`
+      as a local system hook for reliability.
+  - **Action:** Cleaned up all documentation in `docs/` and root to pass the
+      new strict linting rules.
 - **Task 10.2: Initialization & Onboarding Flow**
   - **Status:** **COMPLETED**
-  - **Description:** Implemented a premium onboarding experience on the Home page for new users to connect their BGG
-      account.
+  - **Description:** Implemented a premium onboarding experience on the Home
+      page for new users to connect their BGG account.
 
 ---
 
 ## Phase 11: Collection Insights (Statistics)
 
-### Goal: Provide visual analytics and data distribution for the board game collection
+### Goal: Provide visual analytics and data distribution for the collection
 
 - **Task 11.1: Statistics Dashboard Implementation**
   - **Status:** **COMPLETED**
-  - **Description:** Developed a comprehensive Statistics page with 6 interactive Plotly charts (Complexity, Player
-      Count, Status, etc.) and summary cards.
+  - **Description:** Developed a comprehensive Statistics page with 6
+      interactive Plotly charts (Complexity, Player Count, Status, etc.) and
+      summary cards.
 - **Task 11.2: Dynamic Chart Styling**
   - **Status:** **COMPLETED**
-  - **Description:** Integrated Plotly with the Mantine dark theme, ensuring charts have transparent backgrounds and
-      consistent typography.
+  - **Description:** Integrated Plotly with the Mantine dark theme, ensuring
+      charts have transparent backgrounds and consistent typography.
 
 ---
 
@@ -289,17 +319,21 @@ user's collection.
 
 - **Task 12.1: Local Store Integration**
   - **Status:** **COMPLETED**
-  - **Description:** Migrated active user tracking to `dcc.Store` with `storage_type="local"`, allowing different
-      users on the same app instance to have separate active profiles.
+  - **Description:** Migrated active user tracking to `dcc.Store` with
+      `storage_type="local"`, allowing different users on the same app instance
+      to have separate active profiles.
 
 ---
 
 ## Known Bugs & Improvements
 
-- **Completed:** Improved game card title visibility using a marquee effect and better badge positioning.
-- **Completed:** Stabilized CI tests by mocking database-dependent settings calls.
-- **Completed:** Resolved hardcoded page size limits by dynamically reading the user settings database in the
-  collection view.
-- **Completed:** Implemented automated background sync checking for the `auto_refresh` setting on collection page
-  load.
-- **Pending:** Sync progress bar (Task 7.3) still needs integration with background thread state.
+- **Completed:** Improved game card title visibility using a marquee effect and
+  better badge positioning.
+- **Completed:** Stabilized CI tests by mocking database-dependent settings
+  calls.
+- **Completed:** Resolved hardcoded page size limits by dynamically reading
+  the user settings database in the collection view.
+- **Completed:** Implemented automated background sync checking for the
+  `auto_refresh` setting on collection page load.
+- **Pending:** Sync progress bar (Task 7.3) still needs integration with
+  background thread state.

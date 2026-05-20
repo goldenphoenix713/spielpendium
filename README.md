@@ -5,25 +5,30 @@
 ![Coverage](./coverage.svg)
 [![CI](https://github.com/goldenphoenix713/spielpendium/actions/workflows/ci.yml/badge.svg?branch=restructure)](https://github.com/goldenphoenix713/spielpendium/actions/workflows/ci.yml)
 
-Spielpendium allows users to create a compendium of their board games. A user can create their list by searching
-through BoardGameGeek's online catalog and adding games. Additionally, if a user has a collection on
-BoardGameGeek, they can import that list.
+Spielpendium allows users to create a compendium of their board games. A user
+can create their list by searching through BoardGameGeek's online catalog and
+adding games. Additionally, if a user has a collection on BoardGameGeek, they
+can import that list.
 
-The name is a portmanteau of "spiel" (German for "game", a reference to Germany's centrality in the board game
-sphere) and "compendium".
+The name is a portmanteau of "spiel" (German for "game", a reference to
+Germany's centrality in the board game sphere) and "compendium".
 
 ## Features
 
-- **Deep Collection Insights**: Visualize your library through interactive charts. Analyze complexity distributions,
-  player count support, and category breakdowns.
-- **Guided Onboarding**: Seamless first-visit experience that helps new users connect their BGG account and
-  initialize their local dashboard.
+- **Deep Collection Insights**: Visualize your library through interactive
+  charts. Analyze complexity distributions, player count support, and category
+  breakdowns.
+- **Guided Onboarding**: Seamless first-visit experience that helps new users
+  connect their BGG account and initialize their local dashboard.
 - **Import from BGG**: Seamlessly import your existing BoardGameGeek collection.
-- **Detailed Game Information**: View comprehensive details including high-resolution images, descriptions,
-  complexities, player counts, designers, and publishers.
-- **Collection Management**: Organize and visualize your board games in a beautiful, interactive card grid.
-- **Associated Games Tracking**: Track expansions, accessories, and reimplementations. Easily see what items from a
-  board game family are already in your collection.
+- **Detailed Game Information**: View comprehensive details including
+  high-resolution images, descriptions, complexities, player counts,
+  designers, and publishers.
+- **Collection Management**: Organize and visualize your board games in a
+  beautiful, interactive card grid.
+- **Associated Games Tracking**: Track expansions, accessories, and
+  reimplementations. Easily see what items from a board game family are already
+  in your collection.
 
 ## Technology Stack
 
@@ -35,7 +40,8 @@ Spielpendium is built using modern Python web technologies:
 ## Setup and Installation
 
 1. Ensure you have Python 3.11+ installed.
-2. Install `uv` if you haven't already: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+2. Install `uv` if you haven't already:
+   `curl -LsSf https://astral.sh/uv/install.sh | sh`
 3. Clone the repository and navigate into the directory.
 4. Install dependencies:
 

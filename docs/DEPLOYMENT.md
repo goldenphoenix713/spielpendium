@@ -1,14 +1,16 @@
 # Spielpendium Operations and Deployment Guide
 
-This guide details the procedures for deploying **Spielpendium** to production environments, setting up containerization
-using Docker, and managing database operations.
+This guide details the procedures for deploying **Spielpendium** to production
+environments, setting up containerization using Docker, and managing database
+operations.
 
 ---
 
 ## 1. Production Deployment Architectures
 
-For development, Dash runs using Werkzeug's single-threaded server. In a production environment, you must use a
-production WSGI/ASGI server behind a reverse proxy for reliability and performance.
+For development, Dash runs using Werkzeug's single-threaded server. In a
+production environment, you must use a production WSGI/ASGI server behind a
+reverse proxy for reliability and performance.
 
 ```mermaid
 graph LR
@@ -25,7 +27,8 @@ Install `gunicorn` inside your production python environment:
 pip install gunicorn
 ```
 
-To run Spielpendium with Gunicorn, bind it to port `8000` and define the entry point (`app:server`):
+To run Spielpendium with Gunicorn, bind it to port `8000` and define the entry
+point (`app:server`):
 
 ```bash
 gunicorn --workers 4 --bind 0.0.0.0:8000 app:server
@@ -33,11 +36,13 @@ gunicorn --workers 4 --bind 0.0.0.0:8000 app:server
 
 > [!TIP]
 > **Worker Counts**
-> The recommended number of Gunicorn workers is `2 * number_of_cores + 1`. For a 2-core cloud VM, use 5 workers.
+> The recommended number of Gunicorn workers is `2 * number_of_cores + 1`. For
+> a 2-core cloud VM, use 5 workers.
 
 ### Reverse Proxy (Nginx)
 
-Configure Nginx as a reverse proxy in `/etc/nginx/sites-available/spielpendium`:
+Configure Nginx as a reverse proxy in
+`/etc/nginx/sites-available/spielpendium`:
 
 ```nginx
 server {
@@ -65,8 +70,9 @@ server {
 
 ## 2. Dockerization
 
-Spielpendium includes standard containerization files to build and deploy effortlessly on Docker, Kubernetes, or
-container platforms (e.g. Google Cloud Run).
+Spielpendium includes standard containerization files to build and deploy
+effortlessly on Docker, Kubernetes, or container platforms (e.g. Google Cloud
+Run).
 
 ### `Dockerfile`
 
@@ -130,22 +136,26 @@ volumes:
 
 ## 3. Database Administration & Backups
 
-Spielpendium uses a single, robust SQLite database file powered by SQLModel/SQLAlchemy. SQLite is incredibly fast,
-simple, and self-contained, which makes backups effortless.
+Spielpendium uses a single, robust SQLite database file powered by
+SQLModel/SQLAlchemy. SQLite is incredibly fast, simple, and self-contained,
+which makes backups effortless.
 
 ### Finding Your Database File
 
 By default, the database is stored at:
 
-- **Development**: `/Users/eddie/python_projects/spielpendium/db/spielpendium.db` (or relative path in project folder)
+- **Development**: `/Users/eddie/python_projects/spielpendium/db/spielpendium.db`
+  (or relative path in project folder)
 - **Docker Volume**: `/app/data/collection.db`
 
 ### Backing Up the Database
 
-Because SQLite is a single file, you can create a safe, consistent snapshot by performing a backup command.
+Because SQLite is a single file, you can create a safe, consistent snapshot by
+performing a backup command.
 
 **Using the SQLite CLI (Recommended)**:
-This command performs an online backup without locking the database or disrupting users:
+This command performs an online backup without locking the database or
+disrupting users:
 
 ```bash
 sqlite3 db/spielpendium.db ".backup 'db/spielpendium_backup_$(date +%F).db'"
@@ -159,7 +169,8 @@ cp db/spielpendium.db db/spielpendium_backup.db
 
 ### Restoring the Database
 
-To restore a backup, stop the application, rename the active database, and replace it with the backup:
+To restore a backup, stop the application, rename the active database, and
+replace it with the backup:
 
 ```bash
 mv db/spielpendium.db db/spielpendium_corrupted.db
@@ -169,14 +180,15 @@ cp db/spielpendium_backup.db db/spielpendium.db
 ### Database Migration Policy
 
 - The database schema is managed automatically by SQLModel.
-- On startup, the system calls `create_db_and_tables()` to safely add new tables or missing columns without deleting
-  existing data.
+- On startup, the system calls `create_db_and_tables()` to safely add new tables
+  or missing columns without deleting existing data.
 
 ---
 
 ## 4. Production Cloud Deployment (Render)
 
-Spielpendium v1.0.0 is fully optimized for containerless cloud application hosting on platforms like **Render**.
+Spielpendium v1.0.0 is fully optimized for containerless cloud application
+hosting on platforms like **Render**.
 
 ### Render Service Settings
 
@@ -186,7 +198,8 @@ Configure a new **Web Service** on Render with the following configuration:
 - **Branch**: `main`
 - **Build Command**: `uv sync`
 - **Start Command**: `uv run gunicorn app:server`
-- **Auto-Deploy**: `On` (or manual trigger if webhook authorizations are limited)
+- **Auto-Deploy**: `On` (or manual trigger if webhook authorizations are
+  limited)
 
 ### Environment Variables
 
@@ -194,19 +207,25 @@ Add these key environment variables in the Render Dashboard:
 
 - **`BGG_API_TOKEN`**: Your BoardGameGeek XML API developer token (required).
 - **`TEST_USER`**: Default profile user to seed/onboard collections (optional).
-- **`DB_FILE`**: Leave this variable **unset** to allow the application to default database storage into `/opt/render/project/src/db/spielpendium.sqlite`.
+- **`DB_FILE`**: Leave this variable **unset** to allow the application to
+  default database storage into
+  `/opt/render/project/src/db/spielpendium.sqlite`.
 
 ### Persistent Volume Attachment (CRITICAL)
 
-SQLite databases and downloaded game images will be lost on container restarts if not saved to persistent storage.
+SQLite databases and downloaded game images will be lost on container restarts
+if not saved to persistent storage.
 
 1. In your Render Dashboard, navigate to **Disks** -> **Add Disk**.
 2. Name the disk: `spielpendium-data` (or similar).
 3. Set the **Mount Path** to precisely: `/opt/render/project/src/db`.
-4. Set the **Size** to `1 GiB` (more than enough for tens of thousands of games and high-resolution cached images).
+4. Set the **Size** to `1 GiB` (more than enough for tens of thousands of games
+   and high-resolution cached images).
 
 ### Image Persistence Mechanism
 
-Upon booting, the application's directory manager (`config/directories.py`) automatically initializes `db/images/`
-inside the attached disk and replaces `assets/images/` with a dynamic OS symbolic link. This ensures all downloaded game
-thumbnail assets persist perfectly across redeploys, scaling changes, and restarts with zero manual configuration.
+Upon booting, the application's directory manager (`config/directories.py`)
+automatically initializes `db/images/` inside the attached disk and replaces
+`assets/images/` with a dynamic OS symbolic link. This ensures all downloaded
+game thumbnail assets persist perfectly across redeploys, scaling changes, and
+restarts with zero manual configuration.

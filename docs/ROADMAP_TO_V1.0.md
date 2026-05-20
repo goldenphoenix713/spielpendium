@@ -1,7 +1,8 @@
 # Roadmap to v1.0.0 (COMPLETED)
 
-This document outlines the milestones, feature polish, test coverage, and documentation that were successfully executed
-to transition **Spielpendium** to a stable, production-ready **v1.0.0** release.
+This document outlines the milestones, feature polish, test coverage, and
+documentation that were successfully executed to transition **Spielpendium** to
+a stable, production-ready **v1.0.0** release.
 
 ---
 
@@ -9,16 +10,20 @@ to transition **Spielpendium** to a stable, production-ready **v1.0.0** release.
 
 ### Realtime Sync Progress Feedback (Task 7.3)
 
-Currently, the "Refresh Database" button triggers a background ingestion thread, but the UI only polls the completion
-status. We need a live, granular progress bar showing exact ingestion updates.
+Currently, the "Refresh Database" button triggers a background ingestion thread,
+but the UI only polls the completion status. We need a live, granular progress
+bar showing exact ingestion updates.
 
-- **Objective**: Bind `sync-progress-bar` to represent `current / total * 100` dynamically during active syncs.
-- **Action**: Modify the background thread in `pages/collection.py` to write progress increments to the DB status or
-  cache, allowing `dcc.Interval` to fetch and render the live status (e.g., "Fetched 45 of 120 games...").
+- **Objective**: Bind `sync-progress-bar` to represent `current / total * 100`
+  dynamically during active syncs.
+- **Action**: Modify the background thread in `pages/collection.py` to write
+  progress increments to the DB status or cache, allowing `dcc.Interval` to
+  fetch and render the live status (e.g., "Fetched 45 of 120 games...").
 
 ### Expanded Ownership Badges (Task 9.1)
 
-Display distinct, visual badges for all board game ownership categories on the game cards and detail views.
+Display distinct, visual badges for all board game ownership categories on the
+game cards and detail views.
 
 - **Objective**: Standardize badge rendering for all BGG collection statuses:
   - *Own* (Green)
@@ -29,58 +34,74 @@ Display distinct, visual badges for all board game ownership categories on the g
   - *Want To Buy* (Orange)
   - *Preordered* (Blue)
   - *Wishlist* (Pink)
-- **Action**: Update `STATUS_BADGE_CONFIG` in `pages/collection.py` to cover all statuses with HSL-tailored colors.
+- **Action**: Update `STATUS_BADGE_CONFIG` in `pages/collection.py` to cover
+  all statuses with HSL-tailored colors.
 
 ### List and Grid View Toggle
 
-Provide the user with a toggle to switch between a visual card grid and a compact list/table view for large
-collections.
+Provide the user with a toggle to switch between a visual card grid and a
+compact list/table view for large collections.
 
 - **Objective**: Cater to power users who prefer high-density tabular formats.
-- **Action**: Add a view-toggle component to the settings and collection header, storing the preferred view in
-  `dcc.Store`.
+- **Action**: Add a view-toggle component to the settings and collection
+  header, storing the preferred view in `dcc.Store`.
 
 ---
 
 ## 2. Advanced Documentation & User Guides
 
-A stable v1.0 release requires comprehensive documentation to enable effortless onboarding and self-hosting.
+A stable v1.0 release requires comprehensive documentation to enable effortless
+onboarding and self-hosting.
 
 ### User Guide (`docs/USER_GUIDE.md`)
 
-Create a visually rich user guide explaining how to make the most of Spielpendium:
+Create a visually rich user guide explaining how to make the most of
+Spielpendium:
 
-- **Connecting BGG Accounts**: How to find your username, BGG API queue times, and fetching sync statuses.
-- **Filtering & Search**: Detailed instructions on player count matching, rating ranges, and multi-category filtering.
-- **Theme & Accent Selection**: Setting dark/light modes and managing user preferences.
+- **Connecting BGG Accounts**: How to find your username, BGG API queue times,
+  and fetching sync statuses.
+- **Filtering & Search**: Detailed instructions on player count matching,
+  rating ranges, and multi-category filtering.
+- **Theme & Accent Selection**: Setting dark/light modes and managing user
+  preferences.
 
 ### Operations and Deployment Guide (`docs/DEPLOYMENT.md`)
 
 Guide self-hosters through deploying Spielpendium in production environments:
 
-- **Production Builds**: Running behind reverse proxies (e.g., Nginx) and WSGI/ASGI servers (Gunicorn/Uvicorn).
-- **Dockerization**: A standard `Dockerfile` and `docker-compose.yml` configuration for automated container builds.
-- **Database Backups**: How to safely backup, restore, and migrate the underlying SQLite database file.
+- **Production Builds**: Running behind reverse proxies (e.g., Nginx) and
+  WSGI/ASGI servers (Gunicorn/Uvicorn).
+- **Dockerization**: A standard `Dockerfile` and `docker-compose.yml`
+  configuration for automated container builds.
+- **Database Backups**: How to safely backup, restore, and migrate the
+  underlying SQLite database file.
 
 ### API Reference (`docs/API_REFERENCE.md`)
 
-Document the internals of the `api/bgg_api` module and `util/` libraries for future developers:
+Document the internals of the `api/bgg_api` module and `util/` libraries for
+future developers:
 
-- **Module Architecture**: Schema overview of `client.py`, `game_details.py`, `images.py`, and `collection.py`.
-- **Extending Models**: Guidelines for adding new fields or custom SQLModel tables.
+- **Module Architecture**: Schema overview of `client.py`, `game_details.py`,
+  `images.py`, and `collection.py`.
+- **Extending Models**: Guidelines for adding new fields or custom SQLModel
+  tables.
 
 ---
 
 ## 3. Testing & Robustness Expansion
 
-While our core test suite is highly stable, v1.0 requires comprehensive integration and load testing.
+While our core test suite is highly stable, v1.0 requires comprehensive
+integration and load testing.
 
 ### Load and Performance Testing (`tests/test_performance.py`)
 
-Ensure database queries, collection filters, and card layouts remain responsive under heavy loads.
+Ensure database queries, collection filters, and card layouts remain responsive
+under heavy loads.
 
-- **Scenario**: Simulate collections with `1,000+` games and `10,000+` related game relationships.
-- **Objective**: Keep database querying and JSON transformations under `100ms`, and page layout rendering under `500ms`.
+- **Scenario**: Simulate collections with `1,000+` games and `10,000+` related
+  game relationships.
+- **Objective**: Keep database querying and JSON transformations under `100ms`,
+  and page layout rendering under `500ms`.
 
 ### End-to-End Onboarding Test (`tests/test_e2e_onboarding.py`)
 
@@ -94,8 +115,10 @@ Simulate the entire user flow in a single automated integration test.
 
 ### BGG API Rate-Limit Resilience
 
-- **Objective**: Guard against BGG API rate limits (HTTP 429) during large sync operations.
-- **Action**: Implement robust exponential backoff retry handlers inside `api/bgg_api/client.py`.
+- **Objective**: Guard against BGG API rate limits (HTTP 429) during large sync
+  operations.
+- **Action**: Implement robust exponential backoff retry handlers inside
+  `api/bgg_api/client.py`.
 
 ---
 
@@ -123,5 +146,6 @@ graph TD
 - [x] Add distinct colors and configuration badges for all 8 BGG ownership statuses.
 - [x] Create `docs/USER_GUIDE.md` and `docs/DEPLOYMENT.md` files.
 - [x] Set up robust exponential backoff on the HTTP client for BGG.
-- [x] Write E2E integration test covering onboarding, collection loading, and stats navigation.
-- [x] Ensure 100% compliance with strict pre-commit hooks (formatting, types, markdown linting).
+- [x] Write E2E integration test covering onboarding, collection loading, and
+  stats navigation.
+- [x] Ensure 100% compliance with pre-commit hooks (formatting, types, linting).

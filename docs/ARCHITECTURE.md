@@ -2,10 +2,11 @@
 
 ## Overview
 
-Spielpendium is a local-first Dash web application designed for high-performance board game collection management.
-It syncs a user's BoardGameGeek (BGG) collection, stores metadata in a local SQLite database, and serves a
-premium, dark-mode-optimized UI. It uses browser-local storage to support individual user sessions even when
-sharing a single database instance.
+Spielpendium is a local-first Dash web application designed for
+high-performance board game collection management. It syncs a user's
+BoardGameGeek (BGG) collection, stores metadata in a local SQLite database, and
+serves a premium, dark-mode-optimized UI. It uses browser-local storage to
+support individual user sessions even when sharing a single database instance.
 
 ---
 
@@ -60,7 +61,8 @@ returns the `Dash` app with the `MantineProvider` + `AppShell` layout.
 
 This directory contains API-related modules.
 
-- **`api/bgg_api/`**: All BGG communication, split into a package for maintainability. Key modules:
+- **`api/bgg_api/`**: All BGG communication, split into a package for
+  maintainability. Key modules:
   - **`client.py`**: Base XML fetching and error handling.
   - **`game_details.py`**: Parsing game-specific info (stats, related games).
   - **`images.py`**: Managing image storage on the filesystem.
@@ -77,12 +79,14 @@ Public interface handles:
 | `get_single_image()` | Download image bytes from CDN (no auth header) |
 | `search_bgg()` | Search BGG by title |
 
-All requests to the BGG XML API include an `Authorization: Bearer <token>` header
-from `BGG_API_TOKEN`. Image CDN requests (`get_single_image()`) intentionally
-omit this header as they hit a different domain. Retry logic handles BGG's
-202 (data generating) and 429 (rate limited) responses automatically.
+All requests to the BGG XML API include an `Authorization: Bearer <token>`
+header from `BGG_API_TOKEN`. Image CDN requests (`get_single_image()`)
+intentionally omit this header as they hit a different domain. Retry logic
+handles BGG's 202 (data generating) and 429 (rate limited) responses
+automatically.
 
-See `docs/BGG_API.md` for full API documentation, including how to obtain a token.
+See `docs/BGG_API.md` for full API documentation, including how to obtain a
+token.
 
 ### `util/models.py`
 
@@ -96,23 +100,27 @@ module-level `engine` connected to `config.DB_FILE`.
 
 ### `pages/collection.py`
 
-The main page. Renders the game card grid and the game detail modal. Callbacks in this file query the DB directly via
-`Session(engine)` and react to the `active-user-store`.
+The main page. Renders the game card grid and the game detail modal. Callbacks
+in this file query the DB directly via `Session(engine)` and react to the
+`active-user-store`.
 
 ### `pages/statistics.py`
 
-The analytics dashboard. Uses `pandas` and `plotly` to generate interactive visualizations (Complexity, Player Count,
-Category distribution, etc.) based on the user's collection data.
+The analytics dashboard. Uses `pandas` and `plotly` to generate interactive
+visualizations (Complexity, Player Count, Category distribution, etc.) based on
+the user's collection data.
 
 ### `pages/home.py`
 
-Handles the initial onboarding flow. Detects if a user has connected a BGG account in their current browser using the
-`active-user-store` and provides a guided setup experience if not.
+Handles the initial onboarding flow. Detects if a user has connected a BGG
+account in their current browser using the `active-user-store` and provides a
+guided setup experience if not.
 
 ### `api/bgg_api/images.py`
 
-Helper module that downloads and saves raw image bytes from BGG to the local `assets/images` directory, returning the
-final filesystem path for the DB to reference.
+Helper module that downloads and saves raw image bytes from BGG to the local
+`assets/images` directory, returning the final filesystem path for the DB to
+reference.
 
 ### `util/log.py`
 
