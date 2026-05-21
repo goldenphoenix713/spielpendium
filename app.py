@@ -387,5 +387,12 @@ def update_header_bgg_link(username: str | None) -> tuple[str, str]:
 dash_app = generate_app()
 server = dash_app.server
 
+
+@server.route("/healthz")
+def healthz() -> tuple[str, int]:
+    """Lightweight health check endpoint for Render."""
+    return "OK", 200
+
+
 if __name__ == "__main__":
     dash_app.run(debug=True, use_reloader=False)
