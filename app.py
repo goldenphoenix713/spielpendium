@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any
 
 import dash_mantine_components as dmc
@@ -34,8 +35,9 @@ _dash_renderer._set_react_version("18.2.0")  # type: ignore  # ty: ignore[unused
 
 def generate_app() -> Dash:
     log.info("generate_app: Starting Spielpendium application...")
-    # Ensure database and tables exist on startup
-    create_db_and_tables()
+    # Ensure database and tables exist on startup (skip during testing to avoid xdist race conditions)
+    if "pytest" not in sys.modules:
+        create_db_and_tables()
 
     log.info("generate_app: Initializing Dash application...")
     app = Dash(__name__, use_pages=True, suppress_callback_exceptions=True)
