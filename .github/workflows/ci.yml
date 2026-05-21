@@ -46,6 +46,7 @@ jobs:
         env:
           DB_FILE: testing.sqlite
           BGG_USERNAME: dummy_user
+          SKIP: pytest
 
   test:
     name: Test (Group ${{ matrix.group }}/3)
