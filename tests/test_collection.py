@@ -11,8 +11,11 @@ from dash import html
 dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]  # ty: ignore[invalid-assignment]
 
 from pages.collection import (  # noqa: E402
+    dismiss_pdf_notification,
     filter_collection,
+    initiate_pdf_export,
     open_modal,
+    process_pdf_generation,
     render_grid,
 )
 from tests.test_models import create_mock_game  # noqa: E402
@@ -91,7 +94,9 @@ _DEFAULT_FILTERS: dict[str, Any] = {
 
 
 class TestGridCallbacks:
-    def _make_game_dict(self, bgg_id: int, name: str, **kwargs: Any) -> dict:
+    def _make_game_dict(
+        self, bgg_id: int, name: str, **kwargs: Any
+    ) -> dict[str, Any]:
         """Build a minimal serialized game dict for use in update_grid tests."""
         return {
             "bgg_id": bgg_id,
@@ -685,3 +690,67 @@ class TestOpenModal:
         assert not owned_or_prev, (
             "Expected no ownership badge for 'want' status"
         )
+
+
+def test_initiate_pdf_export() -> None:
+    """Test the initiation phase of PDF export."""
+    assert initiate_pdf_export(None) == dash.no_update
+    assert initiate_pdf_export(0) == dash.no_update
+
+    loading, notification, trigger_data = initiate_pdf_export(1)
+    assert loading is True
+    assert isinstance(notification, dmc.Notification)
+    assert notification.id == "pdf-export-notification"
+    assert notification.loading is True
+    assert trigger_data == {"n_clicks": 1}
+
+
+@patch("util.pdf_generator.generate_catalog_pdf")
+@patch("builtins.open", new_callable=MagicMock)
+@patch("pathlib.Path.mkdir")
+def test_process_pdf_generation(
+    mock_mkdir: MagicMock,
+    mock_open: MagicMock,
+    mock_generate_pdf: MagicMock,
+    session: Session,
+) -> None:
+    """Test the asynchronous heavy-lifting PDF generation callback."""
+    # When trigger is None
+    assert process_pdf_generation(None, None, None) == dash.no_update
+
+    # Prepare mock game data
+    game = create_mock_game(9001, "PDF Game")
+    session.add(game)
+    session.commit()
+    session.refresh(game)
+
+    filtered_games = [{"bgg_id": 9001, "name": "PDF Game"}]
+
+    # Run processing
+    res = process_pdf_generation({"n_clicks": 1}, filtered_games, "testuser")
+    assert res != dash.no_update
+    loading, notification = res
+    assert loading is False
+    assert isinstance(notification, dmc.Notification)
+    assert notification.id == "pdf-export-notification"
+    assert notification.color == "green"
+
+    # Check that directory creation and file writing occurred
+    mock_mkdir.assert_called_once()
+    import tempfile
+    from pathlib import Path
+
+    expected_path = (
+        Path(tempfile.gettempdir())
+        / "spielpendium_exports"
+        / "testuser_board_game_catalog.pdf"
+    )
+    mock_open.assert_any_call(expected_path, "wb")
+    mock_generate_pdf.assert_called_once()
+
+
+def test_dismiss_pdf_notification() -> None:
+    """Test the notification dismissal callback."""
+    assert dismiss_pdf_notification(None) == dash.no_update
+    assert dismiss_pdf_notification(0) == dash.no_update
+    assert dismiss_pdf_notification(1) is None

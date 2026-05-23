@@ -396,5 +396,17 @@ def healthz() -> tuple[str, int]:
     return "OK", 200
 
 
+@server.route("/download/pdf/<filename>")
+def download_pdf(filename: str) -> Any:
+    """Serve the generated PDF catalog from a non-watched temp directory as a download attachment."""
+    import os
+    import tempfile
+
+    from flask import send_from_directory
+
+    directory = os.path.join(tempfile.gettempdir(), "spielpendium_exports")
+    return send_from_directory(directory, filename, as_attachment=True)
+
+
 if __name__ == "__main__":
     dash_app.run(debug=True, use_reloader=False)

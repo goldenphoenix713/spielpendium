@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import io
 import math
+import tempfile
 import threading
 from html import unescape as html_unescape
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 import dash
@@ -167,6 +170,16 @@ def layout() -> dmc.Container:
                                 color="blue",
                                 size="xs",
                             ),
+                            dmc.Button(
+                                "Export PDF",
+                                id="export-pdf-btn",
+                                leftSection=DashIconify(
+                                    icon="tabler:download", width=16
+                                ),
+                                variant="light",
+                                color="green",
+                                size="xs",
+                            ),
                             dmc.SegmentedControl(
                                 id="collection-view-toggle",
                                 data=[
@@ -245,6 +258,8 @@ def layout() -> dmc.Container:
                 justify="center",
             ),
             dcc.Store(id="filtered-collection-store", data=[]),
+            dcc.Store(id="pdf-generation-trigger-store"),
+            html.Div(id="collection-notification-container"),
             dcc.Interval(id="sync-interval", interval=1000, disabled=True),
             dmc.Modal(
                 title=dmc.Group(
@@ -814,7 +829,7 @@ def start_sync(
 
     username = active_user
 
-    def run_sync():
+    def run_sync() -> None:
         try:
             get_user_game_collection(username, filters={}, force_update=True)
         except Exception as e:
@@ -1219,3 +1234,120 @@ def save_toggle_preference(value: str) -> str:
 def sync_toggle_value(layout_view: str | None) -> str:
     """Initialize/sync the view toggle from local storage."""
     return layout_view or "grid"
+
+
+@callback(
+    Output("export-pdf-btn", "loading"),
+    Output("collection-notification-container", "children"),
+    Output("pdf-generation-trigger-store", "data"),
+    Input("export-pdf-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+def initiate_pdf_export(
+    n_clicks: int | None,
+) -> tuple[bool, dmc.Notification, dict[str, Any]] | NoUpdate:
+    """Instantly show loading feedback and trigger the secondary PDF generation callback."""
+    if not n_clicks:
+        return no_update
+
+    notification = dmc.Notification(
+        id="pdf-export-notification",
+        title="Generating PDF...",
+        message="Compiling your board game catalog. This may take a few moments...",
+        loading=True,
+        autoClose=False,
+        color="blue",
+        action="show",
+    )
+    return True, notification, {"n_clicks": n_clicks}
+
+
+@callback(
+    Output("export-pdf-btn", "loading", allow_duplicate=True),
+    Output(
+        "collection-notification-container", "children", allow_duplicate=True
+    ),
+    Input("pdf-generation-trigger-store", "data"),
+    State("filtered-collection-store", "data"),
+    State("active-user-store", "data"),
+    prevent_initial_call=True,
+)
+def process_pdf_generation(
+    trigger_data: dict[str, Any] | None,
+    filtered_games: list[dict[str, Any]] | None,
+    active_user: str | None,
+) -> tuple[bool, dmc.Notification] | NoUpdate:
+    """Generate the catalog PDF, save it in the assets directory, and show a download link."""
+    if not trigger_data:
+        return no_update
+
+    username = active_user or "guest"
+    bgg_ids = []
+    if filtered_games:
+        bgg_ids = [g["bgg_id"] for g in filtered_games if "bgg_id" in g]
+
+    buffer = io.BytesIO()
+    with Session(engine) as session:
+        if bgg_ids:
+            games = session.exec(
+                select(Game).where(Game.bgg_id.in_(bgg_ids))  # type: ignore[attr-defined]  # ty:ignore[unresolved-attribute]
+            ).all()
+            game_ids = [g.id for g in games]
+        else:
+            game_ids = []
+
+        from util.pdf_generator import generate_catalog_pdf
+
+        generate_catalog_pdf(session, game_ids, buffer, username=username)
+
+    # Save generated PDF to static exports cache
+
+    export_dir = Path(tempfile.gettempdir()) / "spielpendium_exports"
+    export_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = f"{username}_board_game_catalog.pdf"
+    file_path = export_dir / filename
+    with open(file_path, "wb") as f:
+        f.write(buffer.getvalue())
+
+    download_url = f"/download/pdf/{filename}"
+
+    notification = dmc.Notification(
+        id="pdf-export-notification",
+        title="PDF Export Ready",
+        message=html.Span([
+            "Your board game catalog is ",
+            html.A(
+                "ready",
+                id="pdf-download-link",
+                href=download_url,
+                download=filename,
+                style={
+                    "cursor": "pointer",
+                    "textDecoration": "underline",
+                    "color": "var(--mantine-color-anchor)",
+                },
+            ),
+            "!",
+        ]),
+        autoClose=False,
+        color="green",
+        icon=DashIconify(icon="tabler:check"),
+        action="update",
+        loading=False,
+    )
+    return False, notification
+
+
+@callback(
+    Output(
+        "collection-notification-container", "children", allow_duplicate=True
+    ),
+    Input("pdf-download-link", "n_clicks"),
+    prevent_initial_call=True,
+)
+def dismiss_pdf_notification(n_clicks: int | None) -> Any:
+    """Clear the notification once the user clicks the download link."""
+    if n_clicks:
+        return None
+    return no_update

@@ -222,6 +222,7 @@ __marimo__/
 db
 log
 old/
+ref/
 .idea
 test.*
 assets/images
@@ -229,3 +230,5 @@ assets/images
 node_modules/
 package.json
 package-lock.json
+*.pdf
+exports/
