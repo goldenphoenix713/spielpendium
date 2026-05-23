@@ -48,12 +48,29 @@ def main() -> None:
 
     print("Connecting to database...")
     with Session(engine) as session:
-        # Fetch game IDs ordered by name
-        stmt = select(Game.id).order_by(Game.name)
-        if args.limit is not None:
-            stmt = stmt.limit(args.limit)
+        # Determine if we should query a specific user's collection or all games
+        if args.username and args.username.lower() != "guest":
+            from api import get_user_game_collection
 
-        game_ids = list(session.exec(stmt).all())
+            collection = get_user_game_collection(args.username)
+            if not collection or not collection.items:
+                print(
+                    f"No collection found for user '{args.username}'. Exiting."
+                )
+                sys.exit(1)
+
+            # Extract game IDs from collection items
+            items = [item for item in collection.items if item.game]
+            # Sort games alphabetically by name
+            items.sort(key=lambda item: item.game.name.lower())
+            game_ids = [item.game_id for item in items]
+        else:
+            # Fetch all game IDs ordered by name
+            stmt = select(Game.id).order_by(Game.name)
+            game_ids = list(session.exec(stmt).all())
+
+        if args.limit is not None:
+            game_ids = game_ids[: args.limit]
 
         if not game_ids:
             print("No games found in the database. Exiting.")
