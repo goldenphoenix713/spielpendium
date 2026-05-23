@@ -456,9 +456,24 @@ def generate_catalog_pdf(
     # Sort components alphabetically by their sorting key
     ordered_components.sort(key=lambda x: x[0])
 
-    # Concatenate all ordered games
+    # Concatenate all ordered games and track the "main" base game of each component
+    main_game_ids = set()
     ordered_games = []
     for _, comp_ordered in ordered_components:
+        # Find the first base game in this component
+        first_base = next(
+            (
+                g
+                for g in comp_ordered
+                if not (
+                    expansion_to_base.get(g.id)
+                    and expansion_to_base.get(g.id) in export_game_ids
+                )
+            ),
+            None,
+        )
+        if first_base:
+            main_game_ids.add(first_base.id)
         ordered_games.extend(comp_ordered)
 
     # Cover Page Images Selection (up to 6 covers)
@@ -679,8 +694,12 @@ def generate_catalog_pdf(
         game_anchor = f"game_{game.id.hex()}"
 
         if not is_exp:
-            base_game_counter += 1
-            label = f"<a href='#{game_anchor}'><b>{base_game_counter}. {safe_xml_text(game.name)}</b></a>"
+            # Only number the primary "main" base game of the component
+            if game.id in main_game_ids:
+                base_game_counter += 1
+                label = f"<a href='#{game_anchor}'><b>{base_game_counter}. {safe_xml_text(game.name)}</b></a>"
+            else:
+                label = f"<a href='#{game_anchor}'><b>{safe_xml_text(game.name)}</b></a>"
             page_str = f"<a href='#{game_anchor}'><b>Page {page_num}</b></a>"
         else:
             label = f"<a href='#{game_anchor}'><font color='#475569'>&nbsp;&nbsp;&nbsp;&nbsp;• {safe_xml_text(game.name)}</font></a>"
