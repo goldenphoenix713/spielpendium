@@ -3,7 +3,7 @@ from __future__ import annotations
 import html
 import math
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 from loguru import logger as log
 from PIL import Image as PILImage
@@ -21,12 +21,12 @@ from reportlab.platypus import (
     Table,
     TableStyle,
 )
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from config import IMAGE_DIR
 from util.models import (
     Game,
-    GameRelationship,
     RelatedGame,
 )
 
@@ -292,123 +292,174 @@ def generate_catalog_pdf(
     export_game_ids = {g.id for g in games}
     id_to_game = {g.id: g for g in games}
 
-    # Query expansion relationships where BOTH games are in the export list
+    # Query all RelatedGame relationships (of any type) where both games are in the export list
     links = session.exec(
         select(RelatedGame)
         .where(RelatedGame.source_game_id.in_(list(export_game_ids)))  # type: ignore[attr-defined]  # ty:ignore[unresolved-attribute]
         .where(RelatedGame.target_game_id.in_(list(export_game_ids)))  # type: ignore[attr-defined]  # ty:ignore[unresolved-attribute]
-        .join(GameRelationship)
-        .where(GameRelationship.type == "boardgameexpansion")
+        .options(selectinload(cast("Any", RelatedGame.relationship_type)))
     ).all()
 
-    # Map: expansion_game_id -> base_game_id
+    # Build expansion_to_base mapping using ONLY "boardgameexpansion" relationships
     expansion_to_base = {}
     for link in links:
-        game_src = id_to_game[link.source_game_id]
-        game_tgt = id_to_game[link.target_game_id]
+        if link.relationship_type.type == "boardgameexpansion":
+            game_src = id_to_game[link.source_game_id]
+            game_tgt = id_to_game[link.target_game_id]
 
-        # Determine which is the base and which is the expansion.
-        # Generally, the base game has a smaller BGG ID than the expansion.
-        if game_src.bgg_id < game_tgt.bgg_id:
-            base_id = game_src.id
-            exp_id = game_tgt.id
-        elif game_src.bgg_id > game_tgt.bgg_id:
-            base_id = game_tgt.id
-            exp_id = game_src.id
-        else:
-            # Fallback for identical bgg_id (e.g. mock games in unit tests)
-            if len(game_src.name) < len(game_tgt.name):
+            # Determine which is the base and which is the expansion.
+            # Generally, the base game has a smaller BGG ID than the expansion.
+            if game_src.bgg_id < game_tgt.bgg_id:
                 base_id = game_src.id
                 exp_id = game_tgt.id
-            elif len(game_src.name) > len(game_tgt.name):
+            elif game_src.bgg_id > game_tgt.bgg_id:
                 base_id = game_tgt.id
                 exp_id = game_src.id
             else:
-                if game_src.id < game_tgt.id:
+                # Fallback for identical bgg_id (e.g. mock games in unit tests)
+                if len(game_src.name) < len(game_tgt.name):
                     base_id = game_src.id
                     exp_id = game_tgt.id
-                else:
+                elif len(game_src.name) > len(game_tgt.name):
                     base_id = game_tgt.id
                     exp_id = game_src.id
+                else:
+                    if game_src.id < game_tgt.id:
+                        base_id = game_src.id
+                        exp_id = game_tgt.id
+                    else:
+                        base_id = game_tgt.id
+                        exp_id = game_src.id
 
-        expansion_to_base[exp_id] = base_id
+            expansion_to_base[exp_id] = base_id
 
-    # Grouping logic:
-    # 1. Base games: either have no base game or base game is not in export list
-    base_games = []
-    # 2. Expansions: base game IS in export list
-    expansions = []
-    for g in games:
-        parent_id = expansion_to_base.get(g.id)
-        if parent_id and parent_id in export_game_ids:
-            expansions.append(g)
-        else:
-            base_games.append(g)
-
-    log.info(
-        f"generate_catalog_pdf: Processed {len(links)} expansion relationships. "
-        f"Classified into {len(base_games)} base games and {len(expansions)} expansions."
-    )
-
-    # Group and sort base games by series/franchise family if available.
+    # Build undirected adjacency list for connected components algorithm
     from collections import defaultdict
 
-    groups = defaultdict(list)
-    group_sort_keys = {}
+    adj = defaultdict(set)
 
-    for g in base_games:
-        # Find primary series/franchise family (starting with "Game:" or "Series:")
-        fam_game = next(
-            (f.name for f in g.families if f.name.startswith("Game:")), None
-        )
-        fam_series = next(
-            (f.name for f in g.families if f.name.startswith("Series:")), None
-        )
-        primary_fam = fam_game or fam_series
+    # 1. Add edges for all database relationship links (expansion, reimplementation, etc.)
+    for link in links:
+        adj[link.source_game_id].add(link.target_game_id)
+        adj[link.target_game_id].add(link.source_game_id)
 
-        if primary_fam:
-            group_key = primary_fam
-            # Remove "Game: " or "Series: " prefix for sorting
-            if primary_fam.startswith("Game:"):
-                sort_key = primary_fam[len("Game:") :].strip().lower()
+    # 2. Add edges for shared series/franchise family names
+    family_to_games = defaultdict(list)
+    for g in games:
+        for fam in g.families:
+            if fam.name.startswith("Game:") or fam.name.startswith("Series:"):
+                family_to_games[fam.name].append(g.id)
+
+    for g_ids in family_to_games.values():
+        if len(g_ids) > 1:
+            first_id = g_ids[0]
+            for other_id in g_ids[1:]:
+                adj[first_id].add(other_id)
+                adj[other_id].add(first_id)
+
+    # Find connected components using BFS
+    visited = set()
+    components = []
+    for g_id in export_game_ids:
+        if g_id not in visited:
+            component = []
+            queue = [g_id]
+            visited.add(g_id)
+            while queue:
+                curr = queue.pop(0)
+                component.append(curr)
+                for neighbor in adj[curr]:
+                    if neighbor not in visited and neighbor in export_game_ids:
+                        visited.add(neighbor)
+                        queue.append(neighbor)
+            components.append(component)
+
+    log.info(
+        f"generate_catalog_pdf: Grouped {len(games)} games into {len(components)} connected components."
+    )
+
+    # Order each component and sort the components
+    ordered_components = []
+    for comp_ids in components:
+        comp_games = [id_to_game[g_id] for g_id in comp_ids]
+
+        # Separate base games vs expansions within this component
+        comp_base_games = []
+        comp_expansions = []
+        for g in comp_games:
+            parent_id = expansion_to_base.get(g.id)
+            if parent_id and parent_id in export_game_ids:
+                comp_expansions.append(g)
             else:
-                sort_key = primary_fam[len("Series:") :].strip().lower()
+                comp_base_games.append(g)
+
+        # Sort base games chronologically
+        comp_base_games.sort(
+            key=lambda g: (g.release_year or 0, g.name.lower())
+        )
+
+        # Map each base game in the component to its sorted list of expansions
+        base_to_exps = defaultdict(list)
+        for exp in comp_expansions:
+            p_id = expansion_to_base[exp.id]
+            base_to_exps[p_id].append(exp)
+
+        for b_id in base_to_exps:
+            base_to_exps[b_id].sort(key=lambda g: g.name.lower())
+
+        # Build final ordered list for this component
+        comp_ordered = []
+        for bg in comp_base_games:
+            comp_ordered.append(bg)
+            if bg.id in base_to_exps:
+                comp_ordered.extend(base_to_exps[bg.id])
+
+        # Append any orphaned expansions just in case (their base game is not in the export list)
+        orphan_exps = [
+            exp
+            for exp in comp_expansions
+            if expansion_to_base[exp.id] not in export_game_ids
+        ]
+        orphan_exps.sort(key=lambda g: g.name.lower())
+        comp_ordered.extend(orphan_exps)
+
+        # Determine sort key for this component
+        prim_fam = None
+        for g in comp_games:
+            fam_game = next(
+                (f.name for f in g.families if f.name.startswith("Game:")),
+                None,
+            )
+            fam_series = next(
+                (f.name for f in g.families if f.name.startswith("Series:")),
+                None,
+            )
+            prim_fam = fam_game or fam_series
+            if prim_fam:
+                break
+
+        if prim_fam:
+            if prim_fam.startswith("Game:"):
+                sort_key = prim_fam[len("Game:") :].strip().lower()
+            else:
+                sort_key = prim_fam[len("Series:") :].strip().lower()
         else:
-            group_key = f"solo_{g.id.hex()}"
-            sort_key = g.name.lower()
+            # Fallback to the first base game name or first game name
+            sort_key = (
+                comp_base_games[0].name.lower()
+                if comp_base_games
+                else comp_games[0].name.lower()
+            )
 
-        groups[group_key].append(g)
-        group_sort_keys[group_key] = sort_key
+        ordered_components.append((sort_key, comp_ordered))
 
-    # Sort groups alphabetically by their sort_key
-    sorted_group_keys = sorted(groups.keys(), key=lambda k: group_sort_keys[k])
+    # Sort components alphabetically by their sorting key
+    ordered_components.sort(key=lambda x: x[0])
 
-    # Within each group, sort games by release_year (ascending), then alphabetically by name
-    sorted_base_games = []
-    for g_key in sorted_group_keys:
-        group_games = groups[g_key]
-        group_games.sort(key=lambda g: (g.release_year or 0, g.name.lower()))
-        sorted_base_games.extend(group_games)
-
-    base_games = sorted_base_games
-
-    # Map: base_game_id -> sorted list of expansions
-    base_to_expansions: dict[bytes, list[Game]] = {}
-    for exp in expansions:
-        parent_id = expansion_to_base[exp.id]
-        if parent_id not in base_to_expansions:
-            base_to_expansions[parent_id] = []
-        base_to_expansions[parent_id].append(exp)
-
-    for b_id in base_to_expansions:
-        base_to_expansions[b_id].sort(key=lambda g: g.name.lower())
-
-    # Build the final ordered game sequence
+    # Concatenate all ordered games
     ordered_games = []
-    for base in base_games:
-        ordered_games.append(base)
-        if base.id in base_to_expansions:
-            ordered_games.extend(base_to_expansions[base.id])
+    for _, comp_ordered in ordered_components:
+        ordered_games.extend(comp_ordered)
 
     # Cover Page Images Selection (up to 6 covers)
     cover_images = []
