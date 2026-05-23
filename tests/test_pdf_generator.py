@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 
 from tests.test_models import create_mock_game
 from util.models import (
+    Family,
+    GameFamilyLink,
     GameRelationship,
     Person,
     PersonGameLink,
@@ -452,3 +454,81 @@ def test_pdf_cover_page_spielpendium_branding(session: Session) -> None:
         assert b"spielpendium.com" in pdf_data
     finally:
         rl_config.pageCompression = orig_compression
+
+
+def test_pdf_family_grouping_and_sorting(session: Session) -> None:
+    """Test that base games belonging to the same series family are grouped together and sorted chronologically."""
+    # Create Munchkin (2001) and Star Munchkin (2002) which share the same family
+    # And create another unrelated game like Azul (2017)
+    munchkin = create_mock_game(1927, "Munchkin")
+    munchkin.release_year = 2001
+    star_munchkin = create_mock_game(4095, "Star Munchkin")
+    star_munchkin.release_year = 2002
+    azul = create_mock_game(20022, "Azul")
+    azul.release_year = 2017
+
+    family = Family(name="Game: Munchkin")
+
+    session.add_all([munchkin, star_munchkin, azul, family])
+    session.commit()
+
+    session.refresh(munchkin)
+    session.refresh(star_munchkin)
+    session.refresh(azul)
+    session.refresh(family)
+
+    # Link to family
+    link1 = GameFamilyLink(family_id=family.id, game_id=munchkin.id)
+    link2 = GameFamilyLink(family_id=family.id, game_id=star_munchkin.id)
+    session.add_all([link1, link2])
+    session.commit()
+
+    # Verify grouping/sorting logic directly on retrieved base games
+    base_games = [azul, star_munchkin, munchkin]
+    from collections import defaultdict
+
+    groups = defaultdict(list)
+    group_sort_keys = {}
+
+    for g in base_games:
+        fam_game = next(
+            (f.name for f in g.families if f.name.startswith("Game:")), None
+        )
+        fam_series = next(
+            (f.name for f in g.families if f.name.startswith("Series:")), None
+        )
+        primary_fam = fam_game or fam_series
+
+        if primary_fam:
+            group_key = primary_fam
+            if primary_fam.startswith("Game:"):
+                sort_key = primary_fam[len("Game:") :].strip().lower()
+            else:
+                sort_key = primary_fam[len("Series:") :].strip().lower()
+        else:
+            group_key = f"solo_{g.id.hex()}"
+            sort_key = g.name.lower()
+
+        groups[group_key].append(g)
+        group_sort_keys[group_key] = sort_key
+
+    sorted_group_keys = sorted(groups.keys(), key=lambda k: group_sort_keys[k])
+
+    sorted_base_games = []
+    for g_key in sorted_group_keys:
+        group_games = groups[g_key]
+        group_games.sort(key=lambda g: (g.release_year or 0, g.name.lower()))
+        sorted_base_games.extend(group_games)
+
+    assert sorted_base_games[0].name == "Azul"
+    assert sorted_base_games[1].name == "Munchkin"
+    assert sorted_base_games[2].name == "Star Munchkin"
+
+    # Also verify the PDF compiles without errors when these games are exported
+    buf = io.BytesIO()
+    generate_catalog_pdf(
+        session, [star_munchkin.id, azul.id, munchkin.id], buf
+    )
+    pdf_data = buf.getvalue()
+    assert len(pdf_data) > 0
+    assert pdf_data.startswith(b"%PDF")

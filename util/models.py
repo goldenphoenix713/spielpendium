@@ -35,6 +35,8 @@ __all__ = [
     "Game",
     "engine",
     "create_db_and_tables",
+    "Family",
+    "GameFamilyLink",
 ]
 
 
@@ -218,6 +220,23 @@ class Category(SQLModel, table=True):
     )
 
 
+class GameFamilyLink(SQLModel, table=True):
+    family_id: bytes = BinaryUUIDField(
+        foreign_key="family.id", primary_key=True, repr=False
+    )
+    game_id: bytes = BinaryUUIDField(
+        foreign_key="game.id", primary_key=True, repr=False
+    )
+
+
+class Family(SQLModel, table=True):
+    id: bytes = BinaryUUIDField(primary_key=True, repr=False)
+    name: str
+    games: list["Game"] = Relationship(  # noqa:UP037
+        back_populates="families", link_model=GameFamilyLink
+    )
+
+
 class Game(SQLModel, table=True):
     id: bytes = BinaryUUIDField(primary_key=True, repr=False)
     bgg_id: int = Field(
@@ -263,6 +282,9 @@ class Game(SQLModel, table=True):
     )
     categories: list[Category] = Relationship(
         back_populates="games", link_model=GameCategoryLink
+    )
+    families: list[Family] = Relationship(
+        back_populates="games", link_model=GameFamilyLink
     )
     artists: list[Person] = Relationship(
         back_populates="games_illustrated",

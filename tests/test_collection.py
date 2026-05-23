@@ -22,6 +22,8 @@ from tests.test_models import create_mock_game  # noqa: E402
 from util.models import (  # noqa: E402
     Collection,
     CollectionItem,
+    Family,
+    GameFamilyLink,
     GameRelationship,
     OwnershipStatus,
     RelatedGame,
@@ -690,6 +692,52 @@ class TestOpenModal:
         assert not owned_or_prev, (
             "Expected no ownership badge for 'want' status"
         )
+
+    def test_family_games_shown_in_modal(
+        self, session: Session, mem_engine: Engine
+    ) -> None:
+        """open_modal includes same series/franchise family games in the accordion."""
+        game1 = create_mock_game(801, "Munchkin")
+        game2 = create_mock_game(802, "Star Munchkin")
+        family = Family(name="Game: Munchkin")
+
+        session.add_all([game1, game2, family])
+        session.commit()
+        session.refresh(game1)
+        session.refresh(game2)
+        session.refresh(family)
+
+        link1 = GameFamilyLink(family_id=family.id, game_id=game1.id)
+        link2 = GameFamilyLink(family_id=family.id, game_id=game2.id)
+        session.add_all([link1, link2])
+        session.commit()
+
+        ctx = _make_triggered(801)
+
+        with (
+            patch("pages.collection.dash.callback_context", ctx),
+        ):
+            result = open_modal(
+                [1],
+                [None],
+                None,
+                None,
+                False,
+                None,
+                {"history": [], "current_index": -1},
+            )
+
+        opened, title, _, content, _, _, _, _, _ = result
+        assert opened is True
+        assert title == "Munchkin"
+        assert isinstance(content, html.Div)
+
+        # Cleanup
+        session.delete(link1)
+        session.delete(link2)
+        session.commit()
+        session.delete(family)
+        session.commit()
 
 
 def test_initiate_pdf_export() -> None:

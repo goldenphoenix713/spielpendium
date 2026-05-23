@@ -33,6 +33,7 @@ from util.models import (
     Collection,
     CollectionItem,
     Game,
+    GameFamilyLink,
     RelatedGame,
     engine,
 )
@@ -542,29 +543,67 @@ def open_modal(
             .where(RelatedGame.source_game_id == game.id)
             .options(selectinload(cast("Any", RelatedGame.relationship_type)))
         ).all()
+
+        # Get Series / Franchise Games
+        series_families = [
+            f
+            for f in game.families
+            if f.name.startswith("Game:") or f.name.startswith("Series:")
+        ]
+        family_games: list[tuple[Game, list[str]]] = []
+        if series_families:
+            family_ids = [f.id for f in series_families]
+            stmt = (
+                select(Game)
+                .join(GameFamilyLink)
+                .where(GameFamilyLink.family_id.in_(family_ids))  # type: ignore[attr-defined] # ty:ignore[unresolved-attribute]
+                .where(Game.id != game.id)
+            )
+            other_games = session.exec(stmt).all()
+            seen_ids = set()
+            unique_other_games = []
+            for og in other_games:
+                if og.id not in seen_ids:
+                    seen_ids.add(og.id)
+                    unique_other_games.append(og)
+
+            for og in unique_other_games:
+                og_statuses = []
+                if user_col_id:
+                    owned_item = session.exec(
+                        select(CollectionItem).where(
+                            CollectionItem.collection_id == user_col_id,
+                            CollectionItem.game_id == og.id,
+                        )
+                    ).first()
+                    if owned_item:
+                        og_statuses = owned_item.statuses
+                family_games.append((og, og_statuses))
+
         related_games_accordion = None
-        if related_links:
-            # Group by relationship type
+        if related_links or family_games:
             by_type: dict[str, list[tuple[Game, list[str]]]] = {}
-            for link in related_links:
-                rel_type = link.relationship_type.type
-                if rel_type not in by_type:
-                    by_type[rel_type] = []
+            if related_links:
+                for link in related_links:
+                    rel_type = link.relationship_type.type
+                    if rel_type not in by_type:
+                        by_type[rel_type] = []
 
-                target_game = session.get(Game, link.target_game_id)
-                if target_game:
-                    owned_statuses: list[str] = []
-                    if user_col_id:
-                        owned_item = session.exec(
-                            select(CollectionItem).where(
-                                CollectionItem.collection_id == user_col_id,
-                                CollectionItem.game_id == target_game.id,
-                            )
-                        ).first()
-                        if owned_item:
-                            owned_statuses = owned_item.statuses
+                    target_game = session.get(Game, link.target_game_id)
+                    if target_game:
+                        owned_statuses: list[str] = []
+                        if user_col_id:
+                            owned_item = session.exec(
+                                select(CollectionItem).where(
+                                    CollectionItem.collection_id
+                                    == user_col_id,
+                                    CollectionItem.game_id == target_game.id,
+                                )
+                            ).first()
+                            if owned_item:
+                                owned_statuses = owned_item.statuses
 
-                    by_type[rel_type].append((target_game, owned_statuses))
+                        by_type[rel_type].append((target_game, owned_statuses))
 
             # Map technical BGG types to readable names
             rel_name_map = {
@@ -618,6 +657,46 @@ def open_modal(
                             dmc.AccordionPanel(item_content),
                         ],
                         value=rel_type,
+                    )
+                )
+
+            if family_games:
+                family_content = dmc.Group(
+                    [
+                        dmc.Group(
+                            [
+                                html.Span(
+                                    g.name,
+                                    id={
+                                        "type": "related-game-link",
+                                        "index": g.bgg_id,
+                                    },
+                                    n_clicks=0,
+                                    style={
+                                        "cursor": "pointer",
+                                        "textDecoration": "underline",
+                                        "color": "var(--mantine-color-blue-filled)",
+                                    },
+                                ),
+                                *create_status_badges(statuses),
+                            ],
+                            gap=5,
+                        )
+                        for g, statuses in sorted(
+                            family_games, key=lambda x: x[0].name
+                        )
+                    ],
+                    gap="xs",
+                )
+                accordion_items.append(
+                    dmc.AccordionItem(
+                        [
+                            dmc.AccordionControl(
+                                f"Series / Franchise ({len(family_games)})"
+                            ),
+                            dmc.AccordionPanel(family_content),
+                        ],
+                        value="series_franchise",
                     )
                 )
 

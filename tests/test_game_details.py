@@ -181,3 +181,34 @@ def test_save_game_data_no_session_and_image(
                 (123, "http://download.jpg")
             ])
             assert mock_game_obj.image_path == "saved.jpg"
+
+
+def test_process_and_save_family(mem_engine: Engine) -> None:
+    data = {
+        "items": {
+            "item": {
+                "@id": "42",
+                "name": {"@type": "primary", "@value": "Munchkin"},
+                "link": [
+                    {
+                        "@type": "boardgamefamily",
+                        "@id": "24",
+                        "@value": "Game: Munchkin",
+                    },
+                    {
+                        "@type": "boardgamefamily",
+                        "@id": "77906",
+                        "@value": "Category: DIZED Tutorial",
+                    },
+                ],
+            }
+        }
+    }
+    with Session(mem_engine) as session:
+        g_obj, img = _process_and_save_game_details(session, 42, data)
+        assert g_obj is not None
+        assert g_obj.name == "Munchkin"
+        assert len(g_obj.families) == 2
+        family_names = {f.name for f in g_obj.families}
+        assert "Game: Munchkin" in family_names
+        assert "Category: DIZED Tutorial" in family_names

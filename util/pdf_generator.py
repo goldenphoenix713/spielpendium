@@ -24,7 +24,11 @@ from reportlab.platypus import (
 from sqlmodel import select
 
 from config import IMAGE_DIR
-from util.models import Game, GameRelationship, RelatedGame
+from util.models import (
+    Game,
+    GameRelationship,
+    RelatedGame,
+)
 
 if TYPE_CHECKING:
     import io
@@ -346,8 +350,47 @@ def generate_catalog_pdf(
         f"Classified into {len(base_games)} base games and {len(expansions)} expansions."
     )
 
-    # Sort base games alphabetically
-    base_games.sort(key=lambda g: g.name.lower())
+    # Group and sort base games by series/franchise family if available.
+    from collections import defaultdict
+
+    groups = defaultdict(list)
+    group_sort_keys = {}
+
+    for g in base_games:
+        # Find primary series/franchise family (starting with "Game:" or "Series:")
+        fam_game = next(
+            (f.name for f in g.families if f.name.startswith("Game:")), None
+        )
+        fam_series = next(
+            (f.name for f in g.families if f.name.startswith("Series:")), None
+        )
+        primary_fam = fam_game or fam_series
+
+        if primary_fam:
+            group_key = primary_fam
+            # Remove "Game: " or "Series: " prefix for sorting
+            if primary_fam.startswith("Game:"):
+                sort_key = primary_fam[len("Game:") :].strip().lower()
+            else:
+                sort_key = primary_fam[len("Series:") :].strip().lower()
+        else:
+            group_key = f"solo_{g.id.hex()}"
+            sort_key = g.name.lower()
+
+        groups[group_key].append(g)
+        group_sort_keys[group_key] = sort_key
+
+    # Sort groups alphabetically by their sort_key
+    sorted_group_keys = sorted(groups.keys(), key=lambda k: group_sort_keys[k])
+
+    # Within each group, sort games by release_year (ascending), then alphabetically by name
+    sorted_base_games = []
+    for g_key in sorted_group_keys:
+        group_games = groups[g_key]
+        group_games.sort(key=lambda g: (g.release_year or 0, g.name.lower()))
+        sorted_base_games.extend(group_games)
+
+    base_games = sorted_base_games
 
     # Map: base_game_id -> sorted list of expansions
     base_to_expansions: dict[bytes, list[Game]] = {}

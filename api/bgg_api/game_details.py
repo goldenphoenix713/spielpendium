@@ -13,8 +13,10 @@ from sqlmodel import select
 from config import BGG_API_URL
 from util.models import (
     Category,
+    Family,
     Game,
     GameCategoryLink,
+    GameFamilyLink,
     GameRelationship,
     Person,
     PersonGameLink,
@@ -207,6 +209,9 @@ def _process_and_save_game_details(
         category_data = [
             ld for ld in links_data if ld.get("@type") == "boardgamecategory"
         ]
+        family_data = [
+            ld for ld in links_data if ld.get("@type") == "boardgamefamily"
+        ]
         related_games_data = [
             ld
             for ld in links_data
@@ -318,6 +323,17 @@ def _process_and_save_game_details(
             "category_id",
             "game_id",
             category_data,
+        )
+
+        # 3b. Families
+        get_or_create_entity_and_link(
+            session,
+            Family,
+            GameFamilyLink,
+            "name",
+            "family_id",
+            "game_id",
+            family_data,
         )
 
         # 4. Related Games

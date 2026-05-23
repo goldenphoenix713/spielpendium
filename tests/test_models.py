@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 from util.models import (
     Collection,
     CollectionItem,
+    Family,
     Game,
+    GameFamilyLink,
     GameRelationship,
     OwnershipStatus,
     RelatedGame,
@@ -30,6 +32,8 @@ def test_create_db_and_tables(engine: Engine) -> None:
     assert "ownershipstatus" in tables
     assert "gamerelationship" in tables
     assert "relatedgame" in tables
+    assert "family" in tables
+    assert "gamefamilylink" in tables
 
 
 def create_mock_game(bgg_id: int, name: str) -> Game:
@@ -191,3 +195,50 @@ def test_collection_crud(session: Session) -> None:
 
     # Verify deletion
     assert session.exec(select(Collection)).first() is None
+
+
+def test_family_crud(session: Session) -> None:
+    game1 = create_mock_game(101, "Munchkin")
+    game2 = create_mock_game(102, "Star Munchkin")
+
+    family = Family(name="Game: Munchkin")
+
+    session.add(game1)
+    session.add(game2)
+    session.add(family)
+    session.commit()
+
+    session.refresh(game1)
+    session.refresh(game2)
+    session.refresh(family)
+
+    # Link both games to family
+    link1 = GameFamilyLink(family_id=family.id, game_id=game1.id)
+    link2 = GameFamilyLink(family_id=family.id, game_id=game2.id)
+    session.add(link1)
+    session.add(link2)
+    session.commit()
+
+    # Read back and verify relationships
+    session.refresh(game1)
+    session.refresh(game2)
+    session.refresh(family)
+
+    assert len(game1.families) == 1
+    assert game1.families[0].name == "Game: Munchkin"
+
+    assert len(game2.families) == 1
+    assert game2.families[0].name == "Game: Munchkin"
+
+    assert len(family.games) == 2
+    assert {g.bgg_id for g in family.games} == {101, 102}
+
+    # Delete family
+    session.delete(link1)
+    session.delete(link2)
+    session.commit()
+
+    session.delete(family)
+    session.commit()
+
+    assert session.exec(select(Family)).first() is None
