@@ -341,6 +341,9 @@ def create_db_and_tables() -> None:
         SQLModel.metadata.create_all(engine)
         log.info("Initial database tables successfully created.")
     else:
-        log.debug(
-            "Database file already exists and RESET_DB is False. Skipping table creation."
+        # DB file exists; safely verify and create any missing tables
+        log.info(
+            f"Database file already exists at: {DB_FILE}. Verifying that all tables exist."
         )
+        SQLModel.metadata.create_all(engine)
+        log.info("Database tables verification complete.")

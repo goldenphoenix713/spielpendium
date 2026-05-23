@@ -45,8 +45,8 @@ class TestCreateDbAndTables:
                 # File is recreated via create_all
                 assert "game" in SQLModel.metadata.tables
 
-    def test_no_action_when_reset_false_and_db_exists(self) -> None:
-        """create_db_and_tables does nothing when RESET_DB=False and DB exists."""
+    def test_verifies_tables_when_db_exists(self) -> None:
+        """create_db_and_tables runs create_all when RESET_DB=False and DB exists to ensure all tables exist."""
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = pathlib.Path(tmpdir) / "test.db"
             # Pre-create the file — DB_FILE.exists() is True & RESET_DB is False
@@ -62,6 +62,5 @@ class TestCreateDbAndTables:
                 patch.object(SQLModel.metadata, "create_all", mock_create_all),
             ):
                 create_db_and_tables()
-                # create_all should NOT have been called since the file already exists
-                # and RESET_DB is False
-                mock_create_all.assert_not_called()
+                # create_all should have been called to verify/create any missing tables
+                mock_create_all.assert_called_once_with(engine)
