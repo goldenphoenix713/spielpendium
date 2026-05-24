@@ -86,6 +86,7 @@ def main() -> None:
         # Write buffer to output file
         with open(output_path, "wb") as f:
             f.write(buffer.getvalue())
+        buffer.close()
 
     print(
         f"Success! PDF catalog successfully generated and saved to: {output_path}"

@@ -1388,6 +1388,11 @@ def process_pdf_generation(
     file_path = export_dir / filename
     with open(file_path, "wb") as f:
         f.write(buffer.getvalue())
+    buffer.close()
+
+    import gc
+
+    gc.collect()
 
     download_url = f"/download/pdf/{filename}"
 
