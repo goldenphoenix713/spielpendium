@@ -226,6 +226,9 @@ Before opening a PR or committing:
 
 See `docs/TASKS.md` for the authoritative task list. As of the latest commit:
 
+- **v1.1.0 Enhancements**: PDF Catalog Export (Theme 5 / Phase 13), family
+  relationship grouping, nested expansions formatting, and BGG compliance
+  attribution logo are **completed**.
 - **v1.0.0 Core Features**: All core phases (1-12) including statistics dashboard,
   advanced filters, session-aware settings, and onboarding are **completed**.
 - **Future Enhancements**: Selecting and designing features from the future

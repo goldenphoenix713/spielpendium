@@ -325,6 +325,25 @@ user's collection.
 
 ---
 
+## Phase 13: PDF Catalog Export & Branding Compliance
+
+### Goal: Premium PDF generation with BGG compliance
+
+- **Task 13.1: Connected Components PDF Grouping**
+  - **Status:** **COMPLETED**
+  - **Description:** Implemented undirected Connected Components graph (BFS)
+      to group related standalones and expansions, sorted chronologically.
+- **Task 13.2: PDF Table of Contents & Styling**
+  - **Status:** **COMPLETED**
+  - **Description:** Standardized primary base game numbering, indenting/
+      bulleting secondary base games/expansions, and scaled fonts.
+- **Task 13.3: BGG Branding Compliance**
+  - **Status:** **COMPLETED**
+  - **Description:** Extracted, cropped, and placed the official "Powered
+      by BoardGameGeek" compliance logo on the cover page.
+
+---
+
 ## Known Bugs & Improvements
 
 - **Completed:** Improved game card title visibility using a marquee effect and
