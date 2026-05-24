@@ -177,7 +177,7 @@ def test_pdf_with_images(session: Session) -> None:
     from config import IMAGE_DIR
 
     # Ensure IMAGE_DIR exists
-    IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+    IMAGE_DIR.resolve().mkdir(parents=True, exist_ok=True)
 
     # Create a dummy image
     dummy_img_name = "test_cover_image.jpg"
