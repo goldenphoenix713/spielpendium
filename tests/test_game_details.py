@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 if TYPE_CHECKING:
     from sqlalchemy.engine import Engine
@@ -13,7 +13,7 @@ from api.bgg_api.game_details import (
     get_game_info,
     save_game_data_to_db,
 )
-from util.models import Game
+from util.models import Game, RelatedGame
 
 # Fixtures are now centralized in tests/conftest.py
 
@@ -212,3 +212,45 @@ def test_process_and_save_family(mem_engine: Engine) -> None:
         family_names = {f.name for f in g_obj.families}
         assert "Game: Munchkin" in family_names
         assert "Category: DIZED Tutorial" in family_names
+
+
+def test_process_and_save_compilation_and_integration(
+    mem_engine: Engine,
+) -> None:
+    data = {
+        "items": {
+            "item": {
+                "@id": "402429",
+                "name": {
+                    "@type": "primary",
+                    "@value": "Oceans: Legendary Edition",
+                },
+                "link": [
+                    {
+                        "@type": "boardgamecompilation",
+                        "@id": "232414",
+                        "@value": "Oceans",
+                    },
+                    {
+                        "@type": "boardgameintegration",
+                        "@id": "12345",
+                        "@value": "Another Game",
+                    },
+                ],
+            }
+        }
+    }
+    with Session(mem_engine) as session:
+        g_obj, img = _process_and_save_game_details(session, 402429, data)
+        assert g_obj is not None
+        assert g_obj.name == "Oceans: Legendary Edition"
+
+        statement = select(RelatedGame).where(
+            RelatedGame.source_game_id == g_obj.id
+        )
+        relations = session.exec(statement).all()
+        assert len(relations) == 2
+
+        rel_types = {r.relationship_type.type for r in relations}
+        assert "boardgamecompilation" in rel_types
+        assert "boardgameintegration" in rel_types

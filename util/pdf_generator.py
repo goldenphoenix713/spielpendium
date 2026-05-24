@@ -3,6 +3,7 @@ from __future__ import annotations
 import html
 import math
 from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from loguru import logger as log
@@ -32,7 +33,6 @@ from util.models import (
 
 if TYPE_CHECKING:
     import io
-    from pathlib import Path
 
     from reportlab.pdfgen.canvas import Canvas
     from reportlab.platypus import (
@@ -234,7 +234,7 @@ def draw_later_page_footer(canvas: Canvas, doc: SimpleDocTemplate) -> None:
     canvas.line(54, 45, 558, 45)  # Margins are 54pt (0.75 in), width is 612pt
 
     # Running footer text
-    canvas.setFont("Helvetica", 8)
+    canvas.setFont("Helvetica", 10)
     canvas.setFillColor(colors.HexColor("#64748b"))
     username_str = getattr(doc, "username", "Guest")
     if username_str and username_str.lower() != "guest":
@@ -243,6 +243,28 @@ def draw_later_page_footer(canvas: Canvas, doc: SimpleDocTemplate) -> None:
         footer_text = "Board Game Collection"
     canvas.drawString(54, 30, footer_text)
     canvas.drawRightString(558, 30, f"Page {canvas.getPageNumber()}")
+    canvas.restoreState()
+
+
+def draw_cover_page_decorations(
+    canvas: Canvas, doc: SimpleDocTemplate
+) -> None:
+    """Canvas callback to draw first page background decoration or footer logo."""
+    canvas.saveState()
+    logo_path = Path("assets/powered-by-bgg-rgb.png")
+    if logo_path.exists() and logo_path.is_file():
+        # Draw logo image at bottom right
+        # width = 120 pt, height = 26.75 pt (aspect ratio 498:111)
+        # X = 558 - 120 = 438
+        # Y = 45
+        canvas.drawImage(
+            str(logo_path),
+            438,
+            45,
+            width=120,
+            height=26.75,
+            mask="auto",
+        )
     canvas.restoreState()
 
 
@@ -536,16 +558,16 @@ def generate_catalog_pdf(
     style_index_label = ParagraphStyle(
         "IndexLabel",
         fontName="Helvetica",
-        fontSize=10,
-        leading=14,
+        fontSize=11,
+        leading=15,
         textColor=colors.HexColor("#1e293b"),
     )
 
     style_index_page = ParagraphStyle(
         "IndexPage",
         fontName="Helvetica",
-        fontSize=10,
-        leading=14,
+        fontSize=11,
+        leading=15,
         alignment=2,  # Right
         textColor=colors.HexColor("#475569"),
     )
@@ -561,24 +583,24 @@ def generate_catalog_pdf(
     style_game_subtitle = ParagraphStyle(
         "GameSubtitle",
         fontName="Helvetica-Oblique",
-        fontSize=11,
-        leading=14,
+        fontSize=12,
+        leading=15,
         textColor=colors.HexColor("#475569"),
     )
 
     style_body = ParagraphStyle(
         "BodyStyle",
         fontName="Helvetica",
-        fontSize=9.5,
-        leading=14,
+        fontSize=12,
+        leading=15,
         textColor=colors.HexColor("#334155"),
     )
 
     style_desc_header = ParagraphStyle(
         "DescHeader",
         fontName="Helvetica-Bold",
-        fontSize=12,
-        leading=16,
+        fontSize=14,
+        leading=17,
         textColor=colors.HexColor("#0f172a"),
     )
 
@@ -665,9 +687,9 @@ def generate_catalog_pdf(
 
     # Generate QR Code for spielpendium.com
     qr_code = QrCodeWidget("https://spielpendium.com")
-    qr_code.barWidth = 100
-    qr_code.barHeight = 100
-    qr_draw = Drawing(100, 100)
+    qr_code.barWidth = 150
+    qr_code.barHeight = 150
+    qr_draw = Drawing(150, 150)
     qr_draw.add(qr_code)
     qr_draw.hAlign = "CENTER"
     story.append(qr_draw)
@@ -675,7 +697,7 @@ def generate_catalog_pdf(
     story.append(PageBreak())
 
     # --- 2. INDEX / TABLE OF CONTENTS ---
-    items_per_page = 25
+    items_per_page = 30
     num_index_pages = (
         math.ceil(len(ordered_games) / items_per_page) if ordered_games else 1
     )
@@ -699,7 +721,7 @@ def generate_catalog_pdf(
                 base_game_counter += 1
                 label = f"<a href='#{game_anchor}'><b>{base_game_counter}. {safe_xml_text(game.name)}</b></a>"
             else:
-                label = f"<a href='#{game_anchor}'><b>{safe_xml_text(game.name)}</b></a>"
+                label = f"<a href='#{game_anchor}'><b>&nbsp;&nbsp;&nbsp;&nbsp;• {safe_xml_text(game.name)}</b></a>"
             page_str = f"<a href='#{game_anchor}'><b>Page {page_num}</b></a>"
         else:
             label = f"<a href='#{game_anchor}'><font color='#475569'>&nbsp;&nbsp;&nbsp;&nbsp;• {safe_xml_text(game.name)}</font></a>"
@@ -791,15 +813,15 @@ def generate_catalog_pdf(
         game_img: RLImage | Table | None = None
         if game.image_path:
             img_path = IMAGE_DIR / game.image_path
-            game_img = get_scaled_image(img_path, 140, 140)
+            game_img = get_scaled_image(img_path, 160, 160)
 
         if not game_img:
-            game_img = get_image_fallback(140, 140)
+            game_img = get_image_fallback(160, 160)
 
         meta_table = make_metadata_table(game, style_body)
 
         top_table_data = [[game_img, meta_table]]
-        top_table = Table(top_table_data, colWidths=[150, 354])
+        top_table = Table(top_table_data, colWidths=[170, 334])
         top_table.setStyle(
             TableStyle([
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -847,13 +869,13 @@ def generate_catalog_pdf(
                 consecutive_empty = 0
                 cleaned_lines.append(line)
 
-        max_lines = 15
+        max_lines = 20
         if len(cleaned_lines) > max_lines:
             desc_text = "\n".join(cleaned_lines[: max_lines - 1]) + "\n..."
         else:
             desc_text = "\n".join(cleaned_lines)
 
-        max_desc_len = 900
+        max_desc_len = 1200
         if len(desc_text) > max_desc_len:
             desc_text = desc_text[:max_desc_len] + "..."
 
@@ -864,7 +886,7 @@ def generate_catalog_pdf(
     log.info("generate_catalog_pdf: Building PDF document (doc.build)...")
     doc.build(
         story,
-        onFirstPage=lambda c, d: None,
+        onFirstPage=draw_cover_page_decorations,
         onLaterPages=draw_later_page_footer,
     )
     log.info("generate_catalog_pdf: PDF catalog successfully compiled.")

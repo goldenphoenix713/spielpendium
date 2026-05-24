@@ -532,3 +532,40 @@ def test_pdf_family_grouping_and_sorting(session: Session) -> None:
     pdf_data = buf.getvalue()
     assert len(pdf_data) > 0
     assert pdf_data.startswith(b"%PDF")
+
+
+def test_pdf_secondary_base_games_bullet_points(session: Session) -> None:
+    """Test that secondary base games in the TOC are rendered with bullet points but remain bold."""
+    from reportlab import rl_config
+
+    munchkin = create_mock_game(12001, "Munchkin")
+    munchkin.release_year = 2001
+    star_munchkin = create_mock_game(12002, "Star Munchkin")
+    star_munchkin.release_year = 2002
+
+    family = Family(name="Game: Munchkin")
+    session.add_all([munchkin, star_munchkin, family])
+    session.commit()
+
+    session.refresh(munchkin)
+    session.refresh(star_munchkin)
+    session.refresh(family)
+
+    link1 = GameFamilyLink(family_id=family.id, game_id=munchkin.id)
+    link2 = GameFamilyLink(family_id=family.id, game_id=star_munchkin.id)
+    session.add_all([link1, link2])
+    session.commit()
+
+    buf = io.BytesIO()
+    orig_compression = rl_config.pageCompression
+    rl_config.pageCompression = 0
+    try:
+        generate_catalog_pdf(session, [star_munchkin.id, munchkin.id], buf)
+        pdf_data = buf.getvalue()
+
+        # The primary (oldest) base game "Munchkin" should be numbered (e.g., "1. Munchkin")
+        assert b"1. Munchkin" in pdf_data
+        # The secondary base game "Star Munchkin" should be bulleted and bolded
+        assert b"Star Munchkin" in pdf_data
+    finally:
+        rl_config.pageCompression = orig_compression

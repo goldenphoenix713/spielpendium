@@ -216,7 +216,13 @@ def _process_and_save_game_details(
             ld
             for ld in links_data
             if ld.get("@type")
-            in ("boardgameexpansion", "boardgamereimplementation")
+            in (
+                "boardgameexpansion",
+                "boardgamereimplementation",
+                "boardgameintegration",
+                "boardgamecompilation",
+                "boardgameaccessory",
+            )
         ]
 
         # Helper to get/create entity and link
