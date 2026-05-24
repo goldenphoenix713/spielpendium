@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
+import reportlab.rl_config
 from loguru import logger as log
 from PIL import Image as PILImage
 from reportlab.graphics.barcode.qr import QrCodeWidget
@@ -30,6 +31,8 @@ from util.models import (
     Game,
     RelatedGame,
 )
+
+reportlab.rl_config.useA85 = 0
 
 if TYPE_CHECKING:
     import io
