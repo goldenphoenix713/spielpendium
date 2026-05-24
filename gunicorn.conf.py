@@ -9,3 +9,8 @@ timeout = 120
 # Number of worker processes.
 # Render's resource constraints usually function best with 2-4 workers.
 workers = 4
+
+# The maximum number of requests a worker will process before restarting.
+# This recycles workers periodically, releasing all pooled memory back to the OS.
+max_requests = 100
+max_requests_jitter = 10
