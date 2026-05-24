@@ -82,6 +82,7 @@ Game ──< RelatedGame >── Game          (self-referential: expansions, et
 Game ──< PersonGameLink >── Person     (authors / artists via PersonRole)
 Game ──< PublisherGameLink >── Publisher
 Game ──< GameCategoryLink >── Category
+Game ──< GameFamilyLink >── Family     (series/franchise grouping)
 Game ──< CollectionItem >── Collection (user ownership)
 CollectionItem ── OwnershipStatus
 ```
@@ -92,6 +93,7 @@ Key points:
   **Always look up games by `bgg_id`**, not the internal UUID.
 - `RelatedGame.source_game_id` → the game that *is* the expansion/variant;
   `target_game_id` → the base game.
+- `GameFamilyLink.family_id` → series/franchise family that groups games.
 - `util/models.py` exports a module-level `engine` connected to `DB_FILE`.
   Import it as `from util.models import engine`.
 
@@ -194,9 +196,10 @@ All hooks are enforced on every commit. They run in this order:
    `check-toml`, `detect-private-key`, `pretty-format-json`
 2. **`ruff-check --fix`** — linting
 3. **`ruff-format`** — formatting
-4. **`mypy .`** — strict type checking (excludes `old/`, `test*`)
-5. **`pytest`** — full test suite
-6. **`ty check`** — additional type checker (skipped in CI)
+4. **`markdownlint`** — Markdown style validator (strict 80-char line limit)
+5. **`mypy .`** — strict type checking (excludes `old/`, `test*`)
+6. **`pytest`** — full test suite
+7. **`ty check`** — additional type checker (skipped in CI)
 
 If mypy crashes with `KeyError: 'setter_type'`, it is a cache corruption issue.
 Fix it with: `rm -rf .mypy_cache`

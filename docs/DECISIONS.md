@@ -146,3 +146,38 @@ fail the pre-commit hook.
 
 **Do not use:** bare `python`, `pip`, or `pip install` for project tooling.
 Always prefix with `uv run` or activate `.venv` explicitly.
+
+---
+
+## ADR-008: Connected Components Grouping and TOC Numbering in PDF Export
+
+**Decision:** Group games in the PDF export using an undirected Connected
+Components graph (BFS) based on shared BGG families and relationship links.
+Sort base games chronologically, nest expansions, and apply section numbering
+only to the primary (oldest) base game of each component in the Table of
+Contents. Secondary base games and expansions are formatted with bullet points,
+indented, and left unnumbered.
+
+**Why:**
+
+- Solves the problem of expansions linked to multiple base games by unifying
+  them into a single component block.
+- Ensures all related standalone games, expansions, and family members are
+  grouped together cleanly.
+- Prevents redundant/messy TOC numbering by reserving numbers for the primary
+  base game of each group.
+
+---
+
+## ADR-009: Database Auto-Creation and Migration on Boot
+
+**Decision:** The application runs database table creation
+(`SQLModel.metadata.create_all`) on startup without deleting or wiping
+existing tables, allowing safe schema evolution when deployed to Render.
+
+**Why:**
+
+- SQLite databases on Render exist on a persistent disk. Wiping databases or
+  running complex migrations manually on redeploys is error-prone.
+- Automatically creates newly added tables (like `Family` and
+  `GameFamilyLink`) on container startup without losing user collection data.

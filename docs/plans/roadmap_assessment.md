@@ -15,7 +15,7 @@ It outlines implementation feasibility, value, risk, and mitigations.
 | **2. Social Share** | Medium | High | 3-4 days | Guest router, multi-db |
 | **3. Analytics** | Low | Medium | 2-3 days | BGG Plays ingestion |
 | **4. Kallax/UI** | High | Low | 6-8 days | Drag-drop Canvas |
-| **5. PDF/Export** | Medium | High | 4-5 days | ReportLab / PWA manifest |
+| **5. PDF/Export** | Completed | High | -- | ReportLab / PWA manifest |
 | **6. API Integr.** | Medium | Medium | 4-6 days | API access tokens |
 | **7. Cloud Sync** | High | High | 5-7 days | Hosted Auth backend |
 
@@ -117,15 +117,21 @@ It outlines implementation feasibility, value, risk, and mitigations.
 
 ---
 
-### Theme 5: Exporting & Portability
+### Theme 5: Exporting & Portability (Completed)
 
-- **Expected Difficulty:** Medium
-  - PDF generation requires precise coordinate mapping. PWA manifest/caching
-    requires standard JS service workers.
+- **Implementation Details:**
+  - Implemented single-page-budget PDF catalog generation using ReportLab.
+  - Features chronological grouping of franchise families via Connected
+    Components (BFS), nested expansions, interactive Table of Contents, scaled
+    typography, and official BGG branding compliance.
+  - Generates catalogs in background worker threads with live status tracking.
+- **Expected Difficulty:** Medium (Completed)
+  - PDF generation was implemented with precise coordinate mapping and
+    page-budget protection.
 - **Value Added & ROI:** High
-  - Re-introduces the "Compendium" aspect of the app's original vision, giving
-    users high-quality printouts and offline reliability at convention centers.
-- **Time to Implement:** 4-5 days
+  - Realizes the "Compendium" aspect of the app's vision, giving users
+    high-quality printouts.
+- **Time to Implement:** 4-5 days (Completed in 4 days)
 - **Prerequisites:**
   - Python `reportlab` library and service worker JS template in the `assets/`
     directory.

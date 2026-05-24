@@ -7,7 +7,32 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-05-24 — Game Families & PDF Enhancements
+
 ### Added
+
+- **Series/Franchise Families**: Added schema models (`Family`,
+  `GameFamilyLink`) to parse BGG series/franchise family links, storing them in
+  the database and displaying related games in the UI details modal.
+- **Enhanced BGG Relationship Ingestion**: Expanded BGG API parsing to include
+  compilation, integration, and accessory relationship types (e.g.
+  `boardgamecompilation`, `boardgameintegration`).
+- **Connected Components PDF Grouping**: Grouped related base games and nested
+  expansions in the PDF using an undirected Connected Components graph (BFS) to
+  unify related standalone/expansion titles.
+- **Table of Contents Formatting**: Implemented section numbering only on
+  primary (oldest) base games of each component. Secondary base games and
+  expansions are now indented with bullet points (bold for secondary bases).
+- **PDF Layout & Typography Scaling**: Increased default font sizes/leadings
+  for all text blocks, increased cover image sizes to 160x160, and adjusted
+  spacing to optimize read-budget.
+- **BGG Compliance Logo**: Added "Powered by Board Game Geek" branding in the
+  bottom-right corner of the title page using canvas layer rendering to satisfy
+  BGG's Attribution guidelines.
+- **Database Self-Healing Tables**: Schema checks at startup now create missing
+  tables automatically to allow seamless deployment on Render.
+
+### Changed
 
 - **Feature Brainstorming & Roadmap**: Created
   `docs/plans/feature_brainstorming.md` and

@@ -93,6 +93,12 @@ token.
 SQLModel ORM definitions. All database schema lives here. Also exports the
 module-level `engine` connected to `config.DB_FILE`.
 
+### `util/pdf_generator.py`
+
+Handles catalog PDF compilation. Groups games using Connected Components BFS,
+sorts them chronologically, formats the Table of Contents, scales layout sizes,
+and renders the "Powered by BGG" logo on the canvas cover.
+
 ### `config/settings.py`
 
 `pydantic-settings` model. Reads from `.env`. Exports named constants
@@ -139,6 +145,7 @@ Game ──< RelatedGame >── Game          self-referential via GameRelation
 Game ──< PersonGameLink >── Person     role discriminated by PersonRole (author/artist)
 Game ──< PublisherGameLink >── Publisher
 Game ──< GameCategoryLink >── Category
+Game ──< GameFamilyLink >── Family     series/franchise grouping
 Game ──< CollectionItem >── Collection
 CollectionItem ── OwnershipStatus      (owned / want / prevowned)
 ```
@@ -147,6 +154,7 @@ CollectionItem ── OwnershipStatus      (owned / want / prevowned)
 
 - `RelatedGame.source_game_id` → the expansion/variant
 - `RelatedGame.target_game_id` → the base game
+- `GameFamilyLink.family_id` → the series/franchise family that groups games
 - `Collection.username` identifies the BGG user
 
 ---

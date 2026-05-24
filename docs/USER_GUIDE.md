@@ -103,3 +103,44 @@ Navigate to the **Settings** page to customize:
   Sapphire Blue, Forest Green, Vibrant Red, Majestic Violet, Crimson Orange,
   Warm Amber, Slate Gray) to customize all buttons, badges, sliders, and
   progress indicators instantly.
+
+---
+
+## 5. Exporting Your Collection as a PDF Catalog
+
+Spielpendium features a premium PDF export utility that generates a highly
+stylized, printable board game catalog of your collection. Each game page is
+budgeted to fit on a single page, featuring its BGG cover image, key statistics
+(release year, player count, playtime, age, complexity, authors, publishers),
+and the description.
+
+### Franchise & Series Grouping
+
+The PDF catalog automatically identifies related games, expansions, and BGG
+series/franchise families to group them together logically:
+
+- **Primary Base Game**: The oldest standalone game in a franchise component is
+  used as the primary parent entry, styled with standard section numbering.
+- **Secondary Base Games**: Additional base games within the same franchise
+  (e.g. *Star Munchkin* in a *Munchkin* group) are nested with a bullet
+  point and bold styling.
+- **Expansions**: Expansions are nested under their respective base games with
+  bullet points and a subtle gray font color.
+- **Table of Contents**: Displays interactive page links. Base games are sorted
+  alphabetically, with expansions nested under their base games.
+
+### Generating the PDF
+
+You can trigger a PDF compilation in two ways:
+
+1. **Via the User Interface**: Click the **Export PDF** button on the
+   collection dashboard. This compiles the catalog for the currently
+   connected profile.
+2. **Via the CLI Script**: Run the helper script from the terminal to compile
+   catalogs for specific users or configurations:
+
+   ```bash
+   uv run python scripts/generate_pdf.py --username <bgg_username> --output exports/catalog.pdf
+   ```
+
+   Use the `--limit` flag to generate a smaller catalog during testing.

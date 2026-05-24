@@ -29,13 +29,17 @@ Germany's centrality in the board game sphere) and "compendium".
 - **Associated Games Tracking**: Track expansions, accessories, and
   reimplementations. Easily see what items from a board game family are already
   in your collection.
+- **Premium PDF Catalog Export**: Generate a beautifully styled, printable PDF
+  catalog of your collection. Features Chronological Franchise Family grouping
+  and nested expansions.
 
 ## Technology Stack
 
 Spielpendium is built using modern Python web technologies:
 
 - **Frontend**: Dash, Dash Mantine Components, Dash Iconify
-- **Backend**: Python 3.11+, SQLModel (SQLAlchemy & Pydantic), SQLite
+- **Backend**: Python 3.11+, SQLModel (SQLAlchemy & Pydantic), SQLite, ReportLab
+  (PDF Export)
 
 ## Setup and Installation
 

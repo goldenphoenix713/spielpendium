@@ -24,6 +24,9 @@ analytical features and multi-user session management:
   badge layouts for better readability on card interfaces.
 - **CI/CD Stabilization**: Resolved database-dependent test failures by
   implementing robust mocking for settings and page registration.
+- **PDF Catalog Export & BGG Branding**: Implemented premium PDF catalog export
+  using ReportLab, featuring chronological franchise family grouping, nested
+  expansions, interactive Table of Contents, and official BGG compliance.
 
 ## Current Project Status
 
@@ -34,6 +37,7 @@ analytical features and multi-user session management:
 | **Phase 10** | Documentation & Quality | **COMPLETED** |
 | **Phase 11** | Collection Insights (Statistics) | **COMPLETED** |
 | **Phase 12** | Multi-User Local Architecture | **COMPLETED** |
+| **Phase 13** | PDF Catalog Export & Branding | **COMPLETED** |
 
 ## Key Achievements
 
@@ -47,3 +51,6 @@ analytical features and multi-user session management:
    profile targeting for every visitor.
 4. **Local Image Caching**: Improves rendering performance by serving high-res
    images directly from the local filesystem (`assets/images/`).
+5. **Premium PDF Generation**: Uses Connected Components (BFS) to group related
+   games chronologically with nested expansions, formatted with a structured,
+   scalable Table of Contents and official "Powered by BGG" attribution.

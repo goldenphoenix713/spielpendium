@@ -41,6 +41,10 @@ BGG_API_TOKEN=your_token_here
 > `cf.geekdo-images.com`), which is a different domain than the API itself.
 > The `get_single_image()` function intentionally omits the `Authorization`
 > header for these requests.
+>
+> **Attribution Compliance:** Spielpendium renders the official BGG logo
+> on both the user interface and the bottom-right corner of the exported
+> PDF catalog cover page, satisfying BGG's brand guidelines.
 
 ---
 
