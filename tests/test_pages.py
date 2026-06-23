@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import dash
 
-dash.register_page = MagicMock()  # type: ignore[invalid-assignment]  # ty:ignore[invalid-assignment]
+dash.register_page = MagicMock()  # type: ignore[invalid-assignment]
 
 import dash_mantine_components as dmc  # noqa: E402
 
@@ -139,7 +140,8 @@ def test_handle_onboarding_callback():
     assert handle_onboarding(1, "", None) == dash.no_update
 
     res = handle_onboarding(1, "new_user", ["old_user"])
-    assert res[0] == "/collection"
-    assert res[1] == "new_user"
-    assert "new_user" in res[2]
-    assert "old_user" in res[2]
+    res_tuple = cast("tuple[Any, ...]", res)
+    assert res_tuple[0] == "/collection"
+    assert res_tuple[1] == "new_user"
+    assert "new_user" in res_tuple[2]
+    assert "old_user" in res_tuple[2]

@@ -37,6 +37,7 @@ __all__ = [
     "create_db_and_tables",
     "Family",
     "GameFamilyLink",
+    "SyncState",
 ]
 
 
@@ -313,6 +314,14 @@ class Game(SQLModel, table=True):
     collection_items: list[CollectionItem] = Relationship(
         back_populates="game"
     )
+
+
+class SyncState(SQLModel, table=True):
+    username: str = Field(primary_key=True)
+    active: bool = Field(default=False)
+    current: int = Field(default=0)
+    total: int = Field(default=0)
+    message: str = Field(default="")
 
 
 # Module-level engine creation

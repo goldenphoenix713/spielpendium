@@ -4,7 +4,7 @@ import dash
 import dash_mantine_components as dmc
 
 # Mock dash.register_page before importing the module to prevent side-effects
-dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]  # ty: ignore[invalid-assignment]
+dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]
 
 from dash import html  # noqa: E402
 

@@ -904,6 +904,10 @@ def start_sync(
             should_sync = True
 
     if not should_sync:
+        status = get_sync_status(active_user)
+        if status.active:
+            # Sync is already active in database! Restore UI progress bar and polling interval.
+            return False, {"display": "block"}, True
         return no_update
 
     username = active_user
@@ -915,7 +919,7 @@ def start_sync(
             from loguru import logger
 
             logger.error(f"Sync failed: {e}")
-            set_sync_status(False, message=f"Error: {e}")
+            set_sync_status(username, False, message=f"Error: {e}")
 
     thread = threading.Thread(target=run_sync)
     thread.daemon = True
@@ -932,17 +936,58 @@ def start_sync(
     Output("sync-progress-container", "style", allow_duplicate=True),
     Output("sync-trigger-store", "data"),
     Output("refresh-database-btn", "loading", allow_duplicate=True),
+    Output(
+        "collection-notification-container", "children", allow_duplicate=True
+    ),
     Input("sync-interval", "n_intervals"),
+    State("active-user-store", "data"),
     State("sync-trigger-store", "data"),
     prevent_initial_call=True,
 )
 def update_progress(
-    _: int, trigger_count: int
-) -> tuple[int, str, str, bool, dict[str, str], int, bool]:
+    _: int, active_user: str | None, trigger_count: int
+) -> tuple[
+    int,
+    str,
+    str,
+    bool,
+    dict[str, str],
+    int,
+    bool,
+    dmc.Notification | NoUpdate,
+]:
     """Polls the sync status and updates the progress bar."""
-    status = get_sync_status()
+    status = get_sync_status(active_user or "")
 
     if not status.active:
+        notification_id = f"sync-complete-notification-{trigger_count}"
+        is_error = (
+            "error" in (status.message or "").lower()
+            or "fail" in (status.message or "").lower()
+        )
+
+        if is_error:
+            notification = dmc.Notification(
+                id=notification_id,
+                title="Sync Failed",
+                message=status.message
+                or "An error occurred during synchronization.",
+                color="red",
+                icon=DashIconify(icon="tabler:x", width=16),
+                action="show",
+                autoClose=5000,
+            )
+        else:
+            notification = dmc.Notification(
+                id=notification_id,
+                title="Sync Complete",
+                message="Your collection has been synchronized successfully.",
+                color="green",
+                icon=DashIconify(icon="tabler:check", width=16),
+                action="show",
+                autoClose=3000,
+            )
+
         return (
             100,
             "100%",
@@ -951,6 +996,7 @@ def update_progress(
             {"display": "none"},
             trigger_count + 1,
             False,
+            notification,
         )
 
     progress = (status.current / status.total * 100) if status.total > 0 else 0
@@ -962,6 +1008,7 @@ def update_progress(
         {"display": "block"},
         trigger_count,
         True,
+        no_update,
     )
 
 

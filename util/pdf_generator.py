@@ -299,11 +299,11 @@ def generate_catalog_pdf(
         style_empty = ParagraphStyle(
             "EmptyStyle", parent=styles["Heading2"], alignment=1
         )
-        story: list[Flowable] = [
+        empty_story: list[Flowable] = [
             Spacer(1, 100),
             Paragraph("No board games selected for export.", style_empty),
         ]
-        doc.build(story)
+        doc.build(empty_story)
         return
 
     # Load all games and their relationships
@@ -604,7 +604,7 @@ def generate_catalog_pdf(
         textColor=colors.HexColor("#0f172a"),
     )
 
-    story = []
+    story: list[Flowable] = []
 
     username_clean = safe_xml_text(username)
     if username_clean and username_clean.lower() != "guest":
