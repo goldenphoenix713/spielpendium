@@ -7,7 +7,7 @@ import dash
 import pytest
 from sqlmodel import Session, SQLModel, create_engine
 
-dash.register_page = MagicMock()  # type: ignore[invalid-assignment]  # ty:ignore[invalid-assignment]
+dash.register_page = MagicMock()  # type: ignore[invalid-assignment]
 
 if TYPE_CHECKING:
     from collections.abc import Generator

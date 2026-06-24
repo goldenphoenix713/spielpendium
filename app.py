@@ -390,13 +390,13 @@ dash_app = generate_app()
 server = dash_app.server
 
 
-@server.route("/healthz")
+@server.route("/healthz")  # type: ignore[untyped-decorator]
 def healthz() -> tuple[str, int]:
     """Lightweight health check endpoint for Render."""
     return "OK", 200
 
 
-@server.route("/download/pdf/<filename>")
+@server.route("/download/pdf/<filename>")  # type: ignore[untyped-decorator]
 def download_pdf(filename: str) -> Any:
     """Serve the generated PDF catalog from a non-watched temp directory as a download attachment."""
     import os

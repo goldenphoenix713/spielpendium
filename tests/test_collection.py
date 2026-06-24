@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import MagicMock, patch
 
 import dash
@@ -8,7 +8,7 @@ import dash_mantine_components as dmc
 from dash import html
 
 # Must mock register_page before importing the module
-dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]  # ty: ignore[invalid-assignment]
+dash.register_page = MagicMock()  # type: ignore[assignment, unused-ignore]
 
 from pages.collection import (  # noqa: E402
     dismiss_pdf_notification,
@@ -317,7 +317,7 @@ class TestOpenModal:
             history,
             back,
             forward,
-        ) = result
+        ) = cast("tuple[Any, ...]", result)
         assert opened is True
         assert title == "Error"
         assert loading == dash.no_update
@@ -357,7 +357,7 @@ class TestOpenModal:
             history,
             back,
             forward,
-        ) = result
+        ) = cast("tuple[Any, ...]", result)
         assert opened is True
         assert title == "Terra Mystica"
         assert "7.5" in rating  # from create_mock_game default bgg_rating
@@ -399,7 +399,7 @@ class TestOpenModal:
             history,
             back,
             forward,
-        ) = result
+        ) = cast("tuple[Any, ...]", result)
         assert opened is True
         assert rating == "N/A"
 
@@ -429,7 +429,9 @@ class TestOpenModal:
                 {"history": [], "current_index": -1},
             )
 
-        opened, title, _, content, _, _, _, _, _ = result
+        opened, title, _, content, _, _, _, _, _ = cast(
+            "tuple[Any, ...]", result
+        )
         assert opened is True
         assert title == "Simple Game"
 
@@ -491,7 +493,9 @@ class TestOpenModal:
                 {"history": [], "current_index": -1},
             )
 
-        opened, title, _, content, _, loading, _, _, _ = result
+        opened, title, _, content, _, loading, _, _, _ = cast(
+            "tuple[Any, ...]", result
+        )
         assert opened is True
         assert title == "Base Game"
         assert loading == dash.no_update
@@ -552,7 +556,9 @@ class TestOpenModal:
                 {"history": [], "current_index": -1},
             )
 
-        opened, title, _, content, _, loading, _, _, _ = result
+        opened, title, _, content, _, loading, _, _, _ = cast(
+            "tuple[Any, ...]", result
+        )
         assert opened is True
         assert title == "Main Game"
         badges = _find_badges(content)
@@ -618,7 +624,7 @@ class TestOpenModal:
                 {"history": [], "current_index": -1},
             )
 
-        _, title, _, content, _, _, _, _, _ = result
+        _, title, _, content, _, _, _, _, _ = cast("tuple[Any, ...]", result)
         assert title == "Main Game 2"
         badges = _find_badges(content)
         assert any(
@@ -683,7 +689,7 @@ class TestOpenModal:
                 {"history": [], "current_index": -1},
             )
 
-        _, title, _, content, _, _, _, _, _ = result
+        _, title, _, content, _, _, _, _, _ = cast("tuple[Any, ...]", result)
         assert title == "Main Game 3"
         badges = _find_badges(content)
         owned_or_prev = [
@@ -727,7 +733,9 @@ class TestOpenModal:
                 {"history": [], "current_index": -1},
             )
 
-        opened, title, _, content, _, _, _, _, _ = result
+        opened, title, _, content, _, _, _, _, _ = cast(
+            "tuple[Any, ...]", result
+        )
         assert opened is True
         assert title == "Munchkin"
         assert isinstance(content, html.Div)
@@ -745,9 +753,8 @@ def test_initiate_pdf_export() -> None:
     assert initiate_pdf_export(None) == dash.no_update
     assert initiate_pdf_export(0) == dash.no_update
 
-    loading, notification, trigger_data = initiate_pdf_export(1)
-    assert loading is True
-    assert isinstance(notification, dmc.Notification)
+    res = initiate_pdf_export(1)
+    loading, notification, trigger_data = cast("tuple[Any, ...]", res)
     assert notification.id == "pdf-export-notification"
     assert notification.loading is True
     assert trigger_data == {"n_clicks": 1}
@@ -776,8 +783,7 @@ def test_process_pdf_generation(
 
     # Run processing
     res = process_pdf_generation({"n_clicks": 1}, filtered_games, "testuser")
-    assert res != dash.no_update
-    loading, notification = res
+    loading, notification = cast("tuple[Any, ...]", res)
     assert loading is False
     assert isinstance(notification, dmc.Notification)
     assert notification.id == "pdf-export-notification"

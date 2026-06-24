@@ -5,7 +5,7 @@ enhancements, and architectural improvements for **Spielpendium**. These ideas
 are categorized by theme to represent potential additions to the roadmap.
 
 For a detailed feasibility, risk, and timeline assessment of these features,
-see [roadmap_assessment.md](file:///Users/eddie/python_projects/spielpendium/docs/plans/roadmap_assessment.md).
+see [roadmap_assessment.md](roadmap_assessment.md).
 
 ---
 

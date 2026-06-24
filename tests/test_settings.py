@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import dash
 
-dash.register_page = MagicMock()  # type: ignore[invalid-assignment]  # ty:ignore[invalid-assignment]
+dash.register_page = MagicMock()  # type: ignore[invalid-assignment]
 
 from util.settings import (  # noqa: E402
     get_active_username,

@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import os
+from typing import Any, cast
 from unittest.mock import MagicMock, patch
 
 import dash
 
 # Must mock register_page before importing the module
-dash.register_page = MagicMock()  # ty:ignore[invalid-assignment]
+dash.register_page = MagicMock()
 
 import dash_mantine_components as dmc  # noqa: E402
 from sqlmodel import Session  # noqa: E402
@@ -61,13 +62,14 @@ def test_directories_env_override():
         pass
 
 
-def test_sync_status():
-    set_sync_status(True, 1, 10, "Syncing...")
-    status = get_sync_status()
-    assert status.active is True
-    assert status.current == 1
-    assert status.total == 10
-    assert status.message == "Syncing..."
+def test_sync_status(mem_engine):
+    with patch("util.models.engine", mem_engine):
+        set_sync_status("phoenix713", True, 1, 10, "Syncing...")
+        status = get_sync_status("phoenix713")
+        assert status.active is True
+        assert status.current == 1
+        assert status.total == 10
+        assert status.message == "Syncing..."
 
 
 def test_collection_gaps(mem_engine):
@@ -93,7 +95,8 @@ def test_collection_gaps(mem_engine):
         res = open_modal(
             [], [], 0, 0, False, 0, {"history": [], "current_index": -1}
         )
-        assert res[0] is False
+        res_tuple = cast("tuple[Any, ...]", res)
+        assert res_tuple[0] is False
 
         # Line 346-360: Back/Forward/Sync
         mock_ctx.triggered = [{"value": 1, "prop_id": "..."}]
@@ -104,14 +107,16 @@ def test_collection_gaps(mem_engine):
         res = open_modal(
             [], [], 1, 0, True, 0, {"history": [1, 2], "current_index": 1}
         )
-        assert res[6]["current_index"] == 0
+        res_tuple = cast("tuple[Any, ...]", res)
+        assert res_tuple[6]["current_index"] == 0
 
         # Forward button
         mock_ctx.triggered_id = "modal-forward-button"
         res = open_modal(
             [], [], 0, 1, True, 0, {"history": [1, 2], "current_index": 0}
         )
-        assert res[6]["current_index"] == 1
+        res_tuple = cast("tuple[Any, ...]", res)
+        assert res_tuple[6]["current_index"] == 1
 
         # Sync game button
         mock_ctx.triggered_id = "sync-game-btn"
@@ -144,52 +149,75 @@ def test_collection_gaps(mem_engine):
         res = open_modal(
             [], [], 0, 0, True, 1, {"history": [1], "current_index": 0}
         )
-        assert res is not dash.no_update
-        assert res[1] == "Test"
+        res_tuple = cast("tuple[Any, ...]", res)
+        assert res_tuple[1] == "Test"
 
 
-def test_start_sync_logic():
-    res = start_sync(None, None)
-    assert res == dash.no_update
-
-    with (
-        patch("threading.Thread") as mock_thread,
-    ):
-        res = start_sync(1, "test")
-        assert res[0] is False
-        assert res[1] == {"display": "block"}
-        assert res[2] is True
-        assert mock_thread.called
-
-
-def test_start_sync_auto_refresh():
-    with (
-        patch("threading.Thread") as mock_thread,
-    ):
-        res = start_sync(None, "testuser", auto_refresh=True)
-        assert res[0] is False
-        assert res[1] == {"display": "block"}
-        assert res[2] is True
-        assert mock_thread.called
-
-    with (
-        patch("threading.Thread") as mock_thread,
-    ):
-        res = start_sync(None, "testuser", auto_refresh=False)
+def test_start_sync_logic(mem_engine):
+    with patch("util.models.engine", mem_engine):
+        res = start_sync(None, None)
         assert res == dash.no_update
-        assert not mock_thread.called
+
+        with (
+            patch("threading.Thread") as mock_thread,
+        ):
+            res = start_sync(1, "test")
+            res_tuple = cast("tuple[Any, ...]", res)
+            assert res_tuple[0] is False
+            assert res_tuple[1] == {"display": "block"}
+            assert res_tuple[2] is True
+            assert mock_thread.called
 
 
-def test_update_progress_logic():
-    set_sync_status(False, message="Done")
-    res = update_progress(0, 0)
-    assert res[0] == 100
-    assert res[2] == "Done"
+def test_start_sync_auto_refresh(mem_engine):
+    with patch("util.models.engine", mem_engine):
+        with (
+            patch("threading.Thread") as mock_thread,
+        ):
+            res = start_sync(None, "testuser", auto_refresh=True)
+            res_tuple = cast("tuple[Any, ...]", res)
+            assert res_tuple[0] is False
+            assert res_tuple[1] == {"display": "block"}
+            assert res_tuple[2] is True
+            assert mock_thread.called
 
-    set_sync_status(True, current=5, total=10, message="Running")
-    res = update_progress(0, 0)
-    assert res[0] == 50
-    assert res[2] == "Running"
+        with (
+            patch("threading.Thread") as mock_thread,
+        ):
+            res = start_sync(None, "testuser", auto_refresh=False)
+            assert res == dash.no_update
+            assert not mock_thread.called
+
+
+def test_start_sync_restores_active_sync(mem_engine):
+    with patch("util.models.engine", mem_engine):
+        set_sync_status(
+            "testuser", True, current=2, total=10, message="Restoring"
+        )
+        # should_sync is False (n_clicks=None, auto_refresh=False)
+        res = start_sync(None, "testuser", auto_refresh=False)
+        # It should check DB, see active is True, and restore UI progress elements without starting a thread
+        res_tuple = cast("tuple[Any, ...]", res)
+        assert res_tuple[0] is False  # disabled=False (enables interval)
+        assert res_tuple[1] == {"display": "block"}
+        assert res_tuple[2] is True  # loading=True
+
+
+def test_update_progress_logic(mem_engine):
+    with patch("util.models.engine", mem_engine):
+        set_sync_status("testuser", False, message="Done")
+        res = update_progress(0, "testuser", 0)
+        assert res[0] == 100
+        assert res[2] == "Done"
+        assert isinstance(res[7], dmc.Notification)
+
+        set_sync_status(
+            "testuser", True, current=5, total=10, message="Running"
+        )
+        res = update_progress(0, "testuser", 0)
+        assert res[0] == 50
+        assert res[2] == "Running"
+        assert res[7] is dash.no_update
 
 
 def test_load_collection_store_empty(mem_engine):
