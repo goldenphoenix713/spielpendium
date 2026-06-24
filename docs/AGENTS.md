@@ -226,6 +226,9 @@ Before opening a PR or committing:
 
 See `docs/TASKS.md` for the authoritative task list. As of the latest commit:
 
+- **v1.2.0 PWA Support**: Progressive Web App (PWA) installation, custom
+  stylized meeple logo, service worker caching, and SQLite sync state progress
+  sync are **completed**.
 - **v1.1.0 Enhancements**: PDF Catalog Export (Theme 5 / Phase 13), family
   relationship grouping, nested expansions formatting, and BGG compliance
   attribution logo are **completed**.

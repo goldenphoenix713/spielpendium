@@ -1,6 +1,6 @@
 [project]
 name = "spielpendium"
-version = "1.1.0"
+version = "1.2.0"
 description = "A tool to organize games and export to document."
 authors = [
     { name = "Eduardo Ruiz", email = "eduardo.j.ruiz@gmail.com" }

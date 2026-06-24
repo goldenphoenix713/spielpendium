@@ -7,6 +7,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-06-23 — Progressive Web App Support
+
 ### Added
 
 - **Progressive Web App (PWA)**: Added manifest (`manifest.json`) and service
