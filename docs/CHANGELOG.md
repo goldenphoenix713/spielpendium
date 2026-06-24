@@ -7,6 +7,27 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Progressive Web App (PWA)**: Added manifest (`manifest.json`) and service
+  worker (`sw.js`) to support standalone installation on mobile and desktop
+  operating systems. Caches application assets (styles, scripts, icons, fonts)
+  and handles offline routing fallback.
+- **PWA Visual Assets**: Generated a transparent high-resolution meeple logo
+  and compiled a multi-size `favicon.ico` containing standard icon sizes (16px
+  to 64px). Swapped header icon with the new stylized meeple logo.
+- **Database-Backed Progress Sync**: Added `SyncState` model to persist BGG
+  ingestion progress parameters (active, current, total, message) in SQLite.
+  Allows active sync UI restoration on page load and resolves coordination
+  issues in multi-process Gunicorn container environments.
+
+### Fixed
+
+- **Deprecation Cleanups**: Upgraded `dmc.NotificationProvider` layout wrapper
+  to `dmc.NotificationContainer` to eliminate console warning messages.
+- **Type Compliance**: Fixed typing checks (`mypy` and `ty check`) across unit
+  tests and generator files.
+
 ## [1.1.0] — 2026-05-24 — Game Families & PDF Enhancements
 
 ### Added
