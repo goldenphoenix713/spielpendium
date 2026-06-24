@@ -187,7 +187,7 @@ cp db/spielpendium_backup.db db/spielpendium.db
 
 ## 4. Production Cloud Deployment (Render)
 
-Spielpendium v1.1.0 is fully optimized for containerless cloud application
+Spielpendium v1.2.0 is fully optimized for containerless cloud application
 hosting on platforms like **Render**.
 
 ### Render Service Settings

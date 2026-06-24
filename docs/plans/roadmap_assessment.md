@@ -2,7 +2,7 @@
 
 This document provides a comprehensive technical and strategic assessment of
 the feature ideas proposed in
-[feature_brainstorming.md](/Users/eddie/python_projects/spielpendium/docs/plans/feature_brainstorming.md).
+[feature_brainstorming.md](feature_brainstorming.md).
 It outlines implementation feasibility, value, risk, and mitigations.
 
 ---

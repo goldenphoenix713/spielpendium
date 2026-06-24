@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import dash
 
-dash.register_page = MagicMock()  # type: ignore[invalid-assignment]  # ty:ignore[invalid-assignment]
+dash.register_page = MagicMock()  # type: ignore[invalid-assignment]
 
 from util.filters import (  # noqa: E402
     FILTER_DEFAULTS,

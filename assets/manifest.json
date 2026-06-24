@@ -1,0 +1,22 @@
+{
+  "background_color": "#1a1b1e",
+  "description": "A premium dashboard and companion for your BoardGameGeek collection.",
+  "display": "standalone",
+  "icons": [
+    {
+      "sizes": "192x192",
+      "src": "/assets/logo-192.png",
+      "type": "image/png"
+    },
+    {
+      "sizes": "512x512",
+      "src": "/assets/logo-512.png",
+      "type": "image/png"
+    }
+  ],
+  "name": "Spielpendium",
+  "orientation": "portrait-primary",
+  "short_name": "Spielpendium",
+  "start_url": "/",
+  "theme_color": "#1a1b1e"
+}

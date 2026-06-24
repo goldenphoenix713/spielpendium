@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from typing import TYPE_CHECKING, Any
 
@@ -14,10 +15,12 @@ from dash import (
     _dash_renderer,
     callback,
     dcc,
+    html,
     no_update,
     page_container,
 )
 from dash_iconify import DashIconify
+from flask import send_from_directory
 from loguru import logger as log
 
 import util.filters  # noqa: F401 — registers filter callbacks
@@ -40,7 +43,32 @@ def generate_app() -> Dash:
         create_db_and_tables()
 
     log.info("generate_app: Initializing Dash application...")
-    app = Dash(__name__, use_pages=True, suppress_callback_exceptions=True)
+    app = Dash(
+        __name__,
+        use_pages=True,
+        suppress_callback_exceptions=True,
+        assets_ignore=".*sw\\.js",
+    )
+
+    app.index_string = """<!DOCTYPE html>
+<html>
+    <head>
+        {%metas%}
+        <title>{%title%}</title>
+        {%favicon%}
+        {%css%}
+        <link rel="manifest" href="/manifest.json">
+        <link rel="apple-touch-icon" href="/assets/logo-192.png">
+    </head>
+    <body>
+        {%app_entry%}
+        <footer>
+            {%config%}
+            {%scripts%}
+            {%renderer%}
+        </footer>
+    </body>
+</html>"""
 
     # Header content
     header_content = dmc.Group(
@@ -56,7 +84,7 @@ def generate_app() -> Dash:
                     size="lg",
                     hiddenFrom="md",
                 ),
-                DashIconify(icon="game-icons:meeple", width=30),
+                html.Img(src="/assets/meeple-logo.png", width=30, height=30),
                 dmc.Title("Spielpendium", order=3, mr="xl"),
                 dmc.Divider(orientation="vertical", h=25, visibleFrom="md"),
                 dmc.Group(
@@ -220,7 +248,7 @@ def generate_app() -> Dash:
         forceColorScheme="dark",
         theme={"primaryColor": "blue"},
         children=[
-            dmc.NotificationProvider(position="top-right"),
+            dmc.NotificationContainer(position="top-right"),
             mobile_drawer,
             dcc.Location(id="url"),
             dmc.AppShell(
@@ -390,13 +418,35 @@ dash_app = generate_app()
 server = dash_app.server
 
 
-@server.route("/healthz")
+@server.route("/healthz")  # type: ignore[untyped-decorator]
 def healthz() -> tuple[str, int]:
     """Lightweight health check endpoint for Render."""
     return "OK", 200
 
 
-@server.route("/download/pdf/<filename>")
+@server.route("/sw.js")  # type: ignore[untyped-decorator]
+def serve_sw() -> Any:
+    """Serve the Service Worker script from the root directory."""
+
+    return send_from_directory(
+        os.path.join(server.root_path, "assets"),
+        "sw.js",
+        mimetype="application/javascript",
+    )
+
+
+@server.route("/manifest.json")  # type: ignore[untyped-decorator]
+def serve_manifest() -> Any:
+    """Serve the manifest.json file from the root directory."""
+
+    return send_from_directory(
+        os.path.join(server.root_path, "assets"),
+        "manifest.json",
+        mimetype="application/json",
+    )
+
+
+@server.route("/download/pdf/<filename>")  # type: ignore[untyped-decorator]
 def download_pdf(filename: str) -> Any:
     """Serve the generated PDF catalog from a non-watched temp directory as a download attachment."""
     import os

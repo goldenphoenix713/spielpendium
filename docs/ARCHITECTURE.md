@@ -156,6 +156,7 @@ CollectionItem ── OwnershipStatus      (owned / want / prevowned)
 - `RelatedGame.target_game_id` → the base game
 - `GameFamilyLink.family_id` → the series/franchise family that groups games
 - `Collection.username` identifies the BGG user
+- `SyncState.username` is the primary key for BGG sync status tracking.
 
 ---
 
@@ -197,6 +198,7 @@ Browser (page load)
 | :--- | :--- |
 | Language | Python 3.11, strict mypy |
 | Web framework | Dash 4.x (multi-page) |
+| PWA | manifest.json + sw.js service worker for caching & installability |
 | State Management | `dcc.Store` (Local Storage) for active user & theme persistence |
 | UI components | dash-mantine-components 2.x (dark-mode-first) |
 | Visualizations | Plotly + Pandas for statistics |

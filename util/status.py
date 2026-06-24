@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from threading import Lock
+
+from loguru import logger
+from sqlmodel import Session as SQLModelSession
 
 
 @dataclass
@@ -10,38 +14,61 @@ class SyncStatus:
     message: str = ""
 
 
-_status = SyncStatus()
-_lock = Lock()
-
-
 def set_sync_status(
-    active: bool, current: int = 0, total: int = 0, message: str = ""
+    username: str,
+    active: bool,
+    current: int = 0,
+    total: int = 0,
+    message: str = "",
 ) -> None:
-    """Set the sync status.
+    """Set the sync status in the database.
 
     Args:
+        username: BGG username of the user whose sync status is being set.
         active: Whether the sync is active.
         current: The current progress of the sync.
         total: The total progress of the sync.
         message: The message to display.
     """
-    with _lock:
-        _status.active = active
-        _status.current = current
-        _status.total = total
-        _status.message = message
+    from util.models import SyncState, engine
+
+    try:
+        with SQLModelSession(engine) as session:
+            state = session.get(SyncState, username)
+            if not state:
+                state = SyncState(username=username)
+                session.add(state)
+            state.active = active
+            state.current = current
+            state.total = total
+            state.message = message
+            session.commit()
+    except Exception as e:
+        logger.error(f"Error setting sync status for {username}: {e}")
 
 
-def get_sync_status() -> SyncStatus:
-    """Get the sync status.
+def get_sync_status(username: str) -> SyncStatus:
+    """Get the sync status for the user from the database.
+
+    Args:
+        username: BGG username of the user whose sync status is being fetched.
 
     Returns:
         SyncStatus: The sync status.
     """
-    with _lock:
-        return SyncStatus(
-            active=_status.active,
-            current=_status.current,
-            total=_status.total,
-            message=_status.message,
-        )
+    from util.models import SyncState, engine
+
+    try:
+        with SQLModelSession(engine) as session:
+            state = session.get(SyncState, username)
+            if state:
+                return SyncStatus(
+                    active=state.active,
+                    current=state.current,
+                    total=state.total,
+                    message=state.message,
+                )
+    except Exception as e:
+        logger.error(f"Error getting sync status for {username}: {e}")
+
+    return SyncStatus(active=False, current=0, total=0, message="")

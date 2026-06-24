@@ -125,13 +125,13 @@ def save_collection_data_to_db(
 
         if not game_ids:
             log.warning(f"No games found in collection for user {username}")
-            set_sync_status(False)
+            set_sync_status(username, False)
             return
 
         # Fetch detailed data for all games in the collection at once in batches of 20
         # (BGG limit is generally ~20 per "thing" request)
         set_sync_status(
-            True, 0, len(game_ids), "Starting game details sync..."
+            username, True, 0, len(game_ids), "Starting game details sync..."
         )
         batch_size = 20
         for i in range(0, len(game_ids), batch_size):
@@ -141,6 +141,7 @@ def save_collection_data_to_db(
                 f"{min(i + batch_size, len(game_ids))} / {len(game_ids)})..."
             )
             set_sync_status(
+                username,
                 True,
                 i,
                 len(game_ids),
@@ -196,6 +197,7 @@ def save_collection_data_to_db(
                 session.commit()
 
             set_sync_status(
+                username,
                 True,
                 i + len(batch_ids),
                 len(game_ids),
@@ -207,6 +209,7 @@ def save_collection_data_to_db(
             f"Processing and linking {len(bgg_items)} collection items for user '{username}'"
         )
         set_sync_status(
+            username,
             True,
             len(game_ids),
             len(game_ids),
@@ -299,7 +302,9 @@ def save_collection_data_to_db(
                 collection_item.statuses = active_statuses
 
         session.commit()
-        set_sync_status(False, len(game_ids), len(game_ids), "Sync complete!")
+        set_sync_status(
+            username, False, len(game_ids), len(game_ids), "Sync complete!"
+        )
         log.info(f"Collection for user {username} saved/updated in DB.")
 
 
