@@ -15,6 +15,7 @@ from dash import (
     _dash_renderer,
     callback,
     dcc,
+    html,
     no_update,
     page_container,
 )
@@ -83,7 +84,7 @@ def generate_app() -> Dash:
                     size="lg",
                     hiddenFrom="md",
                 ),
-                DashIconify(icon="game-icons:meeple", width=30),
+                html.Img(src="/assets/meeple-logo.png", width=30, height=30),
                 dmc.Title("Spielpendium", order=3, mr="xl"),
                 dmc.Divider(orientation="vertical", h=25, visibleFrom="md"),
                 dmc.Group(
